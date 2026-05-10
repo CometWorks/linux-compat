@@ -361,9 +361,12 @@ MigrationBackup/
 # Core dumps
 core.*
 
-# Native wrappers
-NativeWrappers/cmake-build-debug/**
+# Build files
 NativeWrappers/build/**
+NativeWrappers/CMakeFiles/**
+NativeWrappers/cmake-build-debug/**
+NativeWrappers/cmake_install.cmake
+NativeWrappers/CMakeCache.txt
 
 # Packaging build state (FFmpeg sources, flatpak builder dir, staged 7z trees)
 /build/
