@@ -23,8 +23,6 @@ plugin by the Linux version of Pulsar.</Description>
 
     <Runtimes>NETCoreApp</Runtimes>
 
-    <AssetFolder>Assets/</AssetFolder>
-
     <Hidden>true</Hidden>
     
     <Commit>TODO</Commit>
