@@ -58,6 +58,12 @@ static class MyDX9GuiDrawMouseCursorPatch
 
         if (mouseCursorTexture != null && shouldDrawCursor)
         {
+            // Record the texture string the render-thread patch
+            // (CursorRenderRatePatch) uses to identify "the" cursor sprite
+            // among all queued DrawSprite messages. Set before enqueueing so
+            // a fast render thread can never see the message before the name.
+            CursorRenderRateState.LastCursorTextureName = mouseCursorTexture;
+
             Vector2 normalizedSize = MyGuiManager.GetNormalizedSize(new Vector2(64f), 1f);
             MyGuiManager.DrawSpriteBatch(
                 mouseCursorTexture,

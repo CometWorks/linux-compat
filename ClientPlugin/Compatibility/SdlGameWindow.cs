@@ -210,6 +210,29 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         }
     }
 
+    /// <summary>
+    /// Tries to read the freshest in-window mouse position snapshot from the
+    /// SDL polling thread under <see cref="m_bufferLock"/>, so the Vector2
+    /// read is not torn against the per-iteration UpdateMouseSnapshot
+    /// writer. Returns false when the cursor is outside the window or the
+    /// snapshot is invalid — callers (the render-thread cursor repositioner)
+    /// should leave the queued sprite untouched in that case rather than
+    /// teleporting it to an off-window coordinate.
+    /// </summary>
+    internal bool TryGetFreshInWindowMousePosition(out Vector2 position)
+    {
+        lock (m_bufferLock)
+        {
+            if (m_mouseOutsideWindow || !m_mousePosition.IsValid())
+            {
+                position = default;
+                return false;
+            }
+            position = m_mousePosition;
+            return true;
+        }
+    }
+
     public Vector2 MouseAreaSize => new Vector2(m_clientSize.X, m_clientSize.Y);
 
     public event Action OnExit;
