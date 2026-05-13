@@ -1,9 +1,17 @@
 # Linux compatibility for Space Engineers (version 1)
 
-This is applied right after the `se-dotnet-compat` plugin by Pulsar for Linux.
+This plugin contains the compatibility patches required to run the Game on Linux. This plugin is
+applied automatically by Pulsar for Linux right after the `se-dotnet-compat` plugin.
 
-- [Space Engineers](https://store.steampowered.com/app/244850/Space_Engineers/) via the Linux version of Steam, standard installation for Proton
-- [Pulsar](https://github.com/SpaceGT/Pulsar)
+## Prerequisites
+
+- Steam for Linux
+- [Space Engineers](https://store.steampowered.com/app/244850/Space_Engineers/) installed by Steam for Linux (standard installation for Proton)
+
+## Installation
+
+Download the Native or the Flatpak build from [Releases](https://github.com/viktor-ferenczi/se-linux-compat/releases),
+install and run it. Please read the release notes to decide which one is the best for your situation. 
 
 ## Features
 
