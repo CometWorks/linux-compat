@@ -18,7 +18,11 @@ namespace ClientPlugin.Patches.PathHandling;
 // outside Content/Bin64 (UserDataPath, ModsPath, temp, saves, blueprints).
 // Mtime validated on every lookup; rebuilds the affected directory's child
 // listing when files are created/deleted at runtime.
-static class PathHelpers
+// Public so the Cecil prepatch on VRage.Game (MyModContextPrepatch) can
+// emit a cross-assembly `call` into ToWindowsPath. The AssemblyResolve
+// handler in Preloader.cs answers the VRage.Game-side AssemblyRef to
+// LinuxCompat at runtime.
+public static class PathHelpers
 {
     /// <summary>
     /// Normalizes a path for Linux: converts backslashes to forward slashes
@@ -50,15 +54,47 @@ static class PathHelpers
     }
 
     /// <summary>
-    /// Converts a Linux path to use Windows-style backslash separators.
-    /// Exposed to mods, which are designed for Windows and expect backslash
-    /// separators when doing substring/Split operations on path strings.
+    /// Converts a Linux path to a Windows-shape path:
+    /// <list type="bullet">
+    ///   <item>Forward slashes are flipped to backslashes.</item>
+    ///   <item>Known Linux roots (<c>~/.config/SpaceEngineers</c>,
+    ///     <c>~/.steam/.../SpaceEngineers</c>, <c>/tmp</c>, <c>$HOME</c>)
+    ///     are rewritten to their synthetic Windows equivalents via
+    ///     <see cref="PathTranslation.Translate"/>, so the mod-visible
+    ///     prefixes match the Windows reference shape.</item>
+    ///   <item>Paths that don't hit a translation entry but are absolute
+    ///     (start with <c>\</c>) and have no drive prefix get <c>C:</c>
+    ///     prepended so mods checking the second char for drive-ness still
+    ///     see a Windows-shape path.</item>
+    ///   <item>Input that already has a drive prefix is left alone after
+    ///     separator flipping (translation may still rewrite it if a
+    ///     C:-prefixed Linux path slipped through earlier).</item>
+    /// </list>
+    /// Exposed only to mods — all callers are read-only egress from the
+    /// wrapper classes in this folder. The engine never round-trips these
+    /// strings back through the filesystem (it uses its own MyFileSystem
+    /// paths), so synthesising a drive letter and rewriting prefixes is
+    /// safe.
     /// </summary>
     public static string ToWindowsPath(string path)
     {
         if (string.IsNullOrEmpty(path))
             return path;
-        return path.Replace('/', '\\');
+        var flipped = path.IndexOf('/') < 0 ? path : path.Replace('/', '\\');
+        // Prefix-translate known Linux roots to synthetic Windows roots.
+        // On a hit, Translate returns a drive-prefixed Windows path; on a
+        // miss it returns the same string reference.
+        var translated = PathTranslation.Translate(flipped);
+        if (!ReferenceEquals(translated, flipped))
+            return translated;
+        // Already has a drive prefix — leave as-is.
+        if (flipped.Length >= 2 && flipped[1] == ':' &&
+            ((flipped[0] >= 'A' && flipped[0] <= 'Z') || (flipped[0] >= 'a' && flipped[0] <= 'z')))
+            return flipped;
+        // Absolute (rooted) but no drive — promote to C:.
+        if (flipped.Length > 0 && flipped[0] == '\\')
+            return "C:" + flipped;
+        return flipped;
     }
 
     /// <summary>

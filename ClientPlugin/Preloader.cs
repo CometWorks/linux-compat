@@ -28,10 +28,22 @@ public static class Preloader
         // reflects on game types that now carry TypeRefs into LinuxCompat. The default
         // AssemblyLoadContext probing does not know where Pulsar placed our plugin DLL,
         // so it throws FileNotFoundException unless we answer by name here.
+        //
+        // We also answer for the Pulsar dev-folder randomized identity (e.g.
+        // "LinuxCompat_fhop0d1n.jo0"). Pulsar renames the in-memory assembly
+        // identity for hot-reload, and the PathSubstitutionRewriter plumbs a
+        // metadata reference built from that in-memory image into MyScriptCompiler.
+        // Compiled mod assemblies therefore carry TypeRefs into the renamed
+        // identity; at JIT time the runtime asks for that exact name and fails
+        // because Assembly.Load(byte[])-loaded assemblies are not findable by
+        // simple-name through default-ALC binding.
+        var selfAssembly = typeof(Preloader).Assembly;
+        var selfName = selfAssembly.GetName().Name;
         AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
         {
             var name = new AssemblyName(args.Name).Name;
-            return name == "LinuxCompat" ? typeof(Preloader).Assembly : null;
+            if (name == null) return null;
+            return name == "LinuxCompat" || name == selfName ? selfAssembly : null;
         };
     }
 

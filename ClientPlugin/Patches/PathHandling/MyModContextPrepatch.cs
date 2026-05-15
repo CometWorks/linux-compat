@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using ClientPlugin.Tools;
 using Mono.Cecil;
@@ -14,10 +15,10 @@ namespace ClientPlugin.Patches.PathHandling;
 // backslash-separated Windows path:
 //
 //   public  string ModPath { get; private set; }                 // unchanged
-//   string IMyModContext.ModPath => PathUtils.ToWindowsPath(ModPath);
+//   string IMyModContext.ModPath => PathHelpers.ToWindowsPath(ModPath);
 //
 //   public  string ModPathData { get; private set; }             // unchanged
-//   string IMyModContext.ModPathData => PathUtils.ToWindowsPath(ModPathData);
+//   string IMyModContext.ModPathData => PathHelpers.ToWindowsPath(ModPathData);
 //
 // A Harmony Postfix on the public getters is NOT equivalent: the postfix
 // fires for both caller sets and corrupts internal Path.Combine / cache-
@@ -26,10 +27,18 @@ namespace ClientPlugin.Patches.PathHandling;
 // the previous attempt. The correct fix has to synthesize a real explicit
 // interface method, which is a preloader (Mono.Cecil) job.
 //
-// We inline PathUtils.ToWindowsPath (null ? null : path.Replace('/', '\\'))
-// rather than cross-calling ClientPlugin.Patches.PathHandling.PathHelpers
-// from VRage.Game.dll: that would require adding a new AssemblyRef plus
-// making PathHelpers public, and the transform is a single Replace call.
+// The injected getter calls into ClientPlugin.Patches.PathHandling.
+// PathHelpers.ToWindowsPath. That helper carries the full mod-facing path
+// transform — separator flip, prefix translation (Linux SE roots →
+// synthetic Windows roots via PathTranslation), and C: promotion on miss
+// — so MyModContext.ModPath/ModPathData go through exactly the same
+// translation as every other mod-facing egress (WrappedGamePaths,
+// WindowsPath.FromGame, WindowsPath.GetFullPath).
+//
+// Cross-assembly call into LinuxCompat requires a new AssemblyRef on the
+// VRage.Game module; the AssemblyResolve handler installed in Preloader
+// answers that bind at runtime, including the Pulsar dev-folder
+// randomized assembly identity.
 //
 // The public getters are left byte-identical. VerifyCodeHash guards the
 // baseline so a future game update that changes the getter body will fail
@@ -51,12 +60,51 @@ public static class MyModContextPrepatch
         if (iface == null)
             return;
 
-        InjectExplicitGetter(type, iface, module, "ModPath");
-        InjectExplicitGetter(type, iface, module, "ModPathData");
+        var toWindowsPath = ImportToWindowsPath(module);
+
+        InjectExplicitGetter(type, iface, module, "ModPath", toWindowsPath);
+        InjectExplicitGetter(type, iface, module, "ModPathData", toWindowsPath);
+    }
+
+    // Build a MethodReference to LinuxCompat's PathHelpers.ToWindowsPath
+    // (static, one string parameter, string return). Adds an AssemblyRef to
+    // LinuxCompat on the VRage.Game module if one isn't already present.
+    // PublicKeyToken is empty — matches how RedirectAssemblyRef rewires
+    // SharpDX.XAudio2 → LinuxCompat, and the AssemblyResolve handler in
+    // Preloader.cs answers by simple name regardless of token.
+    private static MethodReference ImportToWindowsPath(ModuleDefinition module)
+    {
+        var linuxCompatRef = module.AssemblyReferences
+            .FirstOrDefault(r => r.Name == "LinuxCompat");
+        if (linuxCompatRef == null)
+        {
+            linuxCompatRef = new AssemblyNameReference("LinuxCompat", new Version(1, 0, 0, 0))
+            {
+                PublicKeyToken = Array.Empty<byte>(),
+                PublicKey = Array.Empty<byte>(),
+                Culture = string.Empty,
+                HashAlgorithm = AssemblyHashAlgorithm.None,
+            };
+            module.AssemblyReferences.Add(linuxCompatRef);
+        }
+
+        var pathHelpersType = new TypeReference(
+            "ClientPlugin.Patches.PathHandling", "PathHelpers", module, linuxCompatRef, false);
+
+        var stringRef = module.TypeSystem.String;
+        var method = new MethodReference("ToWindowsPath", stringRef, pathHelpersType)
+        {
+            HasThis = false,
+            ExplicitThis = false,
+            CallingConvention = MethodCallingConvention.Default,
+        };
+        method.Parameters.Add(new ParameterDefinition(stringRef));
+        return method;
     }
 
     private static void InjectExplicitGetter(
-        TypeDefinition type, TypeDefinition iface, ModuleDefinition module, string propName)
+        TypeDefinition type, TypeDefinition iface, ModuleDefinition module, string propName,
+        MethodReference toWindowsPath)
     {
         var publicGetter = type.Methods.FirstOrDefault(m => m.Name == "get_" + propName);
         var backingField = type.Fields.FirstOrDefault(f => f.Name == $"<{propName}>k__BackingField");
@@ -97,35 +145,16 @@ public static class MyModContextPrepatch
         // MethodImpl override: this method satisfies IMyModContext.get_<Prop>().
         newMethod.Overrides.Add(module.ImportReference(ifaceGetter));
 
-        // Body: return backing == null ? null : backing.Replace('/', '\\');
-        //
-        //   ldarg.0
-        //   ldfld   <Prop>k__BackingField
-        //   dup
-        //   brfalse.s L_null
-        //   ldc.i4.s 47   // '/'
-        //   ldc.i4.s 92   // '\\'
-        //   callvirt String::Replace(char, char)
-        //   ret
-        // L_null:
-        //   ret
-        var stringReplace = module.ImportReference(
-            typeof(string).GetMethod("Replace", new[] { typeof(char), typeof(char) }));
-
+        // Body, equivalent C#:
+        //   return ClientPlugin.Patches.PathHandling.PathHelpers
+        //              .ToWindowsPath(this.<Prop>k__BackingField);
+        // ToWindowsPath null-checks internally, so the null branch is gone.
         var body = new MethodBody(newMethod);
         var il = body.GetILProcessor();
-
-        var retNull = il.Create(OpCodes.Ret);
-
         il.Append(il.Create(OpCodes.Ldarg_0));
         il.Append(il.Create(OpCodes.Ldfld, backingField));
-        il.Append(il.Create(OpCodes.Dup));
-        il.Append(il.Create(OpCodes.Brfalse_S, retNull));
-        il.Append(il.Create(OpCodes.Ldc_I4_S, (sbyte)'/'));
-        il.Append(il.Create(OpCodes.Ldc_I4_S, (sbyte)'\\'));
-        il.Append(il.Create(OpCodes.Callvirt, stringReplace));
+        il.Append(il.Create(OpCodes.Call, toWindowsPath));
         il.Append(il.Create(OpCodes.Ret));
-        il.Append(retNull);
 
         newMethod.Body = body;
         type.Methods.Add(newMethod);
