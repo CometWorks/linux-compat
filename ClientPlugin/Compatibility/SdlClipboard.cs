@@ -28,9 +28,17 @@ namespace ClientPlugin.Compatibility;
 ///    <see cref="PumpRenderThread"/> (called from
 ///    <c>SdlRenderThread.Run</c>'s loop). The in-process cache is updated
 ///    synchronously so a subsequent <c>Get</c> on any thread observes the
-///    value just written. Off-thread reads return the cache (last value the
-///    render thread observed or wrote) without driving SDL — keeping the
-///    common case wait-free.
+///    value just written. Off-thread reads of the legacy synchronous getter
+///    return the cache (last value the render thread observed or wrote)
+///    without driving SDL — kept for property-getter compatibility, but it
+///    can return stale data if another application has changed the OS
+///    clipboard since the last render-thread access.
+///  - <see cref="RequestText"/> is the non-blocking fresh-read API: the SDL
+///    call is dispatched to the render thread; the result is posted to
+///    <see cref="MainThreadDispatcher"/>, which delivers the callback on the
+///    main game thread during the next <c>Plugin.Update()</c>. Paste
+///    handlers (textbox, multiline, GPS) use this so the OS clipboard is
+///    actually consulted on Ctrl+V without blocking the main thread.
 /// </summary>
 internal static class SdlClipboard
 {
@@ -113,6 +121,53 @@ internal static class SdlClipboard
             lock (s_cacheLock)
                 return !string.IsNullOrEmpty(s_cachedText);
         }
+    }
+
+    /// <summary>
+    /// Non-blocking fresh-read API. The SDL clipboard read is dispatched to
+    /// the render thread; the result (or <c>null</c> if the clipboard is
+    /// empty / SDL failed and no cached value is available) is posted to
+    /// <see cref="MainThreadDispatcher"/>, which invokes the callback on the
+    /// main game thread during the next <c>Plugin.Update()</c>. Use this
+    /// from paste handlers — never the synchronous <see cref="GetText"/>,
+    /// which returns stale cache off the render thread.
+    /// </summary>
+    public static void RequestText(Action<string> callback)
+    {
+        if (callback == null)
+            return;
+
+        SdlRenderThread.Dispatch(() =>
+        {
+            string result = null;
+            try
+            {
+                IntPtr ptr = SDL_GetClipboardText();
+                try
+                {
+                    result = ptr == IntPtr.Zero ? null : Marshal.PtrToStringUTF8(ptr);
+                    if (!string.IsNullOrEmpty(result))
+                    {
+                        lock (s_cacheLock)
+                            s_cachedText = result;
+                    }
+                }
+                finally
+                {
+                    if (ptr != IntPtr.Zero)
+                        SDL_free(ptr);
+                }
+            }
+            catch (Exception ex)
+            {
+                try { MyLog.Default?.WriteLineAndConsole($"[LinuxCompat] SdlClipboard.RequestText failed: {ex.Message}"); } catch { }
+                lock (s_cacheLock)
+                    result = string.IsNullOrEmpty(s_cachedText) ? null : s_cachedText;
+            }
+
+            string captured = result;
+            MainThreadDispatcher.Post(() => callback(captured));
+        });
     }
 
     /// <summary>

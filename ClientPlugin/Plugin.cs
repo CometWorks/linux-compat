@@ -55,5 +55,9 @@ public class Plugin : IPlugin
 
     public void Update()
     {
+        // Drain continuations posted from the render thread (e.g. clipboard
+        // read results destined for paste handlers). Runs on the main game
+        // thread once per frame.
+        MainThreadDispatcher.Pump();
     }
 }

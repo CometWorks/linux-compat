@@ -17,19 +17,26 @@
 // SDL3 (see MyWindowsSystemClipboardPatch / SdlClipboard), there is no
 // COM-affinity requirement anymore and the worker thread is pure overhead.
 //
-// We replace PasteText with a synchronous version that reads the clipboard
-// on the caller's thread (the main game thread, since HandleInput runs from
-// MySandboxGame.Update). MyVRage.Platform.System.Clipboard is the same
-// property our SdlClipboard hook overrides, so the SDL3 clipboard text is
-// returned to the textbox without any threading at all.
+// We replace PasteText with a two-phase version:
+//   1. Prefix returns immediately (no blocking) and requests the OS
+//      clipboard contents via SdlClipboard.RequestText. The SDL call runs
+//      on the render thread.
+//   2. The continuation runs on the main game thread one frame later
+//      (drained by Plugin.Update → MainThreadDispatcher.Pump), at which
+//      point we read the textbox's current state and insert the text.
+//
+// Reading textbox state inside the continuation (rather than capturing it
+// at Prefix entry) keeps the paste correct even if any other code mutates
+// the textbox in the ~1 frame window between Ctrl+V and the callback.
 
+using System;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using ClientPlugin.Compatibility;
 using HarmonyLib;
 using Sandbox.Graphics.GUI;
-using VRage;
 
 namespace ClientPlugin.Patches.SystemAbstraction;
 
@@ -47,41 +54,63 @@ static class MyGuiControlTextboxPasteTextPatch
 
     static bool Prefix(object __instance, MyGuiControlTextbox sender)
     {
-        // EraseText(sender)
+        var selection = __instance;
         var selectionType = __instance.GetType();
-        selectionType.GetMethod("EraseText", Flags).Invoke(__instance, new object[] { sender });
+        var target = sender;
 
-        StringBuilder textBuilder = AccessTools.FieldRefAccess<MyGuiControlTextbox, StringBuilder>("m_text").Invoke(sender);
-        string text = textBuilder.ToString();
-        string before = text.Substring(0, sender.CarriagePositionIndex);
-        string after = text.Substring(sender.CarriagePositionIndex);
-
-        string clipboardText = ReadClipboardForPaste();
-        AccessTools.FieldRefAccess<string>(selectionType, "ClipboardText").Invoke(__instance) = clipboardText;
-
-        string sanitized = clipboardText.Replace("\n", "");
-        string toInsert;
-        if (sanitized.Length + text.Length <= sender.MaxLength)
+        SdlClipboard.RequestText(raw =>
         {
-            toInsert = sanitized;
-        }
-        else
-        {
-            int room = sender.MaxLength - text.Length;
-            toInsert = (room <= 0) ? "" : sanitized.Substring(0, room);
-        }
+            if (selection == null || target == null)
+                return;
 
-        sender.SetText(new StringBuilder(before).Append(toInsert).Append(after));
-        sender.CarriagePositionIndex = before.Length + toInsert.Length;
+            string clipboardText = SanitizeXmlOrEmpty(raw ?? string.Empty);
 
-        // Reset(sender)
-        selectionType.GetMethod("Reset", Flags).Invoke(__instance, new object[] { sender });
+            try
+            {
+                // EraseText(target)
+                selectionType.GetMethod("EraseText", Flags)?.Invoke(selection, new object[] { target });
+
+                StringBuilder textBuilder = AccessTools.FieldRefAccess<MyGuiControlTextbox, StringBuilder>("m_text").Invoke(target);
+                string text = textBuilder.ToString();
+                int caret = target.CarriagePositionIndex;
+                if (caret < 0) caret = 0;
+                if (caret > text.Length) caret = text.Length;
+                string before = text.Substring(0, caret);
+                string after = text.Substring(caret);
+
+                AccessTools.FieldRefAccess<string>(selectionType, "ClipboardText").Invoke(selection) = clipboardText;
+
+                string sanitized = clipboardText.Replace("\n", "");
+                string toInsert;
+                if (sanitized.Length + text.Length <= target.MaxLength)
+                {
+                    toInsert = sanitized;
+                }
+                else
+                {
+                    int room = target.MaxLength - text.Length;
+                    toInsert = (room <= 0) ? "" : sanitized.Substring(0, room);
+                }
+
+                target.SetText(new StringBuilder(before).Append(toInsert).Append(after));
+                target.CarriagePositionIndex = before.Length + toInsert.Length;
+
+                // Reset(target)
+                selectionType.GetMethod("Reset", Flags)?.Invoke(selection, new object[] { target });
+            }
+            catch (Exception)
+            {
+                // Control may have been disposed between Ctrl+V and the
+                // callback (screen closed). Swallow silently — there's
+                // nothing meaningful to paste into.
+            }
+        });
+
         return false;
     }
 
-    private static string ReadClipboardForPaste()
+    private static string SanitizeXmlOrEmpty(string clipboard)
     {
-        string clipboard = MyVRage.Platform.System.Clipboard ?? string.Empty;
         // Match stock PasteFromClipboard: drop entire clipboard if any
         // character is not XML-safe.
         for (int i = 0; i < clipboard.Length; i++)
@@ -107,27 +136,47 @@ static class MyGuiControlMultilineTextPasteTextPatch
 
     static bool Prefix(object __instance, MyGuiControlMultilineText sender)
     {
+        var selection = __instance;
         var selectionType = __instance.GetType();
-        selectionType.GetMethod("EraseText", Flags).Invoke(__instance, new object[] { sender });
+        var target = sender;
 
-        StringBuilder textBuilder = AccessTools.FieldRefAccess<MyGuiControlMultilineText, StringBuilder>("m_text").Invoke(sender);
-        string text = textBuilder.ToString();
-        string before = text.Substring(0, sender.CarriagePositionIndex);
-        string after = text.Substring(sender.CarriagePositionIndex);
+        SdlClipboard.RequestText(raw =>
+        {
+            if (selection == null || target == null)
+                return;
 
-        string clipboardText = ReadClipboardForPaste();
-        AccessTools.FieldRefAccess<string>(selectionType, "ClipboardText").Invoke(__instance) = clipboardText;
+            string clipboardText = SanitizeXmlOrEmpty(raw ?? string.Empty);
 
-        sender.Text = new StringBuilder(before).Append(Regex.Replace(clipboardText, "\r\n", "\n")).Append(after);
-        sender.CarriagePositionIndex = before.Length + clipboardText.Length;
+            try
+            {
+                selectionType.GetMethod("EraseText", Flags)?.Invoke(selection, new object[] { target });
 
-        selectionType.GetMethod("Reset", Flags).Invoke(__instance, new object[] { sender });
+                StringBuilder textBuilder = AccessTools.FieldRefAccess<MyGuiControlMultilineText, StringBuilder>("m_text").Invoke(target);
+                string text = textBuilder.ToString();
+                int caret = target.CarriagePositionIndex;
+                if (caret < 0) caret = 0;
+                if (caret > text.Length) caret = text.Length;
+                string before = text.Substring(0, caret);
+                string after = text.Substring(caret);
+
+                AccessTools.FieldRefAccess<string>(selectionType, "ClipboardText").Invoke(selection) = clipboardText;
+
+                target.Text = new StringBuilder(before).Append(Regex.Replace(clipboardText, "\r\n", "\n")).Append(after);
+                target.CarriagePositionIndex = before.Length + clipboardText.Length;
+
+                selectionType.GetMethod("Reset", Flags)?.Invoke(selection, new object[] { target });
+            }
+            catch (Exception)
+            {
+                // See note in MyGuiControlTextboxPasteTextPatch.
+            }
+        });
+
         return false;
     }
 
-    private static string ReadClipboardForPaste()
+    private static string SanitizeXmlOrEmpty(string clipboard)
     {
-        string clipboard = MyVRage.Platform.System.Clipboard ?? string.Empty;
         for (int i = 0; i < clipboard.Length; i++)
         {
             if (!XmlConvert.IsXmlChar(clipboard[i]))
