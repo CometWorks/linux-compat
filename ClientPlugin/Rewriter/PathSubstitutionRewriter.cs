@@ -159,18 +159,36 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         // The IMyUtilities / IMySession / IMyConfigDedicated / IMyGamePaths
         // wrappers intercept every path-shaped member by interface dispatch.
         // ModItem is a struct, so its GetPath() can't be wrapped — catch the
-        // call here and wrap the result in WindowsPath.FromGame(...).
+        // call here and route through WindowsPath.FromGame.
+        //
+        // The rewrite extracts the GetPath receiver and passes it to the
+        // ModItem-typed overload: `receiver.GetPath()` → `FromGame(receiver)`.
+        // Constructing the call this way (rather than wrapping the whole
+        // invocation) preserves the original tree shape and lets the
+        // conditional-access form `x?.ModItem.GetPath()` be rewritten cleanly
+        // by VisitConditionalAccessExpression — wrapping the inner invocation
+        // would orphan the `.` member-binding from its `?`, crashing the
+        // Roslyn binder in BindMemberBindingExpression.
         var rewritten = (InvocationExpressionSyntax)base.VisitInvocationExpression(node);
 
-        if (IsModItemGetPath(node))
+        // Skip if the GetPath call sits on the WhenNotNull spine of a `?.`
+        // chain: the receiver expression starts with a MemberBindingExpression
+        // that only exists inside its CAE, so we can't lift it into an
+        // argument list. The CAE handler peels `.GetPath()` off the spine
+        // instead.
+        if (IsModItemGetPath(node) && !IsOnConditionalAccessSpine(node))
         {
-            return SyntaxFactory.InvocationExpression(
-                    SyntaxFactory.ParseExpression(FromGameFqn),
-                    SyntaxFactory.ArgumentList(
-                        SyntaxFactory.SingletonSeparatedList(
-                            SyntaxFactory.Argument(rewritten.WithoutTrivia()))))
-                .WithLeadingTrivia(rewritten.GetLeadingTrivia())
-                .WithTrailingTrivia(rewritten.GetTrailingTrivia());
+            var receiver = TryGetGetPathReceiver(rewritten);
+            if (receiver != null)
+            {
+                return SyntaxFactory.InvocationExpression(
+                        SyntaxFactory.ParseExpression(FromGameFqn),
+                        SyntaxFactory.ArgumentList(
+                            SyntaxFactory.SingletonSeparatedList(
+                                SyntaxFactory.Argument(receiver.WithoutTrivia()))))
+                    .WithLeadingTrivia(rewritten.GetLeadingTrivia())
+                    .WithTrailingTrivia(rewritten.GetTrailingTrivia());
+            }
         }
 
         if (IsStringBuilderAppendLine(node))
@@ -312,6 +330,93 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         if (containing == null)
             return false;
         return containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == ModItemFqn;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="node"/> sits on the
+    /// <see cref="ConditionalAccessExpressionSyntax.WhenNotNull"/> spine of an
+    /// enclosing <c>?.</c> expression. Member-binding tokens (<c>.X</c>) only
+    /// exist on this spine; lifting a node off it into an argument list
+    /// strands those tokens and crashes
+    /// <c>BindMemberBindingExpression</c>. The invocation handler defers to
+    /// <see cref="VisitConditionalAccessExpression"/> in that case so the
+    /// rewrite can be performed at the CAE level instead.
+    /// </summary>
+    private static bool IsOnConditionalAccessSpine(SyntaxNode node)
+    {
+        for (var parent = node.Parent; parent != null; parent = parent.Parent)
+        {
+            if (parent is ConditionalAccessExpressionSyntax)
+                return true;
+            // Stop climbing at statement / member boundaries — a conditional
+            // access can only enclose us through expression-shaped ancestors.
+            if (parent is StatementSyntax || parent is MemberDeclarationSyntax)
+                return false;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// For an invocation of the shape <c>receiver.GetPath()</c>, return the
+    /// <c>receiver</c> expression so it can be passed as the argument of a
+    /// <see cref="WindowsPath.FromGame(VRage.Game.MyObjectBuilder_Checkpoint.ModItem)"/>
+    /// call. Returns <c>null</c> for unsupported shapes (e.g. an invocation
+    /// via a using-static import, where there is no receiver to extract).
+    /// </summary>
+    private static ExpressionSyntax TryGetGetPathReceiver(InvocationExpressionSyntax invocation)
+    {
+        if (invocation.Expression is MemberAccessExpressionSyntax memberAccess)
+            return memberAccess.Expression;
+        return null;
+    }
+
+    /// <summary>
+    /// Rewrite <c>x?.ModItem.GetPath()</c> as
+    /// <c>WindowsPath.FromGame(x?.ModItem)</c> by peeling <c>.GetPath()</c>
+    /// off the WhenNotNull spine. Removing the trailing invocation makes the
+    /// CAE evaluate to <c>ModItem?</c> (lifted because <c>ModItem</c> is a
+    /// struct), which feeds the
+    /// <see cref="WindowsPath.FromGame(VRage.Game.MyObjectBuilder_Checkpoint.ModItem?)"/>
+    /// overload — preserving the original null-propagation semantics.
+    ///
+    /// Wrapping the inner invocation (the natural place for the rewrite) is
+    /// not viable: the WhenNotNull's leftmost token is a member-binding
+    /// (<c>.ModItem</c>) that only exists relative to its <c>?</c>. Pulling
+    /// the invocation into an argument list strands that token and crashes
+    /// <c>BindMemberBindingExpression</c>. The invocation handler detects
+    /// this case via <see cref="IsOnConditionalAccessSpine"/> and defers
+    /// here.
+    ///
+    /// Only the immediate "GetPath() is the whole WhenNotNull" shape is
+    /// handled. Further chaining (<c>x?.ModItem.GetPath().Foo(...)</c>) is
+    /// left un-translated — peeling would change the chained method's
+    /// receiver type from <c>string</c> to <c>ModItem?</c>.
+    /// </summary>
+    public override SyntaxNode VisitConditionalAccessExpression(ConditionalAccessExpressionSyntax node)
+    {
+        var rewritten = (ConditionalAccessExpressionSyntax)base.VisitConditionalAccessExpression(node);
+
+        if (node.WhenNotNull is InvocationExpressionSyntax tailInvocation
+            && IsModItemGetPath(tailInvocation)
+            && tailInvocation.Expression is MemberAccessExpressionSyntax
+            && rewritten.WhenNotNull is InvocationExpressionSyntax rewrittenTail
+            && rewrittenTail.Expression is MemberAccessExpressionSyntax rewrittenAccess)
+        {
+            // Replace the WhenNotNull spine `<receiver>.GetPath()` with just
+            // `<receiver>` — keeping the rewritten copy so any nested
+            // substitutions visited under the receiver are preserved.
+            var peeled = rewritten.WithWhenNotNull(rewrittenAccess.Expression);
+
+            return SyntaxFactory.InvocationExpression(
+                    SyntaxFactory.ParseExpression(FromGameFqn),
+                    SyntaxFactory.ArgumentList(
+                        SyntaxFactory.SingletonSeparatedList(
+                            SyntaxFactory.Argument(peeled.WithoutTrivia()))))
+                .WithLeadingTrivia(rewritten.GetLeadingTrivia())
+                .WithTrailingTrivia(rewritten.GetTrailingTrivia());
+        }
+
+        return rewritten;
     }
 
     public override SyntaxNode VisitTypeOfExpression(TypeOfExpressionSyntax node)

@@ -366,6 +366,33 @@ public static class WindowsPath
         return flipped;
     }
 
+    /// <summary>
+    /// Translates <c>item.GetPath()</c> in one call. The rewriter substitutes
+    /// <c>modItem.GetPath()</c> with <c>WindowsPath.FromGame(modItem)</c> so it
+    /// never has to synthesize an enclosing call around the invocation —
+    /// previously that synthesis broke the conditional-access form
+    /// <c>x?.ModItem.GetPath()</c> by stranding the <c>.</c> member-binding
+    /// token outside its <c>?.</c> context.
+    /// </summary>
+    public static string FromGame(VRage.Game.MyObjectBuilder_Checkpoint.ModItem item)
+    {
+        return FromGame(item.GetPath());
+    }
+
+    /// <summary>
+    /// Conditional-access companion to <see cref="FromGame(VRage.Game.MyObjectBuilder_Checkpoint.ModItem)"/>.
+    /// The rewriter turns <c>x?.ModItem.GetPath()</c> into
+    /// <c>WindowsPath.FromGame(x?.ModItem)</c>: peeling <c>.GetPath()</c> off
+    /// the WhenNotNull spine makes the receiver type <see cref="System.Nullable{T}"/>,
+    /// and this overload preserves null propagation — <c>x</c> being null
+    /// flows through as a null return, matching the original short-circuit
+    /// semantics.
+    /// </summary>
+    public static string FromGame(VRage.Game.MyObjectBuilder_Checkpoint.ModItem? item)
+    {
+        return item.HasValue ? FromGame(item.Value.GetPath()) : null;
+    }
+
     // ---- Internal helpers ------------------------------------------------
 
     private static string ToBackslashes(string path)
