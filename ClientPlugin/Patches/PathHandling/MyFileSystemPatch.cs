@@ -143,14 +143,29 @@ static class MyFileSystemDirectoryExistsPatch
     }
 }
 
+// All three GetFiles overloads need the same treatment as FileExists /
+// DirectoryExists: flip separators, strip the synthetic Windows drive
+// prefix that ToWindowsPath may have stamped onto a mod-built path, and
+// resolve case-insensitively. MyTexts.LoadSupportedLanguages reaches the
+// 3-arg overload with a path the mod composed off ModContext.ModPathData
+// (e.g. "C:\users\steamuser\.steam\debian-installation\...\Localization");
+// without Untranslate, Directory.EnumerateFiles sees a drive-prefixed
+// string that Path.IsPathRooted false-negatives on Linux, and the
+// enumeration silently returns zero entries.
 [HarmonyPatch(typeof(MyFileSystem), nameof(MyFileSystem.GetFiles), typeof(string))]
 [HarmonyPatchCategory("Finish")]
 static class MyFileSystemGetFilesPatch
 {
     static void Prefix(ref string path)
     {
-        if (path != null)
-            path = path.Replace('\\', '/');
+        if (path == null)
+            return;
+
+        path = path.Replace('\\', '/');
+        path = PathTranslation.Untranslate(path);
+
+        if (Path.IsPathRooted(path))
+            path = PathCache.ResolveAbsolute(path);
     }
 }
 
@@ -160,8 +175,77 @@ static class MyFileSystemGetFilesFilterPatch
 {
     static void Prefix(ref string path)
     {
-        if (path != null)
-            path = path.Replace('\\', '/');
+        if (path == null)
+            return;
+
+        path = path.Replace('\\', '/');
+        path = PathTranslation.Untranslate(path);
+
+        if (Path.IsPathRooted(path))
+            path = PathCache.ResolveAbsolute(path);
+    }
+}
+
+[HarmonyPatch(typeof(MyFileSystem), nameof(MyFileSystem.GetFiles), typeof(string), typeof(string), typeof(MySearchOption))]
+[HarmonyPatchCategory("Finish")]
+static class MyFileSystemGetFilesSearchOptionPatch
+{
+    static void Prefix(ref string path)
+    {
+        if (path == null)
+            return;
+
+        path = path.Replace('\\', '/');
+        path = PathTranslation.Untranslate(path);
+
+        if (Path.IsPathRooted(path))
+            path = PathCache.ResolveAbsolute(path);
+    }
+}
+
+// IsDirectory's stock body calls DirectoryExists(path) then File.GetAttributes(path).
+// Our DirectoryExists Prefix normalizes its own `ref string path` parameter,
+// but that change lives in DirectoryExists's stack frame only — the local
+// `path` in IsDirectory is the unmodified caller-supplied string. So a
+// drive-prefixed or case-mismatched input passes the first check (Prefix
+// rewrites it inside DirectoryExists) and then the subsequent
+// File.GetAttributes(originalPath) throws FileNotFoundException on the
+// still-synthetic path. Replace the body with a normalized impl that
+// re-uses the same path once.
+[HarmonyPatch(typeof(MyFileSystem), nameof(MyFileSystem.IsDirectory))]
+[HarmonyPatchCategory("Finish")]
+static class MyFileSystemIsDirectoryPatch
+{
+    static bool Prefix(string path, ref bool __result)
+    {
+        if (path == null)
+        {
+            __result = false;
+            return false;
+        }
+
+        path = path.Replace('\\', '/');
+        path = PathTranslation.Untranslate(path);
+
+        if (Path.IsPathRooted(path))
+            path = PathCache.ResolveAbsolute(path);
+
+        if (!MyFileSystem.DirectoryExists(path))
+        {
+            __result = false;
+            return false;
+        }
+
+        try
+        {
+            var attributes = File.GetAttributes(path);
+            __result = attributes.HasFlag(FileAttributes.Directory);
+        }
+        catch
+        {
+            __result = false;
+        }
+        return false;
     }
 }
 

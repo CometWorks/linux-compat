@@ -139,6 +139,24 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
                 .WithTrailingTrivia(rewritten.GetTrailingTrivia());
         }
 
+        // `System.Diagnostics.Stopwatch` in expression context parses as a
+        // MemberAccessExpression chain (not a QualifiedNameSyntax). When the
+        // whole chain binds to the Stopwatch type, substitute it here as a
+        // single unit. VisitIdentifierName cannot substitute the leaf
+        // `Stopwatch` because that identifier sits in its parent's .Name
+        // slot, which is typed SimpleNameSyntax — replacing it with the
+        // QualifiedNameSyntax produced by ParseName(WindowsStopwatchFqn)
+        // would make the base CSharpSyntaxRewriter throw InvalidCastException
+        // on the parent's hard cast (`(SimpleNameSyntax)Visit(node.Name)`).
+        // Repro before this fix: Nanobot Build and Repair System
+        // (Steam:2111073562) crashed mod compile with exactly that exception.
+        if (IsNamedTypeReference(node, StopwatchFqn))
+        {
+            return SyntaxFactory.ParseName(WindowsStopwatchFqn)
+                .WithLeadingTrivia(rewritten.GetLeadingTrivia())
+                .WithTrailingTrivia(rewritten.GetTrailingTrivia());
+        }
+
         return rewritten;
     }
 
@@ -433,16 +451,22 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         return rewritten;
     }
 
-    private bool IsSystemIoPathTypeReference(SyntaxNode expression)
+    private bool IsSystemIoPathTypeReference(SyntaxNode expression) =>
+        IsNamedTypeReference(expression, SystemIoPathFqn);
+
+    /// <summary>
+    /// True if <paramref name="expression"/> is a syntactic *type* reference
+    /// (the node itself binds to a named type), and that type's fully
+    /// qualified name matches <paramref name="fullyQualifiedName"/>.
+    /// Rejects instance expressions whose runtime type happens to be the
+    /// named type — only the type-of-reference position is matched.
+    /// </summary>
+    private bool IsNamedTypeReference(SyntaxNode expression, string fullyQualifiedName)
     {
-        // We only want references where the syntactic node *is* the type
-        // System.IO.Path — not, say, an instance expression whose type
-        // happens to be Path (impossible, since Path is a static class, but
-        // the check still guards against unusual generated trees).
         var symbol = _semanticModel.GetSymbolInfo(expression).Symbol;
         if (symbol is not INamedTypeSymbol named)
             return false;
-        return named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == SystemIoPathFqn;
+        return named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == fullyQualifiedName;
     }
 
     // ─── Generic type-name substitution (Stopwatch → WindowsStopwatch) ────
@@ -460,10 +484,24 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
 
     public override SyntaxNode VisitIdentifierName(IdentifierNameSyntax node)
     {
-        // Skip identifiers that are the Right of a QualifiedName: the parent
-        // handler substitutes the whole path. Substituting just the leaf
-        // would leave a stale qualifier (System.Diagnostics.WindowsStopwatch).
-        if (node.Parent is QualifiedNameSyntax)
+        // Skip identifiers occupying a slot that Roslyn types as
+        // SimpleNameSyntax. The substitution returns ParseName(...) — a
+        // QualifiedNameSyntax — which derives from NameSyntax but NOT from
+        // SimpleNameSyntax, so returning it from any of these slots makes
+        // the base CSharpSyntaxRewriter throw InvalidCastException when it
+        // revisits the parent.
+        //
+        // The MemberAccess case is the one that bit Nanobot Build and
+        // Repair System (Steam:2111073562) — `System.Diagnostics.Stopwatch
+        // .GetTimestamp()` puts the leaf `Stopwatch` in the .Name slot of
+        // an inner MemberAccessExpression. VisitMemberAccessExpression now
+        // catches that chain as a whole.
+        //
+        // QualifiedName / AliasQualifiedName: also covered for the same
+        // structural reason — Right / Name are typed SimpleNameSyntax.
+        // VisitQualifiedName substitutes the whole qualified path at the
+        // QualifiedName level, so skipping the leaf there is correct.
+        if (IsInSimpleNameSlot(node))
             return base.VisitIdentifierName(node);
 
         var replacement = TryGetTypeSubstitution(node, node.Identifier.ValueText);
@@ -473,6 +511,25 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
                 .WithTrailingTrivia(node.GetTrailingTrivia());
 
         return base.VisitIdentifierName(node);
+    }
+
+    /// <summary>
+    /// True if <paramref name="node"/> occupies a syntactic slot Roslyn
+    /// declares as <see cref="SimpleNameSyntax"/>. Returning anything other
+    /// than a SimpleNameSyntax in such a slot makes the base
+    /// <see cref="CSharpSyntaxRewriter"/> throw on its hard-cast of the
+    /// child it just visited.
+    /// </summary>
+    private static bool IsInSimpleNameSlot(SimpleNameSyntax node)
+    {
+        return node.Parent switch
+        {
+            MemberAccessExpressionSyntax mae => mae.Name == node,
+            QualifiedNameSyntax qn => qn.Right == node,
+            MemberBindingExpressionSyntax mbe => mbe.Name == node,
+            AliasQualifiedNameSyntax aqn => aqn.Name == node,
+            _ => false,
+        };
     }
 
     public override SyntaxNode VisitQualifiedName(QualifiedNameSyntax node)
