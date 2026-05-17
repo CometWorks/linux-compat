@@ -10,8 +10,10 @@ using VRageMath;
 namespace ClientPlugin.Patches.WindowManagement;
 
 // Port of the recompiled MyDX9Gui cursor changes:
-//   * MouseCursorPosition uses GetRawMousePosition() (not the scaled path) so the
-//     software cursor tracks the real pointer with one-frame latency.
+//   * MouseCursorPosition keeps the scaled input path so UI hit testing follows
+//     Settings / Game / UI scale.
+//   * MouseCursorDrawPosition still uses GetRawMousePosition() so the software
+//     cursor sprite tracks the real pointer.
 //   * DrawMouseCursor uses real window-relative mouse coordinates in windowed
 //     mode (CaptureMouse = false, Window mode) so the software cursor
 //     disappears only once the real pointer has actually left the window, and forces
@@ -28,7 +30,7 @@ static class MyDX9GuiMouseCursorPositionPatch
     static bool Prefix(ref Vector2 __result)
     {
         __result = MyGuiManager.GetNormalizedMousePosition(
-            MyInput.Static.GetRawMousePosition(),
+            MyInput.Static.GetMousePosition(),
             MyInput.Static.GetMouseAreaSize());
         return false;
     }
