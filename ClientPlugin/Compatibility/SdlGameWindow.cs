@@ -909,15 +909,19 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 break;
             case SDL_EVENT_KEY_DOWN:
             case SDL_EVENT_KEY_UP:
-                SetKeyState(MapKeycode(sdlEvent.Keyboard.Key), sdlEvent.Type == SDL_EVENT_KEY_DOWN);
+                var key = MapKeycode(sdlEvent.Keyboard.Key);
+                SetKeyState(key, sdlEvent.Type == SDL_EVENT_KEY_DOWN);
                 ApplyModifierAliases();
                 // SDL3's SDL_EVENT_TEXT_INPUT only delivers printable characters,
                 // unlike Windows WM_CHAR which also delivers control chars. SE's
-                // MyGuiControlTextbox detects backspace solely by scanning the
-                // text-input buffer for '\b', so without this injection Backspace
-                // would never delete characters in any in-game text field.
-                if (sdlEvent.Type == SDL_EVENT_KEY_DOWN && sdlEvent.Keyboard.Key == 8u)
-                    AddChar('\b');
+                // text controls depend on that buffer for editing control chars.
+                if (sdlEvent.Type == SDL_EVENT_KEY_DOWN)
+                {
+                    if (sdlEvent.Keyboard.Key == 8u)
+                        AddChar('\b');
+                    else if (key == MyKeys.Enter)
+                        AddChar('\r');
+                }
                 break;
             case SDL_EVENT_TEXT_INPUT:
                 if (sdlEvent.Text.Text != IntPtr.Zero)
