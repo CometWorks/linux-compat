@@ -837,6 +837,22 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             m_relativeDeltaXAccum += relX;
             m_relativeDeltaYAccum += relY;
         }
+
+        // Mirror mouse buttons into the async-keystate buffer so that
+        // MyInput.IsKeyPress(MyKeys.LeftButton) etc. observe them. On
+        // Windows GetAsyncKeyState reports VK_LBUTTON/RBUTTON/MBUTTON/
+        // XBUTTON1/XBUTTON2 alongside keyboard keys, and game code plus
+        // mods (notably Build Vision 2 via RichHud, which polls
+        // MyAPIGateway.Input.IsKeyPress(MyKeys.LeftButton) for its
+        // "Select/Confirm" bind) rely on that. SDL3 keeps mouse buttons in
+        // a separate state stream, so without this mirror MyKeys-backed
+        // mouse-button binds never fire on Linux even though the
+        // MyMouseState path (IsLeftMousePressed/IsRightMousePressed) works.
+        SetKeyState(MyKeys.LeftButton, (buttonState & SDL_BUTTON_LMASK) != 0);
+        SetKeyState(MyKeys.RightButton, (buttonState & SDL_BUTTON_RMASK) != 0);
+        SetKeyState(MyKeys.MiddleButton, (buttonState & SDL_BUTTON_MMASK) != 0);
+        SetKeyState(MyKeys.ExtraButton1, (buttonState & SDL_BUTTON_X1MASK) != 0);
+        SetKeyState(MyKeys.ExtraButton2, (buttonState & SDL_BUTTON_X2MASK) != 0);
     }
 
     private void DestroyNativeWindow()
