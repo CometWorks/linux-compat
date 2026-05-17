@@ -3,6 +3,8 @@ using System.Threading;
 using ClientPlugin.Compatibility;
 using HarmonyLib;
 using Sandbox;
+using Sandbox.Game.Gui;
+using Sandbox.Graphics.GUI;
 using VRage;
 using VRage.Ansel;
 using VRage.Platform.Windows;
@@ -61,11 +63,24 @@ static class CreateWindowPatch
         AccessTools.Field(typeof(MySandboxGame), "form")
             ?.SetValue(__instance, sdlWindow);
 
+        var onExit = AccessTools.Method(typeof(MySandboxGame), "OnExit");
+        var onManualWindowCloseRequest = AccessTools.Method(typeof(MySandboxGame), "Window_OnManualWindowCloseRequest");
+
+        sdlWindow.OnManualWindowCloseRequest += () =>
+        {
+            if (IsInGame())
+            {
+                onManualWindowCloseRequest?.Invoke(__instance, null);
+                return;
+            }
+
+            sdlWindow.Hide();
+            sdlWindow.CloseManually();
+        };
+
         sdlWindow.OnExit += () =>
         {
-            typeof(MySandboxGame).GetMethod("OnExit",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                ?.Invoke(__instance, null);
+            onExit?.Invoke(__instance, null);
         };
 
         var updateMouseCapture = AccessTools.Method(typeof(MySandboxGame), "UpdateMouseCapture");
@@ -81,6 +96,15 @@ static class CreateWindowPatch
 
         Console.WriteLine("[LinuxCompat] SDL3 window initialized via InitializeRenderThread");
         return false;
+    }
+
+    private static bool IsInGame()
+    {
+        var gameplayScreen = MyGuiScreenGamePlay.Static;
+        return gameplayScreen != null
+            && gameplayScreen.LoadingDone
+            && MySandboxGame.IsGameReady
+            && !MyScreenManager.ExistsScreenOfType(typeof(MyGuiScreenLoading));
     }
 
     // Compute the initial window geometry from (in priority order):

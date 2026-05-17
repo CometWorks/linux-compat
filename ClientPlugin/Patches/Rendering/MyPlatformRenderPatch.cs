@@ -79,8 +79,11 @@ static class CreateAdaptersListPatch
                 if (parts.Length == 2)
                 {
                     var text = Regex.Replace(parts[1].Trim(), "\\s+\\(rev [^)]+\\)$", "");
-                    var match = Regex.Match(text, "\\[([^\\]]+)\\]");
-                    gpus.Add(match.Success ? match.Groups[1].Value : text);
+                    var gpuName = Regex.Matches(text, "\\[([^\\]]+)\\]")
+                        .Cast<Match>()
+                        .Select(match => match.Groups[1].Value.Trim())
+                        .MaxBy(bracketText => bracketText.Length);
+                    gpus.Add(gpuName ?? text);
                 }
             }
         }

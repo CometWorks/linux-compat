@@ -653,6 +653,18 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         Exit();
     }
 
+    private void HandleManualWindowCloseRequest()
+    {
+        if (OnManualWindowCloseRequest != null && m_isVisible)
+        {
+            OnManualWindowCloseRequest();
+            return;
+        }
+
+        Hide();
+        CloseManually();
+    }
+
     /// <summary>
     /// Stub. Event polling is owned by <see cref="SdlRenderThread"/>'s loop;
     /// callers used to invoke this to nudge the SDL pump from main / SE
@@ -837,6 +849,22 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             m_relativeDeltaXAccum += relX;
             m_relativeDeltaYAccum += relY;
         }
+
+        // Mirror mouse buttons into the async-keystate buffer so that
+        // MyInput.IsKeyPress(MyKeys.LeftButton) etc. observe them. On
+        // Windows GetAsyncKeyState reports VK_LBUTTON/RBUTTON/MBUTTON/
+        // XBUTTON1/XBUTTON2 alongside keyboard keys, and game code plus
+        // mods (notably Build Vision 2 via RichHud, which polls
+        // MyAPIGateway.Input.IsKeyPress(MyKeys.LeftButton) for its
+        // "Select/Confirm" bind) rely on that. SDL3 keeps mouse buttons in
+        // a separate state stream, so without this mirror MyKeys-backed
+        // mouse-button binds never fire on Linux even though the
+        // MyMouseState path (IsLeftMousePressed/IsRightMousePressed) works.
+        SetKeyState(MyKeys.LeftButton, (buttonState & SDL_BUTTON_LMASK) != 0);
+        SetKeyState(MyKeys.RightButton, (buttonState & SDL_BUTTON_RMASK) != 0);
+        SetKeyState(MyKeys.MiddleButton, (buttonState & SDL_BUTTON_MMASK) != 0);
+        SetKeyState(MyKeys.ExtraButton1, (buttonState & SDL_BUTTON_X1MASK) != 0);
+        SetKeyState(MyKeys.ExtraButton2, (buttonState & SDL_BUTTON_X2MASK) != 0);
     }
 
     private void DestroyNativeWindow()
@@ -859,7 +887,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         {
             case SDL_EVENT_QUIT:
             case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                CloseManually();
+                HandleManualWindowCloseRequest();
                 break;
             case SDL_EVENT_WINDOW_FOCUS_GAINED:
                 m_isActive = true;
@@ -909,15 +937,19 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 break;
             case SDL_EVENT_KEY_DOWN:
             case SDL_EVENT_KEY_UP:
-                SetKeyState(MapKeycode(sdlEvent.Keyboard.Key), sdlEvent.Type == SDL_EVENT_KEY_DOWN);
+                var key = MapKeycode(sdlEvent.Keyboard.Key);
+                SetKeyState(key, sdlEvent.Type == SDL_EVENT_KEY_DOWN);
                 ApplyModifierAliases();
                 // SDL3's SDL_EVENT_TEXT_INPUT only delivers printable characters,
                 // unlike Windows WM_CHAR which also delivers control chars. SE's
-                // MyGuiControlTextbox detects backspace solely by scanning the
-                // text-input buffer for '\b', so without this injection Backspace
-                // would never delete characters in any in-game text field.
-                if (sdlEvent.Type == SDL_EVENT_KEY_DOWN && sdlEvent.Keyboard.Key == 8u)
-                    AddChar('\b');
+                // text controls depend on that buffer for editing control chars.
+                if (sdlEvent.Type == SDL_EVENT_KEY_DOWN)
+                {
+                    if (sdlEvent.Keyboard.Key == 8u)
+                        AddChar('\b');
+                    else if (key == MyKeys.Enter)
+                        AddChar('\r');
+                }
                 break;
             case SDL_EVENT_TEXT_INPUT:
                 if (sdlEvent.Text.Text != IntPtr.Zero)

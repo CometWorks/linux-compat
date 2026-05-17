@@ -83,13 +83,23 @@ namespace ClientPlugin.Rewriter;
 /// require rewrites at every read site and break <c>StartNew()</c>'s
 /// return-type contract.
 ///
+/// Object-creation expressions of <see cref="System.Xml.XmlWriterSettings"/>
+/// get a synthesized <c>NewLineChars = "\r\n"</c> assignment injected into
+/// their initializer list (existing list is preserved; a missing list is
+/// synthesized; an explicit <c>NewLineChars = ...</c> in the source is
+/// left intact). This is the same fix as the
+/// <c>StringBuilder.AppendLine</c> / <c>TextWriter.WriteLine</c> rewrites
+/// applied at the call-site level: it forces the Windows-shape line
+/// terminator on a BCL surface mods reach into. The runtime alternative
+/// (Harmony-patching the <c>XmlWriterSettings</c> constructor) would
+/// touch engine and BCL callers too, which we don't want.
+///
 /// Limitations: <c>using static System.IO.Path;</c> followed by a bare
 /// <c>Combine(...)</c> call is not rewritten. In practice mods qualify with
 /// <c>Path.</c> or <c>System.IO.Path.</c>, which this pass handles. Other
 /// BCL writers that internally consume <c>Environment.NewLine</c>
-/// (<c>File.WriteAllLines</c>, <c>XmlWriterSettings.NewLineChars</c>'
-/// default, ...) are not yet redirected; add similar call-site rewrites if
-/// a real mod exercises them.
+/// (<c>File.WriteAllLines</c>, ...) are not yet redirected; add similar
+/// call-site rewrites if a real mod exercises them.
 /// </summary>
 internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
 {
@@ -103,6 +113,7 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
     private const string WindowsTextWriterWriteLineFqn = "global::ClientPlugin.Rewriter.WindowsTextWriter.WriteLine";
     private const string StopwatchFqn = "global::System.Diagnostics.Stopwatch";
     private const string WindowsStopwatchFqn = "global::ClientPlugin.Rewriter.WindowsStopwatch";
+    private const string XmlWriterSettingsFqn = "global::System.Xml.XmlWriterSettings";
 
     private readonly SemanticModel _semanticModel;
 
@@ -435,6 +446,58 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         }
 
         return rewritten;
+    }
+
+    /// <summary>
+    /// Inject <c>NewLineChars = "\r\n"</c> into every
+    /// <c>new XmlWriterSettings { ... }</c> in mod source. Mirrors
+    /// .NET Framework's Windows default — on Linux .NET 10 the
+    /// property defaults to <c>"\n"</c> (it copies
+    /// <see cref="System.Environment.NewLine"/> at constructor time),
+    /// which would let a mod-built XML payload diverge from its
+    /// Windows-baked reference. The injection is skipped when the
+    /// source already assigns <c>NewLineChars</c> explicitly so a mod
+    /// that opts in to <c>"\n"</c> (or anything else) is respected.
+    /// Symbol-identity filtering: a mod-defined type also named
+    /// <c>XmlWriterSettings</c> in another namespace is untouched.
+    /// </summary>
+    public override SyntaxNode VisitObjectCreationExpression(ObjectCreationExpressionSyntax node)
+    {
+        var rewritten = (ObjectCreationExpressionSyntax)base.VisitObjectCreationExpression(node);
+
+        if (!IsNamedTypeReference(node.Type, XmlWriterSettingsFqn))
+            return rewritten;
+
+        var crlfAssignment = SyntaxFactory.AssignmentExpression(
+            SyntaxKind.SimpleAssignmentExpression,
+            SyntaxFactory.IdentifierName("NewLineChars"),
+            SyntaxFactory.LiteralExpression(
+                SyntaxKind.StringLiteralExpression,
+                SyntaxFactory.Literal("\r\n")));
+
+        var existingInit = rewritten.Initializer;
+        if (existingInit == null)
+        {
+            var newInit = SyntaxFactory.InitializerExpression(
+                SyntaxKind.ObjectInitializerExpression,
+                SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(crlfAssignment));
+            return rewritten.WithInitializer(newInit);
+        }
+
+        // Don't double up if the mod already set the property — respect
+        // the explicit choice. Match on the property name lexically;
+        // the initializer's left-hand side is always a SimpleNameSyntax.
+        foreach (var expr in existingInit.Expressions)
+        {
+            if (expr is AssignmentExpressionSyntax asn &&
+                asn.Left is IdentifierNameSyntax id &&
+                id.Identifier.ValueText == "NewLineChars")
+                return rewritten;
+        }
+
+        var augmented = existingInit.WithExpressions(
+            existingInit.Expressions.Add(crlfAssignment));
+        return rewritten.WithInitializer(augmented);
     }
 
     public override SyntaxNode VisitTypeOfExpression(TypeOfExpressionSyntax node)

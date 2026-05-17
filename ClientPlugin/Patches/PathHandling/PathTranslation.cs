@@ -68,6 +68,18 @@ public static class PathTranslation
     private static string s_tempPath = @"C:\Temp\";
 
     /// <summary>
+    /// Synthetic Windows install root that the Linux Steam install
+    /// directory is translated to in mod-visible strings. Public field
+    /// (not const) so a later configurability pass can reassign it
+    /// before <see cref="Init"/> runs. Value matches the canonical
+    /// Steam install location on a default Windows install — kept long
+    /// for now so paths produced by <c>Path.GetFullPath</c> and
+    /// <c>GamePaths.ContentPath</c> match what a Windows mod would see.
+    /// </summary>
+    public static string WindowsGameInstallPath =
+        @"C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers";
+
+    /// <summary>
     /// Synthetic Windows temp directory, drive-prefixed and trailing-slash
     /// terminated to match <see cref="System.IO.Path.GetTempPath"/> output
     /// shape. Populated by <see cref="Init"/>; defaults to <c>C:\Temp\</c>
@@ -95,7 +107,7 @@ public static class PathTranslation
         // Backslash-normalize the HOME prefix to match the key shape.
         var homeBs = home.Replace('/', '\\');
 
-        const string winSE = @"C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers";
+        var winSE = WindowsGameInstallPath;
         // Windows-shape paths use the Proton-conventional "steamuser" name
         // (lowercase "users") so the actual Linux username never leaks into
         // mod-visible output.

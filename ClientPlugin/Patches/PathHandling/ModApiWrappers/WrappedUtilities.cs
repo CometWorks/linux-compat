@@ -1,6 +1,7 @@
 using System;
 using System.IO;
-using System.Text;
+using System.Xml;
+using System.Xml.Serialization;
 using Sandbox.ModAPI.Interfaces;
 using VRage.FileSystem;
 using VRage.Game;
@@ -29,13 +30,16 @@ namespace ClientPlugin.Patches.PathHandling.ModApiWrappers;
 ///   </item>
 ///   <item>
 ///     The 18 storage methods (<c>*FileIn{Global,Local,World}Storage</c>)
-///     scrub the caller-supplied filename through the engine's own fixed
-///     invalid-char list. Many mods filter with <c>Path.GetInvalidFileNameChars()</c>
-///     which on Linux returns only <c>{'\0','/'}</c> — so colons, asterisks,
-///     etc. survive the mod's scrub and trip the engine's
-///     <c>IndexOfAny(MyKeenUtils.GetFixedInvalidFileNameChars())</c> guard.
-///     The replacement char <c>'_'</c> matches the convention used by
-///     CoreParts-style mod templates.
+///     pre-validate the caller-supplied filename against the
+///     Windows-fixed invalid-filename set and throw
+///     <see cref="FileNotFoundException"/> if any of
+///     <c>: * ? " &lt; &gt; | \ /</c> (or chars 0..31) is present. On
+///     Windows the underlying engine call already fails with
+///     <c>FileNotFoundException("Unable to find the specified file.")</c>
+///     for these inputs because NTFS rejects them; on Linux those chars
+///     are filesystem-legal, so without this guard the file would land
+///     on disk and the round-trip would silently succeed — observable
+///     to mods that branch on the Windows-shape exception.
 ///   </item>
 /// </list>
 ///
@@ -47,7 +51,22 @@ namespace ClientPlugin.Patches.PathHandling.ModApiWrappers;
 internal sealed class WrappedUtilities : IMyUtilities
 {
     private const string Tag = "[LinuxCompat][Storage]";
-    private const char ScrubReplacement = '_';
+
+    // Windows-fixed invalid filename chars in canonical .NET Framework
+    // order. Matches WindowsPath.InvalidFileNameChars and the Proton
+    // reference diagnostic. Used purely for the storage filename guard
+    // below — engine code is unaffected because this class lives behind
+    // the mod-facing IMyUtilities wrapper.
+    private static readonly char[] WindowsInvalidFileNameChars =
+    {
+        '"', '<', '>', '|', '\0',
+        (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7,
+        (char)8, (char)9, (char)10, (char)11, (char)12, (char)13, (char)14,
+        (char)15, (char)16, (char)17, (char)18, (char)19, (char)20, (char)21,
+        (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28,
+        (char)29, (char)30, (char)31,
+        ':', '*', '?', '\\', '/',
+    };
 
     private readonly IMyUtilities _inner;
     private readonly WrappedGamePaths _gamePaths;
@@ -160,85 +179,88 @@ internal sealed class WrappedUtilities : IMyUtilities
     public BinaryReader ReadBinaryFileInGameContent(string file)
         => _inner.ReadBinaryFileInGameContent(PathHelpers.Normalize(file));
 
-    // ---- Storage family (scrub + forward, log on engine-side reject) ----
+    // ---- Storage family (Windows-shape filename guard, then forward) ---
     //
     // The 18 storage methods all share the same Windows-fixed
-    // invalid-filename guard inside MyAPIUtilities. Scrubbing here turns a
-    // ':' or '*' in a mod-supplied filename into '_' so the engine accepts
-    // it. If a future game update changes the guard so the scrub no longer
-    // suffices, the LogIfThrew sentinel surfaces it without altering the
-    // exception.
+    // invalid-filename set. On Linux that set's chars are
+    // filesystem-legal, so a mod passing "scrub:colon.txt" would
+    // silently succeed instead of throwing the Windows-side
+    // FileNotFoundException. ValidateFilenameOrThrow short-circuits
+    // with the same exception type and default message Windows emits
+    // ("Unable to find the specified file."). LogIfThrew remains in
+    // place to surface engine-side rejects from otherwise-clean
+    // filenames without altering the exception they raise.
 
     public bool FileExistsInLocalStorage(string file, Type callingType)
-        => InvokeStorage("FileExistsInLocalStorage", ref file, callingType,
+        => InvokeStorage("FileExistsInLocalStorage", file, callingType,
             (f, t) => _inner.FileExistsInLocalStorage(f, t));
 
     public bool FileExistsInWorldStorage(string file, Type callingType)
-        => InvokeStorage("FileExistsInWorldStorage", ref file, callingType,
+        => InvokeStorage("FileExistsInWorldStorage", file, callingType,
             (f, t) => _inner.FileExistsInWorldStorage(f, t));
 
     public bool FileExistsInGlobalStorage(string file)
-        => InvokeStorageNoType("FileExistsInGlobalStorage", ref file,
+        => InvokeStorageNoType("FileExistsInGlobalStorage", file,
             f => _inner.FileExistsInGlobalStorage(f));
 
     public void DeleteFileInLocalStorage(string file, Type callingType)
-        => InvokeStorageVoid("DeleteFileInLocalStorage", ref file, callingType,
+        => InvokeStorageVoid("DeleteFileInLocalStorage", file, callingType,
             (f, t) => _inner.DeleteFileInLocalStorage(f, t));
 
     public void DeleteFileInWorldStorage(string file, Type callingType)
-        => InvokeStorageVoid("DeleteFileInWorldStorage", ref file, callingType,
+        => InvokeStorageVoid("DeleteFileInWorldStorage", file, callingType,
             (f, t) => _inner.DeleteFileInWorldStorage(f, t));
 
     public void DeleteFileInGlobalStorage(string file)
-        => InvokeStorageVoidNoType("DeleteFileInGlobalStorage", ref file,
+        => InvokeStorageVoidNoType("DeleteFileInGlobalStorage", file,
             f => _inner.DeleteFileInGlobalStorage(f));
 
     public TextReader ReadFileInLocalStorage(string file, Type callingType)
-        => InvokeStorage("ReadFileInLocalStorage", ref file, callingType,
+        => InvokeStorage("ReadFileInLocalStorage", file, callingType,
             (f, t) => _inner.ReadFileInLocalStorage(f, t));
 
     public TextReader ReadFileInWorldStorage(string file, Type callingType)
-        => InvokeStorage("ReadFileInWorldStorage", ref file, callingType,
+        => InvokeStorage("ReadFileInWorldStorage", file, callingType,
             (f, t) => _inner.ReadFileInWorldStorage(f, t));
 
     public TextReader ReadFileInGlobalStorage(string file)
-        => InvokeStorageNoType("ReadFileInGlobalStorage", ref file,
+        => InvokeStorageNoType("ReadFileInGlobalStorage", file,
             f => _inner.ReadFileInGlobalStorage(f));
 
     public TextWriter WriteFileInLocalStorage(string file, Type callingType)
-        => InvokeStorage("WriteFileInLocalStorage", ref file, callingType,
+        => InvokeStorage("WriteFileInLocalStorage", file, callingType,
             (f, t) => _inner.WriteFileInLocalStorage(f, t));
 
     public TextWriter WriteFileInWorldStorage(string file, Type callingType)
-        => InvokeStorage("WriteFileInWorldStorage", ref file, callingType,
+        => InvokeStorage("WriteFileInWorldStorage", file, callingType,
             (f, t) => _inner.WriteFileInWorldStorage(f, t));
 
     public TextWriter WriteFileInGlobalStorage(string file)
-        => InvokeStorageNoType("WriteFileInGlobalStorage", ref file,
+        => InvokeStorageNoType("WriteFileInGlobalStorage", file,
             f => _inner.WriteFileInGlobalStorage(f));
 
     public BinaryReader ReadBinaryFileInLocalStorage(string file, Type callingType)
-        => InvokeStorage("ReadBinaryFileInLocalStorage", ref file, callingType,
+        => InvokeStorage("ReadBinaryFileInLocalStorage", file, callingType,
             (f, t) => _inner.ReadBinaryFileInLocalStorage(f, t));
 
     public BinaryReader ReadBinaryFileInWorldStorage(string file, Type callingType)
-        => InvokeStorage("ReadBinaryFileInWorldStorage", ref file, callingType,
+        => InvokeStorage("ReadBinaryFileInWorldStorage", file, callingType,
             (f, t) => _inner.ReadBinaryFileInWorldStorage(f, t));
 
     public BinaryReader ReadBinaryFileInGlobalStorage(string file)
-        => InvokeStorageNoType("ReadBinaryFileInGlobalStorage", ref file,
+        => InvokeStorageNoType("ReadBinaryFileInGlobalStorage", file,
             f => _inner.ReadBinaryFileInGlobalStorage(f));
 
     public BinaryWriter WriteBinaryFileInLocalStorage(string file, Type callingType)
-        => InvokeStorage("WriteBinaryFileInLocalStorage", ref file, callingType,
+        => InvokeStorage("WriteBinaryFileInLocalStorage", file, callingType,
             (f, t) => _inner.WriteBinaryFileInLocalStorage(f, t));
 
     public BinaryWriter WriteBinaryFileInWorldStorage(string file, Type callingType)
-        => InvokeStorage("WriteBinaryFileInWorldStorage", ref file, callingType,
+        => InvokeStorage("WriteBinaryFileInWorldStorage", file, callingType,
             (f, t) => _inner.WriteBinaryFileInWorldStorage(f, t));
 
     public BinaryWriter WriteBinaryFileInGlobalStorage(string file)
-        => InvokeStorageNoType("WriteBinaryFileInGlobalStorage", ref file,
+        => InvokeStorageNoType("WriteBinaryFileInGlobalStorage", file,
             f => _inner.WriteBinaryFileInGlobalStorage(f));
 
     // ---- Untranslated forwarders ----------------------------------------
@@ -272,7 +294,44 @@ internal sealed class WrappedUtilities : IMyUtilities
     public void ShowMessage(string sender, string messageText) => _inner.ShowMessage(sender, messageText);
     public void SendMessage(string messageText) => _inner.SendMessage(messageText);
 
-    public string SerializeToXML<T>(T objToSerialize) => _inner.SerializeToXML(objToSerialize);
+    /// <summary>
+    /// Mirrors <c>MyAPIUtilities.SerializeToXML</c> but pins
+    /// <see cref="XmlWriterSettings.NewLineChars"/> to <c>"\r\n"</c>.
+    /// The engine implementation builds a plain
+    /// <see cref="System.IO.StringWriter"/> and lets
+    /// <see cref="XmlSerializer.Serialize(System.IO.TextWriter, object)"/>
+    /// pick default writer settings — those default
+    /// <c>NewLineChars</c> to <see cref="Environment.NewLine"/>, which
+    /// is <c>"\n"</c> on Linux .NET 10 and changes the byte length of
+    /// the result by 1 (54 → 53 in the diagnostic baseline). Driving
+    /// our own <see cref="XmlWriter"/> with explicit CRLF settings
+    /// makes the output byte-identical to the Windows-baked
+    /// reference. <see cref="XmlWriterSettings.Encoding"/> is left
+    /// unset on purpose — passing a <see cref="System.IO.StringWriter"/>
+    /// forces UTF-16 in the declaration, matching the engine output
+    /// on Windows.
+    /// </summary>
+    public string SerializeToXML<T>(T objToSerialize)
+    {
+        // Bind against the runtime type, like the engine does: a
+        // boxed primitive serialized through this method must produce
+        // the same root element name (<int>, <double>, ...) it would
+        // on Windows.
+        var serializer = new XmlSerializer(objToSerialize.GetType());
+        var sw = new StringWriter();
+        var settings = new XmlWriterSettings
+        {
+            Indent = true,
+            IndentChars = "  ",
+            NewLineChars = "\r\n",
+            NewLineHandling = NewLineHandling.Replace,
+            OmitXmlDeclaration = false,
+        };
+        using (var xw = XmlWriter.Create(sw, settings))
+            serializer.Serialize(xw, objToSerialize);
+        return sw.ToString();
+    }
+
     public T SerializeFromXML<T>(string buffer) => _inner.SerializeFromXML<T>(buffer);
     public byte[] SerializeToBinary<T>(T obj) => _inner.SerializeToBinary(obj);
     public T SerializeFromBinary<T>(byte[] data) => _inner.SerializeFromBinary<T>(data);
@@ -302,51 +361,52 @@ internal sealed class WrappedUtilities : IMyUtilities
 
     // ---- Storage helpers ------------------------------------------------
 
-    private TResult InvokeStorage<TResult>(string method, ref string file, Type callingType,
+    private TResult InvokeStorage<TResult>(string method, string file, Type callingType,
         Func<string, Type, TResult> call)
     {
-        file = Scrub(file);
+        ValidateFilenameOrThrow(file);
         try { return call(file, callingType); }
         catch (Exception ex) { LogIfThrew(method, file, callingType, ex); throw; }
     }
 
-    private void InvokeStorageVoid(string method, ref string file, Type callingType,
+    private void InvokeStorageVoid(string method, string file, Type callingType,
         Action<string, Type> call)
     {
-        file = Scrub(file);
+        ValidateFilenameOrThrow(file);
         try { call(file, callingType); }
         catch (Exception ex) { LogIfThrew(method, file, callingType, ex); throw; }
     }
 
-    private TResult InvokeStorageNoType<TResult>(string method, ref string file,
+    private TResult InvokeStorageNoType<TResult>(string method, string file,
         Func<string, TResult> call)
     {
-        file = Scrub(file);
+        ValidateFilenameOrThrow(file);
         try { return call(file); }
         catch (Exception ex) { LogIfThrew(method, file, null, ex); throw; }
     }
 
-    private void InvokeStorageVoidNoType(string method, ref string file,
+    private void InvokeStorageVoidNoType(string method, string file,
         Action<string> call)
     {
-        file = Scrub(file);
+        ValidateFilenameOrThrow(file);
         try { call(file); }
         catch (Exception ex) { LogIfThrew(method, file, null, ex); throw; }
     }
 
-    private static string Scrub(string file)
+    /// <summary>
+    /// Reject filenames Windows rejects, with the same exception shape
+    /// the underlying engine call raises on Windows
+    /// (<see cref="FileNotFoundException"/> + default message). Linux's
+    /// filesystem would otherwise accept these chars and the round-trip
+    /// would silently succeed — a behavioural divergence visible to any
+    /// mod that branches on the Windows-baked exception.
+    /// </summary>
+    private static void ValidateFilenameOrThrow(string file)
     {
         if (string.IsNullOrEmpty(file))
-            return file;
-
-        var invalid = MyKeenUtils.GetFixedInvalidFileNameChars();
-        if (file.IndexOfAny(invalid) < 0)
-            return file;
-
-        var sb = new StringBuilder(file.Length);
-        foreach (var c in file)
-            sb.Append(Array.IndexOf(invalid, c) >= 0 ? ScrubReplacement : c);
-        return sb.ToString();
+            return;
+        if (file.IndexOfAny(WindowsInvalidFileNameChars) >= 0)
+            throw new FileNotFoundException();
     }
 
     private static void LogIfThrew(string method, string file, Type callingType, Exception ex)

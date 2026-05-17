@@ -18,7 +18,8 @@ namespace ClientPlugin.Patches.PathHandling;
 //     browser dialog.
 //
 // Replace both with Path.Combine so they probe "<dir>/bp.sbc" on Linux and
-// "<dir>\bp.sbc" on Windows (semantics preserved).
+// "<dir>\bp.sbc" on Windows (semantics preserved), then resolve the child
+// path case-insensitively for user-data paths such as local scripts.
 
 [HarmonyPatch(typeof(MyBlueprintUtils), nameof(MyBlueprintUtils.IsItem_Blueprint))]
 [HarmonyPatchCategory("Finish")]
@@ -26,7 +27,10 @@ static class MyBlueprintUtilsIsItemBlueprintPatch
 {
     static bool Prefix(string path, ref bool __result)
     {
-        __result = File.Exists(Path.Combine(path, "bp.sbc"));
+        var blueprintPath = Path.Combine(path, "bp.sbc");
+        blueprintPath = PathCache.ResolveAbsolute(blueprintPath);
+
+        __result = File.Exists(blueprintPath);
         return false;
     }
 }
@@ -37,7 +41,10 @@ static class MyBlueprintUtilsIsItemScriptPatch
 {
     static bool Prefix(string path, ref bool __result)
     {
-        __result = File.Exists(Path.Combine(path, "Script.cs"));
+        var scriptPath = Path.Combine(path, "Script.cs");
+        scriptPath = PathCache.ResolveAbsolute(scriptPath);
+
+        __result = File.Exists(scriptPath);
         return false;
     }
 }

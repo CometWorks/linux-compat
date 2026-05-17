@@ -44,9 +44,13 @@ public static class WindowsPath
         ':', '*', '?', '\\', '/'
     ];
 
+    // Matches the exact ordering of .NET Framework's
+    // Path.GetInvalidPathChars() on Windows: '"', '<', '>', '|', '\0'
+    // then 1..31. 36 entries — mods that snapshot the array or hash it
+    // see byte-identical bytes to the Windows-baked reference.
     private static readonly char[] InvalidPathChars =
     [
-        '|', '\0',
+        '"', '<', '>', '|', '\0',
         (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7,
         (char)8, (char)9, (char)10, (char)11, (char)12, (char)13, (char)14,
         (char)15, (char)16, (char)17, (char)18, (char)19, (char)20, (char)21,
