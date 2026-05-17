@@ -27,6 +27,11 @@ Reference source: `/home/space/Documents/dotnet-game-local`
 - `IsItem_Script` checks for `path + "\\Script.cs"` in the stock game.
 - `Sandbox.Game/Sandbox/Game/Gui/MyGuiScreenEditor.cs`
 - `ScriptSelected` directly uses `File.Exists(scriptPath)` and `File.ReadAllText(scriptPath)` when the selected path has a `.cs` extension.
+- `Sandbox.Game/Sandbox/Game/Gui/MyGuiIngameScriptsPage.cs`
+- `OnReplaceFromEditor` directly builds `<local>/<ScriptName>/Script.cs`, then uses `File.Exists` and `File.WriteAllText`.
+- `Sandbox.Game/Sandbox/Game/Gui/MyGuiBlueprintScreen_Reworked.cs`
+- `OnButton_Replace` directly builds `SCRIPT_FOLDER_LOCAL/<ScriptName>/Script.cs`, then uses `File.Exists` and `File.WriteAllText`.
+- In the reworked screen this replace path also omits `GetCurrentLocalDirectory()`, unlike the open/delete/create paths.
 
 ## Existing Compat Context
 
@@ -53,19 +58,28 @@ Reference source: `/home/space/Documents/dotnet-game-local`
    - The method uses raw `System.IO.File.Exists` and `File.ReadAllText`, bypassing `MyFileSystem` path patches.
 
 4. Keep the patch narrow.
-   - Do not globally patch `System.IO.File.Exists` or `File.ReadAllText`.
-   - Do not introduce a second script-specific resolver.
-   - Reuse `PathCache.ResolveAbsolute` so behavior matches other Linux path fixes in the plugin.
+    - Do not globally patch `System.IO.File.Exists` or `File.ReadAllText`.
+    - Do not globally patch `System.IO.File.WriteAllText`.
+    - Do not introduce a second script-specific resolver.
+    - Reuse `PathCache.ResolveAbsolute` so behavior matches other Linux path fixes in the plugin.
 
-5. Verify with manual local script cases.
-   - Create `~/.config/SpaceEngineers/IngameScripts/local/LowercaseScript/script.cs`.
-   - Open the in-game scripts browser and confirm `LowercaseScript` appears.
-   - Select it and confirm the editor loads the file contents.
-   - Repeat with the canonical `Script.cs` to confirm existing behavior is unchanged.
+5. Patch replace-button paths.
+   - Add a narrow helper that resolves the canonical local script file path through `PathCache.ResolveAbsolute`.
+   - Patch `MyGuiIngameScriptsPage.OnReplaceFromEditor` to preserve the confirmation dialog, but write through the resolved path.
+   - Patch `MyGuiBlueprintScreen_Reworked.OnButton_Replace` only for local script replacement.
+   - Include `GetCurrentLocalDirectory()` in the reworked local script path before resolving, matching the open/delete/create code paths.
+   - Leave blueprint and cloud replacement on the original game code path.
 
-6. Verify build.
-   - Run `dotnet build LinuxCompat.sln` from the repository root.
-   - Check for Harmony patch binding errors in the game log after launch.
+6. Verify with manual local script cases.
+    - Create `~/.config/SpaceEngineers/IngameScripts/local/LowercaseScript/script.cs`.
+    - Open the in-game scripts browser and confirm `LowercaseScript` appears.
+    - Select it and confirm the editor loads the file contents.
+    - Edit the code, click replace, confirm `script.cs` is overwritten and no new `Script.cs` sibling is created.
+    - Repeat with the canonical `Script.cs` to confirm existing behavior is unchanged.
+
+7. Verify build.
+    - Run `dotnet build LinuxCompat.sln` from the repository root.
+    - Check for Harmony patch binding errors in the game log after launch.
 
 ## Minimal Code Shape
 
