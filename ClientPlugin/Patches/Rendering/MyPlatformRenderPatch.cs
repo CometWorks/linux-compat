@@ -20,6 +20,10 @@ namespace ClientPlugin.Patches.Rendering;
 [HarmonyPatchCategory("Finish")]
 static class CreateAdaptersListPatch
 {
+    const int MaxTextureSize = 16384; // D3D11 spec does not support textures with a width or height larger then this 
+    const ulong FallbackVideoMemory = 4294967296uL; // 4 GiB
+    const ulong MinimumSupportedVideoMemory = 536870912uL; // 512 MiB
+
     static bool Prefix()
     {
         CreateLinuxAdaptersList();
@@ -146,6 +150,41 @@ static class CreateAdaptersListPatch
         }
     }
 
+    static void GetAdapterMemory(Factory factory, int adapterOrdinal, out ulong vram, out ulong svram)
+    {
+        vram = FallbackVideoMemory;
+        svram = FallbackVideoMemory;
+
+        try
+        {
+            if (factory == null)
+                return;
+
+            var adapters = factory.Adapters;
+
+            if (adapterOrdinal < 0 || adapterOrdinal >= adapters.Length)
+                return;
+
+            using var adapter3 = adapters[adapterOrdinal].QueryInterfaceOrNull<Adapter3>();
+            if (adapter3 == null)
+                return;
+
+            var local = adapter3.QueryVideoMemoryInfo(0, MemorySegmentGroup.Local);
+            var nonLocal = adapter3.QueryVideoMemoryInfo(0, MemorySegmentGroup.NonLocal);
+
+            vram = (ulong)local.Budget;
+            svram = (ulong)nonLocal.Budget;
+        }
+        catch (Exception ex)
+        {
+            MyRender11.Log.WriteLine(
+                $"Failed to get VRAM budget: using fallback {FallbackVideoMemory}!\n{ex}");
+
+            vram = FallbackVideoMemory;
+            svram = FallbackVideoMemory;
+        }
+    }
+
     static void FillFallbackDisplayModes(MyAdapterInfo[] adaptersList)
     {
         MyDisplayMode[] fallback = null;
@@ -229,6 +268,7 @@ static class CreateAdaptersListPatch
             // GPUs reported by lspci, fall back to adapter 0 (DXVK typically exposes a single adapter).
             int dxgiOrdinal = j < factory.Adapters.Length ? j : 0;
             var supportedDisplayModes = QueryAdapterDisplayModes(factory, dxgiOrdinal);
+            GetAdapterMemory(factory, dxgiOrdinal, out ulong vram, out ulong svram);
 
             adapterModes[j] = new ModeDescription[0];
             adaptersList[j] = new MyAdapterInfo
@@ -236,18 +276,18 @@ static class CreateAdaptersListPatch
                 Name = name,
                 DeviceName = name,
                 OutputName = "SDL3",
+                OutputId = 0,
                 Description = "DXVK-backed D3D11 adapter on Linux",
                 AdapterDeviceId = j,
-                OutputId = 0,
                 DesktopBounds = rectangle,
                 DesktopResolution = new Vector2I(rectangle.Width, rectangle.Height),
-                MaxTextureSize = 16384,
-                Has512MBRam = true,
+                MaxTextureSize = MaxTextureSize,
+                Has512MBRam = Math.Max(vram, svram) >= MinimumSupportedVideoMemory,
                 IsDx11Supported = true,
                 Priority = VendorPriority(vendorId),
                 IsOutputAttached = true,
-                VRAM = 4294967296uL,
-                SVRAM = 4294967296uL,
+                VRAM = vram,
+                SVRAM = svram,
                 MultithreadedRenderingSupported = true,
                 VendorId = vendorId,
                 DeviceId = 0,
