@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<PluginData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GitHubPlugin">
+
+    <Id>se-linux-compat</Id>
+    <GroupId>se-linux-compat</GroupId>
+    <RepoId>viktor-ferenczi/se-linux-compat</RepoId>
+
+    <FriendlyName>LinuxCompat</FriendlyName>
+    <Author>Viktor</Author>
+
+    <Tooltip>Linux compatibility</Tooltip>
+    <Description>Support plugin for Magnetar to run the server natively on Linux and .NET 10.0.
+
+Do NOT add this plugin manually, it won't work.
+It is added by Magnetar automatically on demand.</Description>
+
+    <SourceDirectories>
+        <Directory>ServerPlugin</Directory>
+    </SourceDirectories>
+
+    <Runtimes>NETCoreApp</Runtimes>
+
+    <Hidden>true</Hidden>
+    
+    <Commit>TODO</Commit>
+
+</PluginData>
