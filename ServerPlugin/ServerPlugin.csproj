@@ -1,0 +1,191 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <OutputType>Library</OutputType>
+        <RootNamespace>ServerPlugin</RootNamespace>
+        <AssemblyName>LinuxCompatServer</AssemblyName>
+        <LangVersion>13</LangVersion>
+
+        <!-- Ensure SDK generates assembly attributes (no need for AssemblyInfo) -->
+        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+
+        <!-- Default versions; override in Directory.Build.props  -->
+        <AssemblyVersion>1.0.9.0</AssemblyVersion>
+        <FileVersion>1.0.9.0</FileVersion>
+
+        <!-- Default configuration if none supplied -->
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+
+        <!-- Keep original behaviour for post/pre build events -->
+        <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+        <!-- Override Bin64 from Directory.Build.props: link against the
+             dedicated server's DedicatedServer64 install instead of the
+             game client's Bin64. -->
+        <Bin64>/home/viktor/.steam/steam/steamapps/common/SpaceEngineersDedicatedServer/DedicatedServer64</Bin64>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+        <PlatformTarget>x64</PlatformTarget>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+        <Optimize>false</Optimize>
+        <OutputPath>bin\Debug\</OutputPath>
+        <DefineConstants>DEBUG;TRACE;DEV_BUILD</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <PlatformTarget>x64</PlatformTarget>
+        <DebugType>pdbonly</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>bin\Release\</OutputPath>
+        <DefineConstants>TRACE;DEV_BUILD</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+    </PropertyGroup>
+
+    <!--
+        Reference set for the server plugin. Trimmed down from the client
+        plugin's set: graphics (SharpDX, SixLabors, EmptyKeys, Sandbox.Graphics,
+        Sandbox.RenderDirect), audio/input (VRage.Audio, VRage.Input,
+        VRage.UserInterface), Mod.Io and the unused VRage.Network/VRage.Ansel
+        bits are dropped because the dedicated server uses MyNullRender,
+        MyNullMicrophone, and never reaches the client-only code paths.
+        VRage.Render is still linked because LODDescriptorPatch and
+        ModelPathPatch reference the VRageRender.Import namespace, which is
+        traversed by model/LOD loading even on a MyNullRender server.
+    -->
+    <ItemGroup>
+        <Reference Include="HavokWrapper">
+            <HintPath>$(Bin64)\HavokWrapper.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="System.Collections.Immutable">
+            <HintPath>$(Bin64)\System.Collections.Immutable.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.CodeAnalysis">
+            <HintPath>$(Bin64)\Microsoft.CodeAnalysis.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Microsoft.CodeAnalysis.CSharp">
+            <HintPath>$(Bin64)\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Sandbox.Common">
+            <HintPath>$(Bin64)\Sandbox.Common.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Sandbox.Game">
+            <HintPath>$(Bin64)\Sandbox.Game.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="SpaceEngineers.Game">
+            <HintPath>$(Bin64)\SpaceEngineers.Game.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="SpaceEngineers.ObjectBuilders">
+            <HintPath>$(Bin64)\SpaceEngineers.ObjectBuilders.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="VRage">
+            <HintPath>$(Bin64)\VRage.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="VRage.Ansel">
+            <HintPath>$(Bin64)\VRage.Ansel.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="VRage.Game">
+            <HintPath>$(Bin64)\VRage.Game.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="VRage.Library">
+            <HintPath>$(Bin64)\VRage.Library.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="VRage.Math">
+            <HintPath>$(Bin64)\VRage.Math.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="VRage.Platform.Windows">
+            <HintPath>$(Bin64)\VRage.Platform.Windows.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="VRage.Render">
+            <HintPath>$(Bin64)\VRage.Render.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="VRage.Scripting">
+            <HintPath>$(Bin64)\VRage.Scripting.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="VRage.Steam">
+            <HintPath>$(Bin64)\VRage.Steam.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Steamworks.NET">
+            <HintPath>$(Bin64)\Steamworks.NET.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="App.config"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Lib.Harmony" Version="2.4.2" />
+        <PackageReference Include="Krafs.Publicizer" Version="2.3.0">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Mono.Cecil" Version="0.11.6"/>
+    </ItemGroup>
+
+    <PropertyGroup>
+        <PublicizerClearCacheOnClean>true</PublicizerClearCacheOnClean>
+        <PublicizerRuntimeStrategies>Unsafe;IgnoresAccessChecksTo</PublicizerRuntimeStrategies>
+        <PublicizerLogFilePath>$(MSBuildProjectDirectory)\$(OutputPath)Krafs.Publicizer.log</PublicizerLogFilePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Publicize Include="Sandbox.Game"/>
+        <Publicize Include="Sandbox.ObjectBuilders"/>
+        <Publicize Include="SpaceEngineers"/>
+        <Publicize Include="SpaceEngineers.Game"/>
+        <Publicize Include="VRage"/>
+        <Publicize Include="VRage.Platform.Windows"/>
+        <Publicize Include="VRage.Scripting"/>
+        <Publicize Include="VRage.Steam"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Patches\" />
+    </ItemGroup>
+
+    <!-- Deploy LinuxCompatServer.dll to the Pulsar Local plugins folder
+         (~/.config/Pulsar/Local) so Pulsar picks it up automatically.
+         Overwrites any existing file at that path. -->
+    <Target Name="DeployToPulsarLocal"
+            AfterTargets="Build"
+            Condition="'$(OS)' != 'Windows_NT'">
+        <PropertyGroup>
+            <PulsarLocalDir>$(HOME)/.config/Pulsar/Local</PulsarLocalDir>
+        </PropertyGroup>
+        <MakeDir Directories="$(PulsarLocalDir)" />
+        <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll"
+              DestinationFolder="$(PulsarLocalDir)"
+              OverwriteReadOnlyFiles="true" />
+    </Target>
+
+</Project>
