@@ -348,6 +348,8 @@ public static class PathCache
     /// Resolve a relative path against an explicit root. If
     /// <paramref name="relativePath"/> is rooted it is resolved as an
     /// absolute path. Returns the (possibly unresolved) full path on miss.
+    /// A non-empty <paramref name="rootPath"/> is authoritative: relative
+    /// lookups are rooted there before probing the global content cache.
     /// </summary>
     public static string Resolve(string relativePath, string rootPath)
     {
@@ -360,8 +362,15 @@ public static class PathCache
         if (Path.IsPathRooted(relativePath))
             return ResolveAbsolute(relativePath);
 
+        if (!string.IsNullOrEmpty(rootPath))
+        {
+            var fullPath = Path.Combine(rootPath, relativePath).Replace('\\', '/');
+            return Path.IsPathRooted(fullPath) ? ResolveAbsolute(fullPath) : fullPath;
+        }
+
         // Level 1 probe via root-relative key (the static cache stores
-        // root-relative keys for every Content/ and Bin64/ entry).
+        // root-relative keys for every Content/ and Bin64/ entry). This is
+        // only valid when the caller did not provide an explicit root.
         if (s_staticReady)
         {
             var hit = s_staticMap;
@@ -369,39 +378,7 @@ public static class PathCache
                 return real;
         }
 
-        var fullPath = string.IsNullOrEmpty(rootPath)
-            ? relativePath
-            : Path.Combine(rootPath, relativePath).Replace('\\', '/');
-
-        if (s_staticReady && Path.IsPathRooted(fullPath))
-        {
-            var hit = s_staticMap;
-            if (hit != null && hit.TryGetValue(fullPath.ToLowerInvariant(), out var real))
-                return real;
-        }
-
-        if (File.Exists(fullPath) || Directory.Exists(fullPath))
-            return fullPath;
-
-        if (Path.IsPathRooted(fullPath))
-        {
-            try { fullPath = Path.GetFullPath(fullPath); }
-            catch { /* keep as-is */ }
-
-            if (s_staticReady)
-            {
-                var hit = s_staticMap;
-                if (hit != null && hit.TryGetValue(fullPath.ToLowerInvariant(), out var real))
-                    return real;
-            }
-
-            if (File.Exists(fullPath) || Directory.Exists(fullPath))
-                return fullPath;
-
-            return WalkFromRoot(fullPath) ?? fullPath;
-        }
-
-        return fullPath;
+        return relativePath;
     }
 
     /// <summary>

@@ -26,8 +26,9 @@ namespace ClientPlugin.Patches.PathHandling;
 //
 // 2) ProcessContentFilePath gains path normalization, case-insensitive
 //    extension comparison, case-insensitive content file resolution
-//    under the mod root, and the error-model literal is switched to
-//    forward slashes ("Models/Debug/Error.mwm").
+//    under the mod root, targeted diagnostics for non-base-game .mwm
+//    paths, and the error-model literal is switched to forward slashes
+//    ("Models/Debug/Error.mwm").
 
 [HarmonyPatch(typeof(MyDefinitionManager), "LoadDefinitions",
     new[] { typeof(List<MyModContext>), typeof(List<MyDefinitionManager.DefinitionSet>) })]
@@ -155,6 +156,7 @@ static class MyDefinitionManagerProcessContentFilePathPatch
         if (string.IsNullOrEmpty(contentFile))
             return false;
 
+        string incomingContentFile = contentFile;
         contentFile = PathHelpers.Normalize(contentFile);
         string extension = Path.GetExtension(contentFile);
 
@@ -187,6 +189,25 @@ static class MyDefinitionManagerProcessContentFilePathPatch
         }
 
         string resolved = CaseInsensitivePathResolver.Resolve(contentFile, context.ModPath);
+        string fallbackContentCandidate = PathHelpers.ResolveContentFilePath(contentFile, MyFileSystem.ContentPath);
+
+        if (ShouldLogProcessContentFilePath(context, contentFile))
+        {
+            bool resolvedFileExists = File.Exists(resolved);
+            bool resolvedMyFileSystemExists = MyFileSystem.FileExists(resolved);
+
+            MyLog.Default.WriteLine(
+                "[LinuxCompat] MyDefinitionManager.ProcessContentFilePath diagnostic: " +
+                "modName=" + (context.ModName ?? "<null>") +
+                ", modPath=" + (context.ModPath ?? "<null>") +
+                ", incoming=" + (incomingContentFile ?? "<null>") +
+                ", normalized=" + (contentFile ?? "<null>") +
+                ", resolved=" + (resolved ?? "<null>") +
+                ", fileExists=" + resolvedFileExists +
+                ", myFileSystemExists=" + resolvedMyFileSystemExists +
+                ", fallbackContentCandidate=" + (fallbackContentCandidate ?? "<null>"));
+        }
+
         if (!MyDefinitionManager.m_directoryExistCache.TryGetValue(resolved, out var exists))
         {
             exists = MyFileSystem.DirectoryExists(Path.GetDirectoryName(resolved))
@@ -201,7 +222,7 @@ static class MyDefinitionManagerProcessContentFilePathPatch
         {
             contentFile = resolved;
         }
-        else if (!MyFileSystem.FileExists(PathHelpers.ResolveContentFilePath(contentFile, MyFileSystem.ContentPath)))
+        else if (!MyFileSystem.FileExists(fallbackContentCandidate))
         {
             if (contentFile.EndsWith(".mwm"))
             {
@@ -216,5 +237,11 @@ static class MyDefinitionManagerProcessContentFilePathPatch
         }
 
         return false;
+    }
+
+    private static bool ShouldLogProcessContentFilePath(MyModContext context, string contentFile)
+    {
+        return !context.IsBaseGame &&
+               contentFile.EndsWith(".mwm", StringComparison.OrdinalIgnoreCase);
     }
 }
