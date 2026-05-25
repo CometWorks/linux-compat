@@ -80,6 +80,7 @@ public static class Preloader
                 break;
             case "VRage.Dedicated":
                 ServerPlugin.Patches.PlatformGuards.AttachConsolePrepatch.Prepatch(asmDef);
+                ServerPlugin.Patches.PlatformGuards.IsVcRedist2019InstalledPrepatch.Prepatch(asmDef);
                 break;
         }
     }
