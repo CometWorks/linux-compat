@@ -33,7 +33,7 @@ public static class Preloader
         {
             var name = new AssemblyName(args.Name).Name;
             if (name == null) return null;
-            return name == "LinuxCompatServer" || name == selfName ? selfAssembly : null;
+            return name == "LinuxCompat" || name == "LinuxCompatServer" || name == selfName ? selfAssembly : null;
         };
     }
 
