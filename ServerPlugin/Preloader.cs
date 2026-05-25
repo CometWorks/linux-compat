@@ -47,6 +47,7 @@ public static class Preloader
         "Sandbox.Game.dll",
         "SpaceEngineers.Game.dll",
         "VRage.dll",
+        "VRage.Dedicated.dll",
         "VRage.Game.dll",
         "VRage.Library.dll",
         "VRage.Platform.Windows.dll",
@@ -76,6 +77,9 @@ public static class Preloader
                 break;
             case "SpaceEngineers.Game":
                 PatchSpaceEngineersGame(asmDef);
+                break;
+            case "VRage.Dedicated":
+                ServerPlugin.Patches.PlatformGuards.AttachConsolePrepatch.Prepatch(asmDef);
                 break;
         }
     }
