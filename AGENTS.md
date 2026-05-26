@@ -21,4 +21,9 @@ only if they are properly configured both in `sources.xml` and `Current.xml` (pr
 here, and it has no effect, then check whether Pulsar is using the local "dev folders" or downloading these plugins 
 from GitHub as it does in production.
 
+Only the `ServerPlugin` project is used on the server (Magnetar).
+Only the `ClientPlugin` is used on the game client (Pulsar). 
+The server plugin started as a copy of the client plugin, then stripped down to remove the client-only patches/code.
+If the `server` branch is the current one, then do **not** change the `ClientPlugin` project.
+
 Also, read the project's `README.md` to understand its purpose and context.
