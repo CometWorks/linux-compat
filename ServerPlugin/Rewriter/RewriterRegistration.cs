@@ -19,6 +19,13 @@ namespace ServerPlugin.Rewriter;
 /// is the same closed generic in both assemblies and a directly-typed
 /// reference works.
 ///
+/// Namespace note: both DotNetCompat projects share <c>AssemblyName=DotNetCompat</c>
+/// but their <c>RootNamespace</c> differs — DotNetCompat-client uses
+/// <c>ClientPlugin</c>, DotNetCompat-server uses <c>ServerPlugin</c>. On the
+/// dedicated server (where this LinuxCompat-server code runs) only the
+/// server-side DotNetCompat is loaded, so the hook type lives under
+/// <c>ServerPlugin.Rewriter</c>.
+///
 /// We still go through reflection because LinuxCompat has no direct project
 /// reference to DotNetCompat — DotNetCompat is a separate Pulsar plugin and
 /// its DLL is not on LinuxCompat's compile-time hint paths.
@@ -66,6 +73,13 @@ internal static class RewriterRegistration
                 var name = candidate.GetName().Name;
                 if (name != "DotNetCompat" && !name.StartsWith("DotNetCompat_", StringComparison.Ordinal))
                     continue;
+                // DotNetCompat-server's RootNamespace is "ServerPlugin" (see
+                // ServerPlugin.csproj in the DotNetCompat repo). The type we
+                // want is in *DotNetCompat's* ServerPlugin assembly, not in
+                // this one — they happen to share the namespace because
+                // every Pulsar side-plugin project of this shape uses the
+                // same root namespace per side. Disambiguation is by
+                // assembly identity (the filter above), not by namespace.
                 extType = candidate.GetType("ServerPlugin.Rewriter.CompilerHookExtensions", throwOnError: false);
                 if (extType != null)
                 {

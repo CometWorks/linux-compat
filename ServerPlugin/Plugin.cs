@@ -1,5 +1,3 @@
-using ServerPlugin.Patches.PathHandling;
-using ServerPlugin.Rewriter;
 using HarmonyLib;
 using VRage.Plugins;
 
@@ -21,19 +19,11 @@ public class Plugin : IPlugin
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     public void Init(object gameInstance)
     {
-        // Build the Linux→Windows prefix translation table before anything
-        // that might call PathHelpers.ToWindowsPath / WindowsPath.FromGame /
-        // .GetTempPath. The Cecil-injected explicit interface getters on
-        // MyModContext also depend on this table being populated by the
-        // time the first mod reads ModPath/ModPathData.
-        PathTranslation.Init();
-
-        // Plug our Path-substitution pass into the DotNetCompat compiler
-        // hook before any mod is compiled. DotNetCompat is always loaded
-        // earlier by Pulsar, so by the time this runs the extension point
-        // exists. Mod compilation only happens once a session loads, well
-        // after Init.
-        RewriterRegistration.Register();
+        // NOTE: PathTranslation.Init() and RewriterRegistration.Register() are
+        // performed from Preloader.Finish, not here. On the dedicated server
+        // IPlugin.Init runs AFTER the auto-loaded session has already
+        // compiled its mods — too late for the path-substitution rewriter to
+        // take effect on mod source. See Preloader.cs Finish() for details.
 
         var harmony = new Harmony("LinuxCompatServer");
         harmony.PatchCategory("Init");

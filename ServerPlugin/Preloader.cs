@@ -7,6 +7,8 @@ using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
 using ServerPlugin.Compatibility;
+using ServerPlugin.Patches.PathHandling;
+using ServerPlugin.Rewriter;
 using HarmonyLib;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -476,6 +478,26 @@ public static class Preloader
         }
         Console.WriteLine($"[LinuxCompatServer] PatchCategory(\"Finish\") applied {harmony.GetPatchedMethods().Count()} methods");
         try { VRage.Utils.MyLog.Default.WriteLineAndConsole($"[LinuxCompatServer] PatchCategory(\"Finish\") applied {harmony.GetPatchedMethods().Count()} methods"); } catch { }
+
+        // Initialize the Linux→Windows path-translation table and register the
+        // mod-source PathSubstitutionRewriter into DotNetCompat's compiler hook
+        // *here* (preloader Finish), not in Plugin.Init. On the dedicated
+        // server, IPlugin.Init runs AFTER the auto-loaded session has already
+        // compiled and started its mods, so registering from Init misses the
+        // mod-compile window entirely — the symptom is BuildInfo printing
+        // "Mod scripts cannot read from mod folders!" because Path.GetFullPath
+        // never got swapped for the WindowsPath shim during compilation.
+        //
+        // Safe to run here: PathTranslation.Init reads only Environment vars,
+        // and RewriterRegistration touches MyScriptCompiler.Static, whose
+        // static-readonly initializer fires the moment the type is referenced
+        // — Harmony just patched methods on it above, so it's loaded.
+        // DotNetCompat is also a Finish-category consumer and its preloader
+        // runs before ours (Pulsar profile order), so its
+        // CompilerHookExtensions extension point is already in the AppDomain
+        // by this point.
+        PathTranslation.Init();
+        RewriterRegistration.Register();
     }
 
     private static bool s_nativeWrappersInitialized;
