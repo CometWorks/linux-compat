@@ -1,14 +1,14 @@
 using System;
-using HarmonyLib;
 using Sandbox;
 using Sandbox.Engine.Utils;
 
 namespace ClientPlugin.Compatibility;
 
 // Read/write custom keys in the game's SpaceEngineers.cfg. MyConfig's parameter
-// accessors are protected; we reach them via reflection so our windowed-size
-// and windowed-position values are serialized in the same XML file and saved
-// by the game's normal Save() path (on settings apply and on game exit).
+// accessors are protected; after publicizing VRage.Game we reach them directly
+// so our windowed-size and windowed-position values are serialized in the same
+// XML file and saved by the game's normal Save() path (on settings apply and
+// on game exit).
 internal static class PluginWindowConfig
 {
     // KEY_WINDOWED_WIDTH and KEY_WINDOWED_HEIGHT are the same keys used by SE to store
@@ -78,10 +78,7 @@ internal static class PluginWindowConfig
             return null;
         try
         {
-            var method = AccessTools.Method(typeof(MyConfigBase), "GetParameterValue", [typeof(string)]);
-            if (method == null)
-                return null;
-            var raw = method.Invoke(config, [key]) as string;
+            var raw = config.GetParameterValue(key);
             if (string.IsNullOrEmpty(raw))
                 return null;
             if (int.TryParse(raw, System.Globalization.NumberStyles.Integer,
@@ -102,9 +99,7 @@ internal static class PluginWindowConfig
             return;
         try
         {
-            var method = AccessTools.Method(typeof(MyConfigBase), "SetParameterValue",
-                [typeof(string), typeof(int)]);
-            method?.Invoke(config, [key, value]);
+            config.SetParameterValue(key, value);
         }
         catch (Exception)
         {

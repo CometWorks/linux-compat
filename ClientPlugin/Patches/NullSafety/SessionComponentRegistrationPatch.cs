@@ -24,16 +24,15 @@ static class SessionComponentRegistrationPatch
             var component = (MySessionComponentBase)Activator.CreateInstance(type);
 
             var isRequiredByGame = component.IsRequiredByGame;
-            var getComponentInfo = AccessTools.Method(typeof(MySession), "GetComponentInfo");
-            var args = new object[] { type, null };
-            var hasInfo = (bool)getComponentInfo.Invoke(__instance, args);
-            definition = (MyDefinitionId?)args[1];
+            MyDefinitionId? infoDefinition = null;
+            var hasInfo = __instance.GetComponentInfo(type, out infoDefinition);
+            definition = infoDefinition;
 
             if (isRequiredByGame || modAssembly || hasInfo)
             {
                 __instance.RegisterComponent(component, component.UpdateOrder, component.Priority);
-                getComponentInfo.Invoke(__instance, args);
-                definition = (MyDefinitionId?)args[1];
+                __instance.GetComponentInfo(type, out infoDefinition);
+                definition = infoDefinition;
                 component.Definition = definition;
                 component.ModContext = context;
             }

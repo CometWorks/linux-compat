@@ -44,8 +44,9 @@ static class MyGuiBlueprintScreenCreateScriptPatch
         var il = instructions.ToList();
         il.RecordOriginalCode(patchedMethod);
 
-        var thumbnailField = AccessTools.Field(typeof(MyBlueprintUtils), nameof(MyBlueprintUtils.STEAM_THUMBNAIL_NAME));
-        var normalize = AccessTools.Method(typeof(PathHelpers), nameof(PathHelpers.Normalize));
+        var thumbnailField = typeof(MyBlueprintUtils).GetField(nameof(MyBlueprintUtils.STEAM_THUMBNAIL_NAME),
+            BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        var normalize = typeof(PathHelpers).GetMethod(nameof(PathHelpers.Normalize));
 
         // Walk backwards so Insert calls don't shift the indexes still to visit.
         for (var i = il.Count - 1; i >= 0; i--)

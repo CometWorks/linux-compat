@@ -9,6 +9,7 @@ using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using VRage;
+using VRage.Platform.Windows.Render;
 using VRage.Utils;
 using VRageMath;
 using VRageRender;
@@ -16,7 +17,7 @@ using Device1 = SharpDX.Direct3D11.Device1;
 
 namespace ClientPlugin.Patches.Rendering;
 
-[HarmonyPatch("VRage.Platform.Windows.Render.MyPlatformRender", "CreateAdaptersList")]
+[HarmonyPatch(typeof(MyPlatformRender), nameof(MyPlatformRender.CreateAdaptersList))]
 [HarmonyPatchCategory("Finish")]
 static class CreateAdaptersListPatch
 {
@@ -244,14 +245,11 @@ static class CreateAdaptersListPatch
         if (gpus.Count == 0)
             gpus.Add("DXVK Native Adapter");
 
-        var platformRenderType = AccessTools.TypeByName("VRage.Platform.Windows.Render.MyPlatformRender");
         var adaptersList = new MyAdapterInfo[gpus.Count];
-        var adapterModes = AccessTools.StaticFieldRefAccess<Dictionary<int, ModeDescription[]>>(platformRenderType, "m_adapterModes");
-        adapterModes.Clear();
+        MyPlatformRender.m_adapterModes.Clear();
 
-        var factoryField = AccessTools.Field(platformRenderType, "m_factory");
-        var factory = (Factory)factoryField.GetValue(null) ?? new Factory1();
-        factoryField.SetValue(null, factory);
+        var factory = MyPlatformRender.m_factory ?? new Factory1();
+        MyPlatformRender.m_factory = factory;
 
         for (int j = 0; j < gpus.Count; j++)
         {
@@ -270,7 +268,7 @@ static class CreateAdaptersListPatch
             var supportedDisplayModes = QueryAdapterDisplayModes(factory, dxgiOrdinal);
             GetAdapterMemory(factory, dxgiOrdinal, out ulong vram, out ulong svram);
 
-            adapterModes[j] = new ModeDescription[0];
+            MyPlatformRender.m_adapterModes[j] = new ModeDescription[0];
             adaptersList[j] = new MyAdapterInfo
             {
                 Name = name,
@@ -308,23 +306,20 @@ static class CreateAdaptersListPatch
 
         FillFallbackDisplayModes(adaptersList);
 
-        AccessTools.StaticFieldRefAccess<MyAdapterInfo[]>(platformRenderType, "m_adapterInfoList") = adaptersList;
+        MyPlatformRender.m_adapterInfoList = adaptersList;
     }
 }
 
 
-[HarmonyPatch("VRage.Platform.Windows.Render.MyPlatformRender", "GetAdapter")]
+[HarmonyPatch(typeof(MyPlatformRender), nameof(MyPlatformRender.GetAdapter))]
 [HarmonyPatchCategory("Finish")]
 static class GetAdapterPatch
 {
-    static readonly Type PlatformRenderType = AccessTools.TypeByName("VRage.Platform.Windows.Render.MyPlatformRender");
-
     static bool Prefix(int adapterOrdinal, ref Adapter adapter, ref MyAdapterInfo adapterInfo)
     {
-        var factoryField = AccessTools.Field(PlatformRenderType, "m_factory");
-        var factory = (Factory)factoryField.GetValue(null) ?? new Factory1();
-        factoryField.SetValue(null, factory);
-        var adaptersList = AccessTools.StaticFieldRefAccess<MyAdapterInfo[]>(PlatformRenderType, "m_adapterInfoList");
+        var factory = MyPlatformRender.m_factory ?? new Factory1();
+        MyPlatformRender.m_factory = factory;
+        var adaptersList = MyPlatformRender.m_adapterInfoList;
         int adapterDeviceId = adaptersList[adapterOrdinal].AdapterDeviceId;
 
         if (adapterDeviceId >= factory.Adapters.Length)
@@ -343,14 +338,13 @@ static class GetAdapterPatch
     }
 }
 
-[HarmonyPatch("VRage.Platform.Windows.Render.MyPlatformRender", "FixSettings")]
+[HarmonyPatch(typeof(MyPlatformRender), nameof(MyPlatformRender.FixSettings))]
 [HarmonyPatchCategory("Finish")]
 static class FixSettingsPatch
 {
     static bool Prefix(ref MyRenderDeviceSettings settings)
     {
-        var adaptersList = AccessTools.StaticFieldRefAccess<MyAdapterInfo[]>(
-            AccessTools.TypeByName("VRage.Platform.Windows.Render.MyPlatformRender"), "m_adapterInfoList");
+        var adaptersList = MyPlatformRender.m_adapterInfoList;
 
         var currentAdapter = adaptersList[settings.AdapterOrdinal];
         int refreshRate = settings.WindowMode != MyWindowModeEnum.FullscreenWindow ? settings.RefreshRate : 0;
@@ -367,14 +361,13 @@ static class FixSettingsPatch
     }
 }
 
-[HarmonyPatch("VRage.Platform.Windows.Render.MyPlatformRender", "GetDefaultDeviceSettings")]
+[HarmonyPatch(typeof(MyPlatformRender), nameof(MyPlatformRender.GetDefaultDeviceSettings))]
 [HarmonyPatchCategory("Finish")]
 static class GetDefaultDeviceSettingsPatch
 {
     static bool Prefix(ref MyRenderDeviceSettings __result)
     {
-        var adaptersList = AccessTools.StaticFieldRefAccess<MyAdapterInfo[]>(
-            AccessTools.TypeByName("VRage.Platform.Windows.Render.MyPlatformRender"), "m_adapterInfoList");
+        var adaptersList = MyPlatformRender.m_adapterInfoList;
 
         var displayMode = adaptersList[0].GetDisplayMode(
             adaptersList[0].DesktopResolution.X, adaptersList[0].DesktopResolution.Y, 0);
@@ -398,22 +391,19 @@ static class GetDefaultDeviceSettingsPatch
     }
 }
 
-[HarmonyPatch("VRage.Platform.Windows.Render.MyPlatformRender", "CreateSwapChain")]
+[HarmonyPatch(typeof(MyPlatformRender), nameof(MyPlatformRender.CreateSwapChain))]
 [HarmonyPatchCategory("Finish")]
 static class CreateSwapChainPatch
 {
-    static readonly Type PlatformRenderType = AccessTools.TypeByName("VRage.Platform.Windows.Render.MyPlatformRender");
-
     static bool Prefix(IntPtr windowHandle)
     {
-        AccessTools.Method(PlatformRenderType, "DisposeSwapChain")?.Invoke(null, null);
+        MyPlatformRender.DisposeSwapChain();
 
-        var swapChainField = AccessTools.Field(PlatformRenderType, "m_swapchain");
-        if (swapChainField.GetValue(null) != null)
+        if (MyPlatformRender.m_swapchain != null)
             return false;
 
-        var settings = (MyRenderDeviceSettings)AccessTools.Field(PlatformRenderType, "m_settings").GetValue(null);
-        var deviceInstance = (SharpDX.Direct3D11.Device)AccessTools.Property(PlatformRenderType, "DeviceInstance").GetValue(null);
+        var settings = MyPlatformRender.m_settings;
+        var deviceInstance = MyPlatformRender.DeviceInstance;
 
         var modeDesc = new ModeDescription
         {
@@ -437,17 +427,16 @@ static class CreateSwapChainPatch
             SwapEffect = SwapEffect.Sequential
         };
 
-        var factory = (Factory)AccessTools.Field(PlatformRenderType, "m_factory").GetValue(null) ?? new Factory1();
-        AccessTools.Field(PlatformRenderType, "m_factory").SetValue(null, factory);
+        var factory = MyPlatformRender.m_factory ?? new Factory1();
+        MyPlatformRender.m_factory = factory;
 
-        var swapChain = new SwapChain(factory, deviceInstance, swapChainDescription);
-        swapChainField.SetValue(null, swapChain);
+        MyPlatformRender.m_swapchain = new SwapChain(factory, deviceInstance, swapChainDescription);
 
         return false;
     }
 }
 
-[HarmonyPatch("VRage.Platform.Windows.Render.MyPlatformRender", "ApplySettings")]
+[HarmonyPatch(typeof(MyPlatformRender), nameof(MyPlatformRender.ApplySettings))]
 [HarmonyPatchCategory("Finish")]
 static class ApplySettingsPatch
 {
@@ -455,9 +444,7 @@ static class ApplySettingsPatch
     {
         if (settings.HasValue)
         {
-            AccessTools.Field(
-                AccessTools.TypeByName("VRage.Platform.Windows.Render.MyPlatformRender"), "m_settings")
-                .SetValue(null, settings.Value);
+            MyPlatformRender.m_settings = settings.Value;
         }
         return false;
     }

@@ -97,8 +97,11 @@ static class MyFontConstructorPatch
         if (string.IsNullOrEmpty(dir))
             return;
 
-        s_fontDirectoryField ??= AccessTools.Field(typeof(MyFont), "m_fontDirectory")
-            ?? throw new InvalidOperationException("MyFont.m_fontDirectory not found");
-        s_fontDirectoryField.SetValue(__instance, dir);
+        // m_fontDirectory is private readonly in MyFont; the publicizer makes
+        // it visible but the readonly modifier is preserved, so we still need
+        // reflection to overwrite it after the ctor ran.
+        s_fontDirectoryField ??= typeof(MyFont).GetField("m_fontDirectory",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        s_fontDirectoryField?.SetValue(__instance, dir);
     }
 }

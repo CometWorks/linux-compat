@@ -22,8 +22,7 @@ static class MyGuiScreenLoadingConstructorPatch
             return;
 
         bool showCursor = config.WindowMode != MyWindowModeEnum.Fullscreen;
-        AccessTools.PropertySetter(typeof(MyGuiScreenBase), "DrawMouseCursor")
-            ?.Invoke(__instance, [showCursor]);
+        __instance.DrawMouseCursor = showCursor;
         MyGuiSandbox.SetMouseCursorVisibility(showCursor);
     }
 }

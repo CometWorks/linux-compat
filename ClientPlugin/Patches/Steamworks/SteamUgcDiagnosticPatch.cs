@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Reflection;
 using HarmonyLib;
 using Steamworks;
 using VRage.Steam;
@@ -196,16 +195,15 @@ static class SteamUgcDiagnosticPatch
         {
             try
             {
-                var t = typeof(MySteamWorkshopItemPublisher);
-                string folder = (string)AccessTools.Property(t, "Folder")?.GetValue(__instance);
-                string thumb = (string)AccessTools.Property(t, "Thumbnail")?.GetValue(__instance);
-                string title = (string)AccessTools.Property(t, "Title")?.GetValue(__instance);
-                ulong id = (ulong)(AccessTools.Property(t, "Id")?.GetValue(__instance) ?? 0UL);
+                string folder = __instance.Folder;
+                string thumb = __instance.Thumbnail;
+                string title = __instance.Title;
+                ulong id = __instance.Id;
                 Log($"UpdatePublishedItem ENTER id={id} title='{title}' folder='{folder}' thumb='{thumb}'");
             }
             catch (Exception ex)
             {
-                Log($"UpdatePublishedItem ENTER (reflection failed): {ex.Message}");
+                Log($"UpdatePublishedItem ENTER (read failed): {ex.Message}");
             }
         }
 

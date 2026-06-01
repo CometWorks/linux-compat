@@ -19,8 +19,7 @@ static class CreateWindowPatch
 {
     static bool Prefix(MySandboxGame __instance, ref IVRageWindow __result)
     {
-        AccessTools.PropertySetter(typeof(MySandboxGame), "DrawThread")
-            .Invoke(__instance, [Thread.CurrentThread]);
+        __instance.DrawThread = Thread.CurrentThread;
 
         // Resolve the initial window geometry BEFORE creating the SDL window
         // so it shows up at the right place on first map (rather than flashing
@@ -34,20 +33,17 @@ static class CreateWindowPatch
         var sdlWindow = SdlGameWindow.Create("Space Engineers", initialW, initialH, initialX, initialY);
         SdlInput2Provider.Instance = sdlWindow;
 
-        var windows = MyVRage.Platform.Windows;
-        var windowsType = windows.GetType();
-
-        AccessTools.PropertySetter(windowsType, "Window")
-            ?.Invoke(windows, [sdlWindow]);
-
-        AccessTools.PropertySetter(windowsType, "WindowHandle")
-            ?.Invoke(windows, [sdlWindow.Handle]);
+        var windows = MyVRage.Platform.Windows as MyWindowsWindows;
+        if (windows != null)
+        {
+            windows.Window = sdlWindow;
+            windows.WindowHandle = sdlWindow.Handle;
+        }
 
         var platform = MyVRage.Platform as MyVRagePlatform;
         if (platform != null)
         {
-            AccessTools.PropertySetter(typeof(MyVRagePlatform), "Input")
-                ?.Invoke(platform, [sdlWindow]);
+            platform.Input = sdlWindow;
 
             var ansel = platform.Ansel as MyAnsel;
             if (ansel != null)
@@ -60,17 +56,13 @@ static class CreateWindowPatch
         // MySandboxGame.Update can call form.UpdateMainThread() each frame, which is
         // required for pumping SDL events on the main thread (window focus, WM ping,
         // resize, close). Without this the window appears frozen to the WM.
-        AccessTools.Field(typeof(MySandboxGame), "form")
-            ?.SetValue(__instance, sdlWindow);
-
-        var onExit = AccessTools.Method(typeof(MySandboxGame), "OnExit");
-        var onManualWindowCloseRequest = AccessTools.Method(typeof(MySandboxGame), "Window_OnManualWindowCloseRequest");
+        __instance.form = sdlWindow;
 
         sdlWindow.OnManualWindowCloseRequest += () =>
         {
             if (IsInGame())
             {
-                onManualWindowCloseRequest?.Invoke(__instance, null);
+                __instance.Window_OnManualWindowCloseRequest();
                 return;
             }
 
@@ -80,18 +72,16 @@ static class CreateWindowPatch
 
         sdlWindow.OnExit += () =>
         {
-            onExit?.Invoke(__instance, null);
+            __instance.OnExit();
         };
 
-        var updateMouseCapture = AccessTools.Method(typeof(MySandboxGame), "UpdateMouseCapture");
-        updateMouseCapture?.Invoke(__instance, null);
+        __instance.UpdateMouseCapture();
 
         var config = MySandboxGame.Config;
         if (config.SyncRendering)
         {
             var viewport = new MyViewport(0f, 0f, config.ScreenWidth.Value, config.ScreenHeight.Value);
-            var sizeChanged = AccessTools.Method(typeof(MySandboxGame), "RenderThread_SizeChanged");
-            sizeChanged?.Invoke(__instance, [(int)viewport.Width, (int)viewport.Height, viewport]);
+            __instance.RenderThread_SizeChanged((int)viewport.Width, (int)viewport.Height, viewport);
         }
 
         Console.WriteLine("[LinuxCompat] SDL3 window initialized via InitializeRenderThread");

@@ -1,6 +1,6 @@
-using System.Reflection;
 using ClientPlugin.Patches.PlatformGuards;
 using HarmonyLib;
+using VRage.Render11.Sprites;
 using VRageMath;
 using VRageRender;
 using VRageRender.Messages;
@@ -49,14 +49,11 @@ internal static class CursorRenderRateState
 //
 // MySpritesRenderer is internal to VRage.Render11, so the target method is
 // resolved via Harmony's TargetMethod() / AccessTools.Method by full name.
-[HarmonyPatch]
+[HarmonyPatch(typeof(MySpritesRenderer), nameof(MySpritesRenderer.ProcessDrawMessage))]
 [HarmonyPatchCategory("Finish")]
 static class CursorRenderRatePatch
 {
-    static MethodBase TargetMethod() =>
-        AccessTools.Method("VRage.Render11.Sprites.MySpritesRenderer:ProcessDrawMessage");
-
-    static bool Prepare() => TargetMethod() != null;
+    static bool Prepare() => AccessTools.Method(typeof(MySpritesRenderer), nameof(MySpritesRenderer.ProcessDrawMessage)) != null;
 
     static void Prefix(MyRenderMessageBase drawMessage)
     {

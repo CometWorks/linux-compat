@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <OutputType>Library</OutputType>
@@ -250,10 +250,12 @@
         <Publicize Include="SpaceEngineers.Game"/>
         <Publicize Include="VRage"/>
         <Publicize Include="VRage.Audio"/>
+        <Publicize Include="VRage.Game"/>
         <Publicize Include="VRage.Input"/>
         <Publicize Include="VRage.EOS"/>
         <Publicize Include="VRage.Network"/>
         <Publicize Include="VRage.Platform.Windows"/>
+        <Publicize Include="VRage.Render"/>
         <Publicize Include="VRage.Render11"/>
         <Publicize Include="VRage.Scripting"/>
         <Publicize Include="VRage.Steam"/>

@@ -40,22 +40,13 @@ using Sandbox.Graphics.GUI;
 
 namespace ClientPlugin.Patches.SystemAbstraction;
 
-[HarmonyPatch]
+[HarmonyPatch(typeof(MyGuiControlTextbox.MyGuiControlTextboxSelection), nameof(MyGuiControlTextbox.MyGuiControlTextboxSelection.PasteText))]
 [HarmonyPatchCategory("Finish")]
 static class MyGuiControlTextboxPasteTextPatch
 {
-    private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-    static MethodBase TargetMethod()
-    {
-        var selectionType = typeof(MyGuiControlTextbox).GetNestedType("MyGuiControlTextboxSelection", Flags);
-        return selectionType?.GetMethod("PasteText", Flags);
-    }
-
-    static bool Prefix(object __instance, MyGuiControlTextbox sender)
+    static bool Prefix(MyGuiControlTextbox.MyGuiControlTextboxSelection __instance, MyGuiControlTextbox sender)
     {
         var selection = __instance;
-        var selectionType = __instance.GetType();
         var target = sender;
 
         SdlClipboard.RequestText(raw =>
@@ -67,18 +58,16 @@ static class MyGuiControlTextboxPasteTextPatch
 
             try
             {
-                // EraseText(target)
-                selectionType.GetMethod("EraseText", Flags)?.Invoke(selection, new object[] { target });
+                selection.EraseText(target);
 
-                StringBuilder textBuilder = AccessTools.FieldRefAccess<MyGuiControlTextbox, StringBuilder>("m_text").Invoke(target);
-                string text = textBuilder.ToString();
+                string text = target.m_text.ToString();
                 int caret = target.CarriagePositionIndex;
                 if (caret < 0) caret = 0;
                 if (caret > text.Length) caret = text.Length;
                 string before = text.Substring(0, caret);
                 string after = text.Substring(caret);
 
-                AccessTools.FieldRefAccess<string>(selectionType, "ClipboardText").Invoke(selection) = clipboardText;
+                selection.ClipboardText = clipboardText;
 
                 string sanitized = clipboardText.Replace("\n", "");
                 string toInsert;
@@ -95,8 +84,7 @@ static class MyGuiControlTextboxPasteTextPatch
                 target.SetText(new StringBuilder(before).Append(toInsert).Append(after));
                 target.CarriagePositionIndex = before.Length + toInsert.Length;
 
-                // Reset(target)
-                selectionType.GetMethod("Reset", Flags)?.Invoke(selection, new object[] { target });
+                selection.Reset(target);
             }
             catch (Exception)
             {
@@ -122,22 +110,13 @@ static class MyGuiControlTextboxPasteTextPatch
     }
 }
 
-[HarmonyPatch]
+[HarmonyPatch(typeof(MyGuiControlMultilineText.MyGuiControlMultilineSelection), nameof(MyGuiControlMultilineText.MyGuiControlMultilineSelection.PasteText))]
 [HarmonyPatchCategory("Finish")]
 static class MyGuiControlMultilineTextPasteTextPatch
 {
-    private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-    static MethodBase TargetMethod()
-    {
-        var selectionType = typeof(MyGuiControlMultilineText).GetNestedType("MyGuiControlMultilineSelection", Flags);
-        return selectionType?.GetMethod("PasteText", Flags);
-    }
-
-    static bool Prefix(object __instance, MyGuiControlMultilineText sender)
+    static bool Prefix(MyGuiControlMultilineText.MyGuiControlMultilineSelection __instance, MyGuiControlMultilineText sender)
     {
         var selection = __instance;
-        var selectionType = __instance.GetType();
         var target = sender;
 
         SdlClipboard.RequestText(raw =>
@@ -149,22 +128,21 @@ static class MyGuiControlMultilineTextPasteTextPatch
 
             try
             {
-                selectionType.GetMethod("EraseText", Flags)?.Invoke(selection, new object[] { target });
+                selection.EraseText(target);
 
-                StringBuilder textBuilder = AccessTools.FieldRefAccess<MyGuiControlMultilineText, StringBuilder>("m_text").Invoke(target);
-                string text = textBuilder.ToString();
+                string text = target.m_text.ToString();
                 int caret = target.CarriagePositionIndex;
                 if (caret < 0) caret = 0;
                 if (caret > text.Length) caret = text.Length;
                 string before = text.Substring(0, caret);
                 string after = text.Substring(caret);
 
-                AccessTools.FieldRefAccess<string>(selectionType, "ClipboardText").Invoke(selection) = clipboardText;
+                selection.ClipboardText = clipboardText;
 
                 target.Text = new StringBuilder(before).Append(Regex.Replace(clipboardText, "\r\n", "\n")).Append(after);
                 target.CarriagePositionIndex = before.Length + clipboardText.Length;
 
-                selectionType.GetMethod("Reset", Flags)?.Invoke(selection, new object[] { target });
+                selection.Reset(target);
             }
             catch (Exception)
             {

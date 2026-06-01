@@ -17,8 +17,7 @@ static class GameRenderComponentStartPatch
         Console.WriteLine("[LinuxCompat] MyGameRenderComponent.Start: calling window initializer on main thread");
         IVRageWindow window = windowInitializer();
 
-        AccessTools.PropertySetter(typeof(MyGameRenderComponent), "RenderThread")
-            .Invoke(__instance, [MyRenderThread.Start(timer, () => window, settingsToTry, maxFrameRate)]);
+        __instance.RenderThread = MyRenderThread.Start(timer, () => window, settingsToTry, maxFrameRate);
 
         MyVRage.Platform.Render.OnSuspending += delegate { __instance.RenderThread.Suspend = true; };
         MyVRage.Platform.Render.OnResuming += delegate { __instance.RenderThread.Suspend = false; };

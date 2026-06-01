@@ -24,10 +24,9 @@ namespace ClientPlugin.Patches.WindowManagement;
 // no other application to switch to, and showing the cursor on a transient
 // null-controlled-entity frame would just flash a pointer on screen.
 //
-// Reflection via AccessTools.PropertySetter matches the pattern used by
-// MyGuiScreenLoadingConstructorPatch. Update() runs ~60 Hz, but the setter
-// is invoked only when the state actually flips, so per-frame allocations
-// are bounded to a handful per control transition.
+// Update() runs ~60 Hz, but the setter is invoked only when the state
+// actually flips, so per-frame allocations are bounded to a handful per
+// control transition.
 [HarmonyPatch(typeof(MyGuiScreenGamePlay), nameof(MyGuiScreenGamePlay.Update))]
 [HarmonyPatchCategory("Finish")]
 static class MyGuiScreenGamePlayUpdateCursorPatch
@@ -44,7 +43,6 @@ static class MyGuiScreenGamePlayUpdateCursorPatch
         if (__instance.GetDrawMouseCursor() == wantCursor)
             return;
 
-        AccessTools.PropertySetter(typeof(MyGuiScreenBase), "DrawMouseCursor")
-            ?.Invoke(__instance, [wantCursor]);
+        __instance.DrawMouseCursor = wantCursor;
     }
 }
