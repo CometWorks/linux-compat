@@ -19,6 +19,7 @@ It is added by Magnetar automatically on demand.</Description>
     </SourceDirectories>
 
     <Runtimes>NETCoreApp</Runtimes>
+    <Platforms>Linux</Platforms>
 
     <Hidden>true</Hidden>
     

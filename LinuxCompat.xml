@@ -22,6 +22,7 @@ plugin by the Linux version of Pulsar.</Description>
 	</NuGetReferences>
 
     <Runtimes>NETCoreApp</Runtimes>
+    <Platforms>Linux</Platforms>
 
     <Hidden>true</Hidden>
     
