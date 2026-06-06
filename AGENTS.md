@@ -3,6 +3,7 @@
 Use the following skills for plugin development:
 - `se-dev-plugin`
 - `se-dev-game-code`
+- `se-dev-server-code`
 
 Install the skills listed above from https://github.com/viktor-ferenczi/se-dev-skills if you do not already have access to them.
 
@@ -12,11 +13,17 @@ Default paths on Linux:
 
 Possible location of the source code of the related projects:
 - Pulsar for Linux: `../Pulsar`- Pulsar loader modified to run on Linux.
+- Magnetar for Linux: `../Magnetar`- Magnetar loader modified to run on Linux.
 - DotNetCompat plugin: `../se-dotnet-compat` - .NET 10 compatibility, shared with Pulsar for Windows.
 
 This `se-linux-compat` plugin and the `se-dotnet-compat` are compiled from the local source folder by Pulsar for Linux
 only if they are properly configured both in `sources.xml` and `Current.xml` (profile). If you change the source code
 here, and it has no effect, then check whether Pulsar is using the local "dev folders" or downloading these plugins 
 from GitHub as it does in production.
+
+Only the `ServerPlugin` project is used on the server (Magnetar).
+Only the `ClientPlugin` is used on the game client (Pulsar). 
+The server plugin started as a copy of the client plugin, then stripped down to remove the client-only patches/code.
+If the `server` branch is the current one, then do **not** change the `ClientPlugin` project.
 
 Also, read the project's `README.md` to understand its purpose and context.

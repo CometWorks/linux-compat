@@ -9,19 +9,17 @@
     <Author>Viktor</Author>
 
     <Tooltip>Linux compatibility</Tooltip>
-    <Description>This is applied right after the `se-dotnet-compat` 
-plugin by the Linux version of Pulsar.</Description>
+    <Description>Support plugin for Magnetar to run the server natively on Linux and .NET 10.0.
+
+Do NOT add this plugin manually, it won't work.
+It is added by Magnetar automatically on demand.</Description>
 
     <SourceDirectories>
-        <Directory>ClientPlugin</Directory>
+        <Directory>ServerPlugin</Directory>
     </SourceDirectories>
 
-	<NuGetReferences>
-		<PackageReference Include="FFmpeg.AutoGen" Version="8.1.0" />
-        <PackageReference Include="Silk.NET.OpenAL" Version="2.23.0" />
-	</NuGetReferences>
-
     <Runtimes>NETCoreApp</Runtimes>
+    <Platforms>Linux</Platforms>
 
     <Hidden>true</Hidden>
     
