@@ -361,12 +361,5 @@ MigrationBackup/
 # Core dumps
 core.*
 
-# CMake build files
-NativeWrappers/build/**
-NativeWrappers/CMakeFiles/**
-NativeWrappers/cmake-build-debug/**
-NativeWrappers/cmake_install.cmake
-NativeWrappers/CMakeCache.txt
-
 # IL code (recorded by debug builds from local dev folder)
 *.il
