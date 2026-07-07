@@ -121,6 +121,26 @@ static class SpaceEngineersGameInitializeRenderPatch
     }
 }
 
+[HarmonyPatch]
+[HarmonyPatchCategory("Finish")]
+static class HeadlessGravityIndicatorDrawPatch
+{
+    static bool Prepare()
+    {
+        return TargetMethod() != null;
+    }
+
+    static MethodBase TargetMethod()
+    {
+        return AccessTools.Method("Sandbox.Game.Screens.Helpers.MyHudControlGravityIndicator:Draw");
+    }
+
+    static bool Prefix()
+    {
+        return !CommandLineFlags.Headless;
+    }
+}
+
 sealed class HeadlessWindow : IVRageWindow
 {
     private readonly Vector2I _size;
