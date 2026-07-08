@@ -1,3 +1,4 @@
+using ClientPlugin.Compatibility;
 using HarmonyLib;
 using Sandbox;
 using Sandbox.AppCode;
@@ -21,18 +22,25 @@ static class MySandboxGameSetMouseVisiblePatch
     static void Postfix(MySandboxGame __instance, bool visible, bool __state)
     {
         // __state captured in prefix: whether we should center the cursor
-        if (!__state || MyExternalAppBase.IsEditorActive)
+        if (!RenderingConfig.AllowRendering || !__state || MyExternalAppBase.IsEditorActive)
             return;
 
         var areaSize = MyInput.Static.GetMouseAreaSize();
         MyInput.Static.SetMousePosition((int)(areaSize.X / 2f), (int)(areaSize.Y / 2f));
     }
 
-    static void Prefix(MySandboxGame __instance, bool visible, out bool __state)
+    static bool Prefix(MySandboxGame __instance, bool visible, out bool __state)
     {
+        if (!RenderingConfig.AllowRendering)
+        {
+            __state = false;
+            return false;
+        }
+
         __state = visible
             && !__instance.IsCursorVisible
             && MySession.Static?.ControlledEntity != null
             && !MyExternalAppBase.IsEditorActive;
+        return true;
     }
 }
