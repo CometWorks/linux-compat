@@ -35,7 +35,7 @@ public class Plugin : IPlugin
         // clipboard. Starting here ensures the thread is ready by the time
         // MyCommonProgramStartup.InitSplashScreen fires (which our
         // ShowSplashScreenPatch dispatches onto the render thread).
-        if (!CommandLineFlags.Headless)
+        if (RenderingConfig.AllowRendering)
             SdlRenderThread.Start();
 
         // Plug our Path-substitution pass into the DotNetCompat compiler
@@ -51,7 +51,7 @@ public class Plugin : IPlugin
 
     public void Dispose()
     {
-        if (!CommandLineFlags.Headless)
+        if (RenderingConfig.AllowRendering)
             SdlRenderThread.Stop();
     }
 

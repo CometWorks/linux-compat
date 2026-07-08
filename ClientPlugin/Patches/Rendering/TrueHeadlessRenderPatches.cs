@@ -30,10 +30,10 @@ static class DxvkNativeResolverInitializePatch
 
     static bool Prefix()
     {
-        if (!CommandLineFlags.Headless)
+        if (RenderingConfig.AllowRendering)
             return true;
 
-        Console.WriteLine("[LinuxCompat] --headless set; skipping DXVK native resolver initialization");
+        Console.WriteLine("[LinuxCompat] rendering disabled (PULSAR_NO_RENDER); skipping DXVK native resolver initialization");
         return false;
     }
 }
@@ -74,10 +74,10 @@ static class MyProgramInitializeRenderPatch
 
     static bool Prefix()
     {
-        if (!CommandLineFlags.Headless)
+        if (RenderingConfig.AllowRendering)
             return true;
 
-        Console.WriteLine("[LinuxCompat] --headless set; using MyNullRender");
+        Console.WriteLine("[LinuxCompat] rendering disabled (PULSAR_NO_RENDER); using MyNullRender");
         MyFakes.USE_NULL_AUDIO_DRIVER = true;
         MyFakes.USE_NULL_INPUT_DRIVER = true;
         InstallHeadlessWindow(null);
@@ -112,10 +112,10 @@ static class SpaceEngineersGameInitializeRenderPatch
 {
     static bool Prefix(SpaceEngineersGame __instance)
     {
-        if (!CommandLineFlags.Headless)
+        if (RenderingConfig.AllowRendering)
             return true;
 
-        Console.WriteLine("[LinuxCompat] --headless set; skipping game render component initialization");
+        Console.WriteLine("[LinuxCompat] rendering disabled (PULSAR_NO_RENDER); skipping game render component initialization");
         MyProgramInitializeRenderPatch.InstallHeadlessWindow(__instance);
         return false;
     }
@@ -137,7 +137,7 @@ static class HeadlessGravityIndicatorDrawPatch
 
     static bool Prefix()
     {
-        return !CommandLineFlags.Headless;
+        return RenderingConfig.AllowRendering;
     }
 }
 

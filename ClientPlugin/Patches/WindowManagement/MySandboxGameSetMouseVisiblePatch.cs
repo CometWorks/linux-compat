@@ -22,7 +22,7 @@ static class MySandboxGameSetMouseVisiblePatch
     static void Postfix(MySandboxGame __instance, bool visible, bool __state)
     {
         // __state captured in prefix: whether we should center the cursor
-        if (CommandLineFlags.Headless || !__state || MyExternalAppBase.IsEditorActive)
+        if (!RenderingConfig.AllowRendering || !__state || MyExternalAppBase.IsEditorActive)
             return;
 
         var areaSize = MyInput.Static.GetMouseAreaSize();
@@ -31,7 +31,7 @@ static class MySandboxGameSetMouseVisiblePatch
 
     static bool Prefix(MySandboxGame __instance, bool visible, out bool __state)
     {
-        if (CommandLineFlags.Headless)
+        if (!RenderingConfig.AllowRendering)
         {
             __state = false;
             return false;

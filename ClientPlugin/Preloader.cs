@@ -855,7 +855,7 @@ public static class Preloader
         // thread here in Preloader.Finish (which runs prior to MyProgram.Main)
         // is the only place early enough. Plugin.Init's call to Start() is
         // kept as a no-op safety net (Start is idempotent).
-        if (!ClientPlugin.Compatibility.CommandLineFlags.Headless)
+        if (ClientPlugin.Compatibility.RenderingConfig.AllowRendering)
             ClientPlugin.Compatibility.SdlRenderThread.Start();
 
         // Override game DLLs with the versions added as NuGet dependency by this plugin

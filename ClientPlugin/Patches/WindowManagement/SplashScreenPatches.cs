@@ -32,7 +32,7 @@ static class ShowSplashScreenPatch
 {
     static bool Prefix(string image, Vector2 scale)
     {
-        if (CommandLineFlags.Headless)
+        if (!RenderingConfig.AllowRendering)
             return false;
 
         string gameIcon = MyPerGameSettings.GameIcon;
@@ -55,7 +55,7 @@ static class HideSplashScreenPatch
 {
     static bool Prefix()
     {
-        if (CommandLineFlags.Headless)
+        if (!RenderingConfig.AllowRendering)
             return false;
 
         Console.WriteLine("[LinuxCompat] HideSplashScreen prefix");
