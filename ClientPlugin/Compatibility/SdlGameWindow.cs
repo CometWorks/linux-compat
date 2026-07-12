@@ -766,11 +766,11 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         };
     }
 
-    List<string> IVRageInput2.EnumerateJoystickNames() => new();
-    string IVRageInput2.InitializeJoystickIfPossible(string joystickInstanceName) => null;
-    bool IVRageInput2.IsJoystickAxisSupported(MyJoystickAxesEnum axis) => false;
-    bool IVRageInput2.IsJoystickConnected() => false;
-    void IVRageInput2.GetJoystickState(ref MyJoystickState state) { }
+    List<string> IVRageInput2.EnumerateJoystickNames() => SdlJoystick.EnumerateJoystickNames();
+    string IVRageInput2.InitializeJoystickIfPossible(string joystickInstanceName) => SdlJoystick.InitializeJoystickIfPossible(joystickInstanceName);
+    bool IVRageInput2.IsJoystickAxisSupported(MyJoystickAxesEnum axis) => SdlJoystick.IsJoystickAxisSupported(axis);
+    bool IVRageInput2.IsJoystickConnected() => SdlJoystick.IsJoystickConnected();
+    void IVRageInput2.GetJoystickState(ref MyJoystickState state) => SdlJoystick.GetJoystickState(ref state);
     void IVRageInput2.ShowVirtualKeyboardIfNeeded(Action<string> onSuccess, Action onCancel, string defaultText, string title, int maxLength) { }
     unsafe void IVRageInput2.GetAsyncKeyStates(byte* data) => CopyAsyncKeyStates(data);
     void IDisposable.Dispose() { }

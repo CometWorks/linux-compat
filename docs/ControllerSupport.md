@@ -3,6 +3,11 @@
 Plan for adding analog controller (gamepad / joystick / HOTAS) support to Space Engineers
 running natively on Linux via Pulsar for Linux, as part of the LinuxCompat plugin.
 
+> **Status: implemented and passing.** `ClientPlugin/Compatibility/SdlJoystick.cs` +
+> small hooks in `SdlRenderThread`/`SdlGameWindow`; verified end-to-end by
+> `tests/controller_test.py` (virtual uinput gamepad → SDL3 → game → character
+> moves/looks/menu). Deviations from the original plan are marked *(implemented)* below.
+
 ## Goal
 
 A player plugs in an Xbox-style gamepad or a joystick/HOTAS and the game's **built-in**
@@ -106,7 +111,13 @@ a lock; the game thread's `IVRageInput2` methods only read the snapshot, except
 the existing `SdlRenderThread.Invoke`. Device add/remove arrives as
 `SDL_EVENT_JOYSTICK_ADDED/REMOVED` in the existing event handler.
 
-**Device model.** One "active" device at a time (matches `MyDirectInput`). Two paths:
+**Device model.** One "active" device at a time (matches `MyDirectInput`), with one
+deliberate deviation *(implemented)*: when no device name is configured
+(`joystickInstanceName` unset), the backend opens the **first available device**
+instead of none. On Windows the player must pick the controller in
+Options → Controller once; on Linux we give plug-and-play behavior. The opened name
+is returned to `MyVRageInput`, which persists it in the config, so an explicit
+selection still wins. Two read paths:
 
 1. **Gamepad path** — `SDL_IsGamepad(id)` true (Xbox/PS/etc. with a known mapping).
    Read via the SDL_Gamepad API and emit the same layout XInput-over-DirectInput
@@ -134,9 +145,12 @@ fallback and return-value semantics copied from `MyDirectInput.InitializeJoystic
 
 ### Patch changes
 
-`MyVRageInputLoadContentPatch`: after installing the keyboard state, reflectively call
-the private `MyVRageInput.InitializeJoystickIfPossible()` so the joystick configured in
-the game config is opened at startup (or the first device by default).
+None were needed *(implemented)*. `MyVRageInput` calls `SearchForJoystickNow()` every
+frame while no joystick is connected (from `UpdateStates` → `ResetJoystickState`), which
+reaches our `InitializeJoystickIfPossible` as soon as the window and `Input2` exist.
+Because of that per-frame call, the backend has a cheap no-dispatch fast path when no
+attached device matches. The existing `MyVRageInputPatch` prefixes (skip when `Input2`
+is null) already cover the early-init window.
 
 ### Rendering-disabled mode
 
@@ -175,30 +189,35 @@ Fallback if the created event node is not readable by the game process (logind
 joystick* (`SDL_AttachVirtualJoystick`) test hook inside SdlJoystick, enabled by an
 environment variable and fed from a small local file/pipe.
 
-### Level 2 — automated in-game test script
+### Level 2 — automated in-game test script *(implemented)*
 
-`tests/controller_test.py` (uv script; deps: `evdev`, plus `se_remote.py` from the
-se-remote skill for the Remote API):
+`tests/controller_test.py` (uv script; deps: `evdev`, `httpx`, plus `se_remote.py`
+from the se-remote skill for the Remote API). What it does:
 
-1. Start the virtual gamepad (context manager; also test creating it *after* game
-   start for hotplug coverage).
-2. Start the game via the Headless `Interim` launcher (`StartGame.sh` /
-   `RunGameInWeston.sh`), wait for the Remote API.
-3. **Detection check**: assert the LinuxCompat log (`[LinuxCompat] Joystick added: ...`)
-   and/or `MyInput.Static` sees the device (game log lists joystick names).
-4. Load a test world with a ship, seat the character in the cockpit (Remote API UI
-   automation / an existing test world from `~/dev/se1/TestWorlds`).
-5. **Analog axis check**: push virtual left stick forward (thrust), hold a few
-   seconds; assert grid velocity/position changed via the Remote API; release; verify
-   inertia dampers stop the ship. Repeat for yaw (right stick X) — assert orientation
-   change; and a trigger axis.
-6. **Button check**: press A (e.g. bound action) and verify the mapped effect.
-7. Analog gradation: feed 25% / 50% / 100% stick deflection and assert monotonically
-   increasing acceleration (true analog input, not digitized).
-8. Stop the game (`StopGame.sh`), clean up the virtual device.
+1. Creates the virtual Xbox 360 gamepad (uinput; VID/PID `045e:028e`).
+2. Starts the game via the Headless `Interim` launcher with
+   `-skipintro -nosplash -sources --headless --resolution 640x480` — always headless
+   (offscreen), never fullscreen; the hidden window keeps input focus so the joystick
+   path runs.
+3. **Detection checks**: asserts `[LinuxCompat] SdlJoystick initialised` and
+   `SdlJoystick opened '...'` in the console log. Note: SDL reports the pad under
+   its gamepad-mapping name (`Xbox 360 Controller`), not the uinput device name.
+4. Enters a world (Continue, falling back to QuickStart), waits until the character
+   is stationary (the quick-start drop pod lands), and leaves the seat via
+   `POST /v1/character/use`.
+5. **Analog movement**: left stick forward for 3 s vs a neutral-stick baseline;
+   asserts the character position moved (via `GET /v1/character`).
+6. **Analog look**: right stick for 2 s; asserts the character forward vector turned
+   vs baseline drift.
+7. **Button check**: Start opens an in-game menu screen (`/v1/ui/screens`).
+8. Stops the game and removes the virtual device.
 
-The script must be re-runnable standalone (no model tokens needed) and print a clear
-PASS/FAIL per check.
+Re-runnable standalone (no model tokens needed), prints PASS/FAIL per check, exit
+code 0 only when all pass. Current result: **all checks pass**.
+
+Not yet covered (future work): ship/cockpit analog thrust and 25/50/100% analog
+gradation, trigger axes (`Z_Left`/`Z_Right`), HOTAS-style generic joystick path
+(non-gamepad device), and hotplug after game start.
 
 ## Implementation steps
 
