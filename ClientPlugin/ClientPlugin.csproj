@@ -10,8 +10,8 @@
         <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 
         <!-- Default versions; override in Directory.Build.props  -->
-        <AssemblyVersion>1.0.10.0</AssemblyVersion>
-        <FileVersion>1.0.10.0</FileVersion>
+        <AssemblyVersion>1.0.11.0</AssemblyVersion>
+        <FileVersion>1.0.11.0</FileVersion>
 
         <!-- Default configuration if none supplied -->
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
