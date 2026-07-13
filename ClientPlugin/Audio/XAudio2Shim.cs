@@ -1640,12 +1640,26 @@ public interface AudioProcessor
 // able to load the generic type definition before JIT can bind the
 // callsite, or StartEngine() throws TypeLoadException and the whole
 // audio engine is caught-and-disabled.
-public abstract class AudioProcessorParamNative<T> : AudioProcessor where T : struct
+//
+// Must inherit from the real SharpDX.CppObject (SharpDX.dll is NOT
+// assembly-redirected, so CppObject : DisposeBase here is the same type
+// the game IL binds against). The real hierarchy is
+// AudioProcessorParamNative<T> : AudioProcessorNative : ComObject :
+// CppObject : DisposeBase, and stock VRage.Audio IL disposes effects via
+// `callvirt SharpDX.DisposeBase::Dispose()` (MyCueBank.Dispose on the
+// Reverb, compiled against the declaring type). DisposeBase.Dispose()
+// virtually dispatches `Dispose(bool)` through vtable slot 5 — when this
+// stub derived from System.Object that slot did not exist and the
+// dispatch jumped into type metadata: a deterministic SIGSEGV at
+// RIP 0x2281 on world load (MyDefinitionManager.LoadSounds →
+// MyXAudio2.ReloadData → MyCueBank.Dispose).
+public abstract unsafe class AudioProcessorParamNative<T> : global::SharpDX.CppObject, AudioProcessor where T : struct
 {
 	private T m_parameter;
 
 	protected AudioProcessorParamNative(global::SharpDX.XAudio2.XAudio2 _)
 	{
+		_nativePointer = (void*)1;
 	}
 
 	public T Parameter
@@ -1653,18 +1667,33 @@ public abstract class AudioProcessorParamNative<T> : AudioProcessor where T : st
 		get { return m_parameter; }
 		set { m_parameter = value; }
 	}
+
+	protected override void Dispose(bool disposing)
+	{
+		_nativePointer = null;
+	}
 }
 }
 
 namespace SharpDX.XAudio2.Fx
 {
-public sealed class Reverb : global::SharpDX.XAPO.AudioProcessor, IDisposable
+// Closes the generic base like the real SharpDX.XAudio2.Fx.ReverbParameters
+// does. Stock VRage.Audio never touches its fields (SetReverbParameters is
+// an empty stub in this game version), so no members are required.
+public struct ReverbParameters
 {
-	public Reverb(global::SharpDX.XAudio2.XAudio2 _)
-	{
-	}
+}
 
-	public void Dispose()
+// Must mirror the real hierarchy (Reverb : AudioProcessorParamNative<
+// ReverbParameters>, rooted in the real SharpDX.DisposeBase — see the
+// comment on AudioProcessorParamNative<T>). MyCueBank stores this instance
+// and MyCueBank.Dispose calls `callvirt SharpDX.DisposeBase::Dispose()` on
+// it during MyXAudio2.ReloadData; a System.Object-based stub crashed there
+// with SIGSEGV at RIP 0x2281 (missing Dispose(bool) vtable slot).
+public sealed class Reverb : global::SharpDX.XAPO.AudioProcessorParamNative<ReverbParameters>
+{
+	public Reverb(global::SharpDX.XAudio2.XAudio2 engine)
+		: base(engine)
 	{
 	}
 }
