@@ -245,6 +245,7 @@ internal static class SdlRenderThread
         else
         {
             Console.WriteLine("[LinuxCompat] SdlRenderThread initialised SDL3 (video)");
+            SdlJoystick.Initialize();
         }
 
         s_running = true;
@@ -258,6 +259,9 @@ internal static class SdlRenderThread
             {
                 while (SDL_PollEvent(out var ev))
                 {
+                    try { SdlJoystick.HandleEvent(ev.Type); }
+                    catch (Exception ex) { LogException("joystick event", ex); }
+
                     var handler = EventHandler;
                     if (handler != null)
                     {
@@ -268,6 +272,9 @@ internal static class SdlRenderThread
 
                 try { MouseSnapshotCallback?.Invoke(); }
                 catch (Exception ex) { LogException("mouse snapshot", ex); }
+
+                try { SdlJoystick.UpdateSnapshot(); }
+                catch (Exception ex) { LogException("joystick snapshot", ex); }
 
                 try { SdlClipboard.PumpRenderThread(); }
                 catch (Exception ex) { LogException("clipboard pump", ex); }
