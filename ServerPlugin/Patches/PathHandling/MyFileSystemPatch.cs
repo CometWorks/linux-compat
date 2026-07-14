@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using HarmonyLib;
 using Sandbox.Engine.Voxels;
 using VRage.FileSystem;
@@ -152,6 +154,20 @@ static class MyFileSystemDirectoryExistsPatch
 // without Untranslate, Directory.EnumerateFiles sees a drive-prefixed
 // string that Path.IsPathRooted false-negatives on Linux, and the
 // enumeration silently returns zero entries.
+//
+// Enumeration order (Postfix): the stock providers return whatever order
+// the OS yields. On Windows NTFS that is per-directory lexicographic
+// (case-insensitive); on Linux ext4/btrfs `readdir` order is undefined.
+// Several consumers are order-sensitive -- MyScriptManager batches .cs
+// files into per-subdirectory assemblies, and MyTexts (*.resx) /
+// MyLocalization (*.sbl) let a later file override an earlier one for the
+// same string id. Unsorted Linux order therefore changes which mod
+// scripts group together and which translation wins, diverging from the
+// Windows-tested behaviour. We materialize and sort __result by full path
+// with OrdinalIgnoreCase, which mirrors Windows' case-insensitive index
+// and matches MyDefinitionManager's own .sbc path sort. Sorting globally
+// by full path is deterministic and also fixes the nested-subdirectory
+// grouping case better than Windows' per-directory + breadth-first walk.
 [HarmonyPatch(typeof(MyFileSystem), nameof(MyFileSystem.GetFiles), typeof(string))]
 [HarmonyPatchCategory("Finish")]
 static class MyFileSystemGetFilesPatch
@@ -167,6 +183,8 @@ static class MyFileSystemGetFilesPatch
         if (Path.IsPathRooted(path))
             path = PathCache.ResolveAbsolute(path);
     }
+
+    static void Postfix(ref IEnumerable<string> __result) => GetFilesSort.Apply(ref __result);
 }
 
 [HarmonyPatch(typeof(MyFileSystem), nameof(MyFileSystem.GetFiles), typeof(string), typeof(string))]
@@ -184,6 +202,8 @@ static class MyFileSystemGetFilesFilterPatch
         if (Path.IsPathRooted(path))
             path = PathCache.ResolveAbsolute(path);
     }
+
+    static void Postfix(ref IEnumerable<string> __result) => GetFilesSort.Apply(ref __result);
 }
 
 [HarmonyPatch(typeof(MyFileSystem), nameof(MyFileSystem.GetFiles), typeof(string), typeof(string), typeof(MySearchOption))]
@@ -200,6 +220,25 @@ static class MyFileSystemGetFilesSearchOptionPatch
 
         if (Path.IsPathRooted(path))
             path = PathCache.ResolveAbsolute(path);
+    }
+
+    static void Postfix(ref IEnumerable<string> __result) => GetFilesSort.Apply(ref __result);
+}
+
+// Shared full-path sort applied to every MyFileSystem.GetFiles result so
+// enumeration order is deterministic and Windows-like across platforms.
+static class GetFilesSort
+{
+    public static void Apply(ref IEnumerable<string> result)
+    {
+        if (result == null)
+            return;
+
+        // Materialize once: providers may hand back a lazy IEnumerable, and
+        // sorting (and any downstream re-enumeration) must not re-run it.
+        var sorted = result.ToList();
+        sorted.Sort(StringComparer.OrdinalIgnoreCase);
+        result = sorted;
     }
 }
 
