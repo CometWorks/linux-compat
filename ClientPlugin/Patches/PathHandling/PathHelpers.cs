@@ -359,6 +359,20 @@ public static class PathCache
         if (string.IsNullOrEmpty(relativePath))
             return relativePath;
 
+        // A mod that builds an absolute asset path off ModContext.ModPath
+        // (e.g. Light Block Improvements assigning
+        // `def.Model = Path.Combine(ModContext.ModPath, "Models\\Foo.mwm")`)
+        // hands us a Windows-shape, drive-prefixed string
+        // ("C:/users/steamuser/.../Models/Foo.mwm"). Path.IsPathRooted on
+        // Linux only treats a leading '/' as rooted, so such a path would
+        // false-negative the check below, get joined onto rootPath (Content/),
+        // and fail to load — the block then renders as the missing-mesh
+        // placeholder. Untranslate rewrites the drive prefix back to the
+        // native path (making it rooted); it is a no-op for non-drive-prefixed
+        // input, so relative/native callers are unaffected. Mirrors the same
+        // pass already done in ResolveAbsolute.
+        relativePath = PathTranslation.Untranslate(relativePath);
+
         if (Path.IsPathRooted(relativePath))
             return ResolveAbsolute(relativePath);
 
