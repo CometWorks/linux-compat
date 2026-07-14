@@ -55,7 +55,7 @@ SDL3 / evdev (Linux)                              ← missing piece (this plan)
 | Method | Windows behavior (`MyDirectInput`) to replicate |
 |---|---|
 | `List<string> EnumerateJoystickNames()` | Names of attached game controllers |
-| `string InitializeJoystickIfPossible(string name)` | Opens first device whose name *contains* `name`; `null` opens the first device; returns actual name or `null`; retries with `null` if the requested name is not found |
+| `string InitializeJoystickIfPossible(string name)` | Opens first device whose name *contains* `name`; `null` (the "Disabled" selection) opens **no** device; returns actual name or `null` |
 | `bool IsJoystickAxisSupported(MyJoystickAxesEnum)` | Per-axis capability flags of the opened device |
 | `bool IsJoystickConnected()` | Opened device still attached |
 | `void GetJoystickState(ref MyJoystickState)` | Fills the state struct (see encoding below) |
@@ -111,13 +111,14 @@ a lock; the game thread's `IVRageInput2` methods only read the snapshot, except
 the existing `SdlRenderThread.Invoke`. Device add/remove arrives as
 `SDL_EVENT_JOYSTICK_ADDED/REMOVED` in the existing event handler.
 
-**Device model.** One "active" device at a time (matches `MyDirectInput`), with one
-deliberate deviation *(implemented)*: when no device name is configured
-(`joystickInstanceName` unset), the backend opens the **first available device**
-instead of none. On Windows the player must pick the controller in
-Options → Controller once; on Linux we give plug-and-play behavior. The opened name
-is returned to `MyVRageInput`, which persists it in the config, so an explicit
-selection still wins. Two read paths:
+**Device model.** One "active" device at a time, matching `MyDirectInput` exactly:
+the backend opens **only** the device selected in Options → Controller (first
+attached device whose name *contains* the configured `joystickInstanceName`), and a
+null name — the "Disabled" entry in that combobox — opens **no** device. There is no
+plug-and-play "open the first available device" behavior: an earlier version did that
+on a null name, which made "Disabled" impossible to keep (the device reconnected on
+every frame) and activated controllers the player never selected (e.g. a HOTAS left
+plugged in). Two read paths:
 
 1. **Gamepad path** — `SDL_IsGamepad(id)` true (Xbox/PS/etc. with a known mapping).
    Read via the SDL_Gamepad API and emit the same layout XInput-over-DirectInput
@@ -151,6 +152,19 @@ reaches our `InitializeJoystickIfPossible` as soon as the window and `Input2` ex
 Because of that per-frame call, the backend has a cheap no-dispatch fast path when no
 attached device matches. The existing `MyVRageInputPatch` prefixes (skip when `Input2`
 is null) already cover the early-init window.
+
+### Hotplug → device-change notification *(implemented)*
+
+The list shown in Options → Controller is the game's cached `m_joysticks`, refreshed
+only at startup (`MyVRageInput` LoadContent → `InitializeJoystickIfPossible`) and when a
+selection is applied (`UpdateJoystickChanged`). On Windows there is a third refresh:
+`MyGameForm` turns the `WM_DEVICECHANGE` window message into
+`MyInput.Static.DeviceChangeCallback()`. Linux has no such message pump, so a controller
+plugged in after start would not appear in the list (nor auto-open if it is the selected
+one) until a restart. `SdlJoystick.HandleEvent` bridges this: on
+`SDL_EVENT_JOYSTICK_ADDED/REMOVED` it posts `DeviceChangeCallback()` to the main thread
+(via `MainThreadDispatcher`, since that method mutates game-thread input state). Result:
+the options list and the active device track hotplug live, like Windows.
 
 ### Rendering-disabled mode
 
@@ -192,32 +206,33 @@ environment variable and fed from a small local file/pipe.
 ### Level 2 — automated in-game test script *(implemented)*
 
 `tests/controller_test.py` (uv script; deps: `evdev`, `httpx`, plus `se_remote.py`
-from the se-remote skill for the Remote API). What it does:
+from the se-remote skill for the Remote API). It plugs in **two** virtual pads — the
+active Xbox 360 pad (uinput; VID/PID `045e:028e`, which SDL maps to the gamepad name
+`Xbox 360 Controller`) and a differently-named decoy pad — and runs two phases, each a
+full Headless launch (`-skipintro -nosplash -sources --headless --resolution 640x480`,
+always offscreen, never fullscreen). It sets the Options → Controller selection by
+editing `joystickInstanceName` in `SpaceEngineers.cfg` with a **byte-preserving** text
+edit (an ElementTree rewrite drops the BOM and makes the game regenerate defaults,
+which also resets the GDPR consent), and restores the original selection afterwards.
 
-1. Creates the virtual Xbox 360 gamepad (uinput; VID/PID `045e:028e`).
-2. Starts the game via the Headless `Interim` launcher with
-   `-skipintro -nosplash -sources --headless --resolution 640x480` — always headless
-   (offscreen), never fullscreen; the hidden window keeps input focus so the joystick
-   path runs.
-3. **Detection checks**: asserts `[LinuxCompat] SdlJoystick initialised` and
-   `SdlJoystick opened '...'` in the console log. Note: SDL reports the pad under
-   its gamepad-mapping name (`Xbox 360 Controller`), not the uinput device name.
-4. Enters a world (Continue, falling back to QuickStart), waits until the character
-   is stationary (the quick-start drop pod lands), and leaves the seat via
-   `POST /v1/character/use`.
-5. **Analog movement**: left stick forward for 3 s vs a neutral-stick baseline;
-   asserts the character position moved (via `GET /v1/character`).
-6. **Analog look**: right stick for 2 s; asserts the character forward vector turned
-   vs baseline drift.
-7. **Button check**: Start opens an in-game menu screen (`/v1/ui/screens`).
-8. Stops the game and removes the virtual device.
+- **Phase DISABLED** — selection null; asserts the plugin opens **no** device (no
+  `SdlJoystick opened` line), then enters a world and asserts that pushing the left
+  stick moves the character **0 m** (no controller input accepted).
+- **Phase SELECTED** — selection `Xbox 360 Controller`; asserts the plugin opens
+  **that** device and **not** the decoy, then that the left stick moves the character,
+  the right stick turns the camera, and Start opens an in-game menu.
 
-Re-runnable standalone (no model tokens needed), prints PASS/FAIL per check, exit
-code 0 only when all pass. Current result: **all checks pass**.
+Detection is read from the console log (`SdlJoystick initialised`, `SdlJoystick
+devices: '...'`, `SdlJoystick opened '...'`); gameplay effects from the Remote API
+(`GET /v1/character`, `/v1/ui/screens`). Re-runnable standalone
+(`tests/controller_test.py [--mode both|disabled|selected]`), prints PASS/FAIL per
+check, exit code 0 only when all pass. Current result: **all checks pass**.
 
-Not yet covered (future work): ship/cockpit analog thrust and 25/50/100% analog
-gradation, trigger axes (`Z_Left`/`Z_Right`), HOTAS-style generic joystick path
-(non-gamepad device), and hotplug after game start.
+Hotplug after game start is covered by a separate manual check (start with the selected
+pad absent → the combobox shows Disabled; hot-plug it → the list refreshes and the pad
+is auto-selected and opened). Not yet covered (future work): ship/cockpit analog thrust
+and 25/50/100% analog gradation, trigger axes (`Z_Left`/`Z_Right`), and the HOTAS-style
+generic joystick path (non-gamepad device).
 
 ## Implementation steps
 
