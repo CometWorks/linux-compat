@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using VRage.Input;
 
@@ -141,6 +142,17 @@ internal static class SdlJoystick
             Console.WriteLine(eventType == SDL_EVENT_JOYSTICK_ADDED
                 ? "[LinuxCompat] SdlJoystick device added"
                 : "[LinuxCompat] SdlJoystick device removed");
+
+            // Tell the game a device changed so the Options -> Controller list
+            // refreshes live and a just-plugged-in selected device gets opened
+            // without a restart. On Windows MyGameForm drives this from the
+            // WM_DEVICECHANGE window message; SDL has no such pump on Linux, so
+            // bridge the SDL hotplug event to the same MyVRageInput callback.
+            // DeviceChangeCallback mutates game-thread input state, so it must
+            // run on the main thread — hop off the SDL thread via the queue
+            // that Plugin.Update drains. MyInput.Static is null until input is
+            // initialized (early startup hotplug), hence the null-guard.
+            MainThreadDispatcher.Post(() => MyInput.Static?.DeviceChangeCallback());
         }
     }
 
@@ -284,23 +296,43 @@ internal static class SdlJoystick
             SDL_free(ids);
         }
 
+        bool changed;
         lock (Lock)
+        {
+            changed = !names.SequenceEqual(s_deviceNames);
             s_deviceNames = names;
+        }
+
+        // Log the attached device names whenever the set changes. This is the
+        // string the player must match in Options -> Controller (substring),
+        // so surfacing it makes "why isn't my controller selected" debuggable.
+        if (changed)
+            Console.WriteLine(names.Count == 0
+                ? "[LinuxCompat] SdlJoystick devices: (none)"
+                : $"[LinuxCompat] SdlJoystick devices: {string.Join(", ", names.Select(n => $"'{n}'"))}");
     }
 
     /// <summary>
     /// Open the first attached device whose name contains
-    /// <paramref name="joystickInstanceName"/>. Unlike
-    /// MyDirectInput.InitializeJoystickIfPossible, a null name (nothing
-    /// configured yet) opens the first available device instead of none:
-    /// on Windows a controller must be picked in Options -> Controller
-    /// once; on Linux we give plug-and-play behavior instead. The opened
-    /// name is returned to MyVRageInput, which persists it in the config,
-    /// so an explicit selection in the options still wins. SDL thread only.
+    /// <paramref name="joystickInstanceName"/>, mirroring
+    /// MyDirectInput.InitializeJoystickIfPossible exactly: a null name means
+    /// "Disabled" (Options -> Controller sets the instance name to null when
+    /// the user picks the "Disabled" entry, see MyGuiScreenOptionsController)
+    /// and opens NO device. A non-null name opens only the matching device,
+    /// so an unselected controller — e.g. one the player never chose but
+    /// leaves plugged in — never becomes active on its own. SDL thread only.
     /// </summary>
     private static unsafe string OpenDevice(string joystickInstanceName)
     {
         CloseDevice();
+
+        // Disabled / nothing selected: open no device, just like Windows.
+        // Opening the first available device here was the cause of the
+        // "cannot disable the controller" and "unselected controllers
+        // activate" bugs.
+        if (joystickInstanceName == null)
+            return null;
+
         RefreshDeviceNames();
 
         string openedName = null;
@@ -317,7 +349,7 @@ internal static class SdlJoystick
                 string name = namePtr != IntPtr.Zero ? Marshal.PtrToStringUTF8(namePtr) : null;
                 if (string.IsNullOrEmpty(name))
                     continue;
-                if (joystickInstanceName != null && !name.Contains(joystickInstanceName))
+                if (!name.Contains(joystickInstanceName))
                     continue;
 
                 s_joystick = SDL_OpenJoystick(id);
@@ -421,16 +453,33 @@ internal static class SdlJoystick
         if (!s_subsystemReady)
             return null;
 
-        // Fast path without dispatching to the SDL thread: MyVRageInput
-        // calls this every frame while disconnected (ResetJoystickState ->
-        // SearchForJoystickNow). Only cross threads when there is either a
-        // device to open or one to close.
+        // Disabled / nothing selected. Mirror MyDirectInput: open no device.
+        // If one is currently open (the user just switched the Options ->
+        // Controller selection to "Disabled"), close it so its input stops
+        // immediately. Never fall back to the first available device.
+        if (joystickInstanceName == null)
+        {
+            lock (Lock)
+            {
+                if (s_openDeviceName == null)
+                    return null;
+            }
+
+            SdlRenderThread.Invoke(CloseDevice);
+            return null;
+        }
+
+        // A specific device is selected. Fast path without dispatching to the
+        // SDL thread: MyVRageInput calls this every frame while disconnected
+        // (ResetJoystickState -> SearchForJoystickNow). Only cross threads
+        // when there is a matching device to open, or a device open under a
+        // different name that must be replaced/closed.
         lock (Lock)
         {
             bool anyMatch = false;
             foreach (var name in s_deviceNames)
             {
-                if (joystickInstanceName == null || name.Contains(joystickInstanceName))
+                if (name.Contains(joystickInstanceName))
                 {
                     anyMatch = true;
                     break;
