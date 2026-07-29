@@ -13,8 +13,25 @@ namespace ServerPlugin.Rewriter;
 /// Registers our <see cref="PathSubstitutionRewriter"/> with the DotNetCompat
 /// plugin's compiler-hook extension point.
 ///
-/// DotNetCompat is always loaded earlier than LinuxCompat (Pulsar loads it
-/// first), and Microsoft.CodeAnalysis is referenced by both plugins, so the
+/// DotNetCompat's *assembly* is guaranteed to be in the AppDomain by the time
+/// this runs, but not because of plugin order: Magnetar's Loader constructor
+/// Assembly.Loads every enabled plugin before it builds the Preloader and runs
+/// PreHooks/Patch/PostHooks (Magnetar Shared/Loader.cs, Legacy/Program.cs
+/// SetupPlugins). Presence is guaranteed outright — se-dotnet-compat is a
+/// force-enabled core plugin (Magnetar Legacy/Program.cs GetCorePlugins), and
+/// the launcher Environment.Exit(1)s if it fails to load, long before we get
+/// here.
+///
+/// DotNetCompat's own <c>Preloader.Finish</c> may or may not have run yet:
+/// this plugin registers from its Finish postHook and Magnetar collects
+/// postHooks in a <c>HashSet&lt;MethodInfo&gt;</c>, whose iteration order is
+/// unspecified. That is harmless — RewriterFactories is a static field
+/// initializer, so reading the field constructs the list, and DotNetCompat's
+/// patched CreateCompilation (also Finish-category) re-reads it on every call,
+/// well after every postHook has run. Do not turn this around: nothing here
+/// may depend on DotNetCompat's preloader having run.
+///
+/// Microsoft.CodeAnalysis is referenced by both plugins, so the
 /// <c>List&lt;Func&lt;SemanticModel, CSharpSyntaxRewriter&gt;&gt;</c> type
 /// inside <c>ServerPlugin.Rewriter.CompilerHookExtensions.RewriterFactories</c>
 /// is the same closed generic in both assemblies and a directly-typed

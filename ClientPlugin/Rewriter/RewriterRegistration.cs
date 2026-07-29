@@ -13,8 +13,23 @@ namespace ClientPlugin.Rewriter;
 /// Registers our <see cref="PathSubstitutionRewriter"/> with the DotNetCompat
 /// plugin's compiler-hook extension point.
 ///
-/// DotNetCompat is always loaded earlier than LinuxCompat (Pulsar loads it
-/// first), and Microsoft.CodeAnalysis is referenced by both plugins, so the
+/// DotNetCompat's *assembly* is guaranteed to be in the AppDomain by the time
+/// this runs, but not because of plugin order: Pulsar's Loader constructor
+/// Assembly.Loads every enabled plugin before it builds the Preloader or runs
+/// any IPlugin.Init (Pulsar Shared/Loader.cs, Legacy/Program.cs). Presence is
+/// guaranteed outright — se-dotnet-compat is a force-enabled core plugin
+/// (Pulsar Legacy/Program.cs GetCorePlugins), and the launcher Environment
+/// .Exit(1)s if it fails to load, long before we get here.
+///
+/// DotNetCompat's *Init* has NOT run yet: PluginLoader.Init iterates the
+/// plugin list in reverse and the core plugins sit at its head, so
+/// LinuxCompat.Init runs first. That is harmless — RewriterFactories is a
+/// static field initializer, so reading the field constructs the list, and
+/// DotNetCompat's patched CreateCompilation re-reads it on every call, well
+/// after both plugins have initialized. Do not turn this around: nothing here
+/// may depend on DotNetCompat having initialized.
+///
+/// Microsoft.CodeAnalysis is referenced by both plugins, so the
 /// <c>List&lt;Func&lt;SemanticModel, CSharpSyntaxRewriter&gt;&gt;</c> type
 /// inside <c>ClientPlugin.Rewriter.CompilerHookExtensions.RewriterFactories</c>
 /// is the same closed generic in both assemblies and a directly-typed
