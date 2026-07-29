@@ -53,18 +53,20 @@ internal static class RewriterRegistration
 
         try
         {
-            // Pulsar names production-built plugin assemblies after the
-            // <AssemblyName> in the csproj (e.g. "DotNetCompat"), but
-            // dev-folder builds get a random suffix (e.g.
-            // "DotNetCompat_oppbym1d.mqw"). Match either by scanning every
-            // loaded assembly for the extension type — that's the only
-            // identity we actually care about.
+            // Pulsar's assembly name for DotNetCompat depends on the install
+            // path: csproj <AssemblyName> ("DotNetCompat") for packaged DLLs,
+            // "DotNetCompat_<random>" for dev-folder builds (FriendlyName
+            // from the plugin data file), and "dotnet_compat_<random>" for
+            // GitHub-sourced installs (MakeSafeString over the repo name,
+            // e.g. CometWorks/dotnet-compat).
             Type extType = null;
             Assembly asm = null;
             foreach (var candidate in AppDomain.CurrentDomain.GetAssemblies())
             {
                 var name = candidate.GetName().Name;
-                if (name != "DotNetCompat" && !name.StartsWith("DotNetCompat_", StringComparison.Ordinal))
+                if (name != "DotNetCompat"
+                    && !name.StartsWith("DotNetCompat_", StringComparison.Ordinal)
+                    && !name.StartsWith("dotnet_compat_", StringComparison.Ordinal))
                     continue;
                 extType = candidate.GetType("ClientPlugin.Rewriter.CompilerHookExtensions", throwOnError: false);
                 if (extType != null)
