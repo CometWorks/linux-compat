@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using Microsoft.CodeAnalysis;
@@ -51,6 +52,11 @@ internal static class RewriterRegistration
         // and would be inlined by the JIT without touching the type).
         _ = WindowsStopwatch.GetTimestamp();
 
+        // Every failure below is fatal. A missing rewriter is not a graceful
+        // degradation: mods compile fine but then see Windows path semantics
+        // applied to native paths, and fail later in ways that are near
+        // impossible to trace back to this registration. Better to refuse to
+        // start than to hand the user a subtly broken game.
         try
         {
             // Pulsar's assembly name for DotNetCompat depends on the install
@@ -58,60 +64,61 @@ internal static class RewriterRegistration
             // "DotNetCompat_<random>" for dev-folder builds (FriendlyName
             // from the plugin data file), and "dotnet_compat_<random>" for
             // GitHub-sourced installs (MakeSafeString over the repo name,
-            // e.g. CometWorks/dotnet-compat).
+            // e.g. CometWorks/dotnet-compat). Matching on the name means
+            // keeping that list in sync with Pulsar forever, so match on the
+            // extension type instead — that's the only identity we actually
+            // care about and it is stable across every install path.
             Type extType = null;
             Assembly asm = null;
             foreach (var candidate in AppDomain.CurrentDomain.GetAssemblies())
             {
-                var name = candidate.GetName().Name;
-                if (name != "DotNetCompat"
-                    && !name.StartsWith("DotNetCompat_", StringComparison.Ordinal)
-                    && !name.StartsWith("dotnet_compat_", StringComparison.Ordinal))
+                // LinuxCompat's own root namespace is also "ClientPlugin", so
+                // exclude ourselves rather than risk matching a same-named
+                // type in this assembly.
+                if (candidate == typeof(RewriterRegistration).Assembly)
                     continue;
-                extType = candidate.GetType("ClientPlugin.Rewriter.CompilerHookExtensions", throwOnError: false);
+                extType = candidate.GetType(ExtensionTypeName, throwOnError: false);
                 if (extType != null)
                 {
                     asm = candidate;
                     break;
                 }
             }
-            if (asm == null)
-            {
-                Console.WriteLine("[LinuxCompat] PathSubstitutionRewriter: DotNetCompat assembly not loaded, skipping registration");
-                return;
-            }
             if (extType == null)
-            {
-                Console.WriteLine("[LinuxCompat] PathSubstitutionRewriter: CompilerHookExtensions type missing from DotNetCompat (incompatible version?)");
-                return;
-            }
+                throw new InvalidOperationException(
+                    $"No loaded assembly exports {ExtensionTypeName}. The DotNetCompat plugin must be " +
+                    "installed and loaded before LinuxCompat (check the Pulsar plugin list and profile order). " +
+                    $"Loaded assemblies: {string.Join(", ", AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetName().Name).OrderBy(n => n, StringComparer.Ordinal))}");
 
             var field = extType.GetField("RewriterFactories");
             if (field == null)
-            {
-                Console.WriteLine("[LinuxCompat] PathSubstitutionRewriter: RewriterFactories field missing on CompilerHookExtensions");
-                return;
-            }
+                throw new InvalidOperationException(
+                    $"RewriterFactories field missing on {ExtensionTypeName} in {asm.GetName().Name} (incompatible DotNetCompat version?)");
 
             // The element type Func<SemanticModel, CSharpSyntaxRewriter> is
             // identical across both assemblies (both reference the same
             // Microsoft.CodeAnalysis instance), so adding through IList works.
             if (field.GetValue(null) is not IList list)
-            {
-                Console.WriteLine("[LinuxCompat] PathSubstitutionRewriter: RewriterFactories is not an IList");
-                return;
-            }
+                throw new InvalidOperationException(
+                    $"{ExtensionTypeName}.RewriterFactories in {asm.GetName().Name} is not an IList " +
+                    $"(got {field.GetValue(null)?.GetType().FullName ?? "null"}; incompatible DotNetCompat version?)");
 
             Func<SemanticModel, CSharpSyntaxRewriter> factory = model => new PathSubstitutionRewriter(model);
             list.Add(factory);
 
-            Console.WriteLine("[LinuxCompat] PathSubstitutionRewriter registered with DotNetCompat compiler hook");
+            Console.WriteLine($"[LinuxCompat] PathSubstitutionRewriter registered with DotNetCompat compiler hook in {asm.GetName().Name}");
         }
         catch (Exception ex)
         {
+            // Log before rethrowing: the host does not reliably surface
+            // plugin-init exceptions, and this message is the only clue the
+            // user gets about why the game refused to start.
             Console.WriteLine($"[LinuxCompat] PathSubstitutionRewriter registration failed: {ex}");
+            throw;
         }
     }
+
+    private const string ExtensionTypeName = "ClientPlugin.Rewriter.CompilerHookExtensions";
 
     private static void PlumbRewriterShimReferences()
     {
@@ -120,10 +127,9 @@ internal static class RewriterRegistration
             var asm = typeof(WindowsPath).Assembly;
             var reference = BuildMetadataReferenceFromLoadedAssembly(asm);
             if (reference == null)
-            {
-                Console.WriteLine("[LinuxCompat] Rewriter shim plumb skipped: cannot extract in-memory metadata image");
-                return;
-            }
+                throw new InvalidOperationException(
+                    $"Cannot extract the in-memory metadata image of {asm.GetName().Name}; " +
+                    "the script compiler would reject every rewritten mod source file.");
 
             // Append directly to MyScriptCompiler.m_metadataReferences
             // (publicized via Krafs.Publicizer). We bypass the public
@@ -150,7 +156,11 @@ internal static class RewriterRegistration
         }
         catch (Exception ex)
         {
+            // Fatal, and logged before rethrow for the same reason as above:
+            // without the shim types on the compiler's reference list and
+            // whitelist, every rewritten mod source file fails to compile.
             Console.WriteLine($"[LinuxCompat] Rewriter shim plumb failed: {ex}");
+            throw;
         }
     }
 
