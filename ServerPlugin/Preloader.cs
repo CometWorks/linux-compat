@@ -492,10 +492,13 @@ public static class Preloader
         // and RewriterRegistration touches MyScriptCompiler.Static, whose
         // static-readonly initializer fires the moment the type is referenced
         // — Harmony just patched methods on it above, so it's loaded.
-        // DotNetCompat is also a Finish-category consumer and its preloader
-        // runs before ours (Pulsar profile order), so its
-        // CompilerHookExtensions extension point is already in the AppDomain
-        // by this point.
+        // DotNetCompat's assembly (carrying the CompilerHookExtensions
+        // extension point) is in the AppDomain regardless of hook order:
+        // Magnetar's Loader constructor Assembly.Loads every enabled plugin
+        // before the Preloader even exists. Note that DotNetCompat is also a
+        // Finish-category consumer and postHooks are iterated out of a
+        // HashSet, so its preloader may run either side of ours — see
+        // RewriterRegistration's class doc for why that does not matter.
         PathTranslation.Init();
         RewriterRegistration.Register();
     }

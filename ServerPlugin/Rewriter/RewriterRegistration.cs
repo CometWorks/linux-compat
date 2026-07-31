@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using Microsoft.CodeAnalysis;
@@ -12,8 +13,25 @@ namespace ServerPlugin.Rewriter;
 /// Registers our <see cref="PathSubstitutionRewriter"/> with the DotNetCompat
 /// plugin's compiler-hook extension point.
 ///
-/// DotNetCompat is always loaded earlier than LinuxCompat (Pulsar loads it
-/// first), and Microsoft.CodeAnalysis is referenced by both plugins, so the
+/// DotNetCompat's *assembly* is guaranteed to be in the AppDomain by the time
+/// this runs, but not because of plugin order: Magnetar's Loader constructor
+/// Assembly.Loads every enabled plugin before it builds the Preloader and runs
+/// PreHooks/Patch/PostHooks (Magnetar Shared/Loader.cs, Legacy/Program.cs
+/// SetupPlugins). Presence is guaranteed outright — se-dotnet-compat is a
+/// force-enabled core plugin (Magnetar Legacy/Program.cs GetCorePlugins), and
+/// the launcher Environment.Exit(1)s if it fails to load, long before we get
+/// here.
+///
+/// DotNetCompat's own <c>Preloader.Finish</c> may or may not have run yet:
+/// this plugin registers from its Finish postHook and Magnetar collects
+/// postHooks in a <c>HashSet&lt;MethodInfo&gt;</c>, whose iteration order is
+/// unspecified. That is harmless — RewriterFactories is a static field
+/// initializer, so reading the field constructs the list, and DotNetCompat's
+/// patched CreateCompilation (also Finish-category) re-reads it on every call,
+/// well after every postHook has run. Do not turn this around: nothing here
+/// may depend on DotNetCompat's preloader having run.
+///
+/// Microsoft.CodeAnalysis is referenced by both plugins, so the
 /// <c>List&lt;Func&lt;SemanticModel, CSharpSyntaxRewriter&gt;&gt;</c> type
 /// inside <c>ServerPlugin.Rewriter.CompilerHookExtensions.RewriterFactories</c>
 /// is the same closed generic in both assemblies and a directly-typed
@@ -58,72 +76,77 @@ internal static class RewriterRegistration
         // and would be inlined by the JIT without touching the type).
         _ = WindowsStopwatch.GetTimestamp();
 
+        // Every failure below is fatal. A missing rewriter is not a graceful
+        // degradation: mods compile fine but then see Windows path semantics
+        // applied to native paths, and fail later in ways that are near
+        // impossible to trace back to this registration. Better to refuse to
+        // start than to hand the user a subtly broken server.
         try
         {
-            // Pulsar names production-built plugin assemblies after the
-            // <AssemblyName> in the csproj (e.g. "DotNetCompat"), but
-            // dev-folder builds get a random suffix (e.g.
-            // "DotNetCompat_oppbym1d.mqw"). Match either by scanning every
-            // loaded assembly for the extension type — that's the only
-            // identity we actually care about.
+            // Pulsar's assembly name for DotNetCompat depends on the install
+            // path: csproj <AssemblyName> ("DotNetCompat") for packaged DLLs,
+            // "DotNetCompat_<random>" for dev-folder builds (FriendlyName
+            // from the plugin data file), and "dotnet_compat_<random>" for
+            // GitHub-sourced installs (MakeSafeString over the repo name,
+            // e.g. CometWorks/dotnet-compat). Matching on the name means
+            // keeping that list in sync with Pulsar forever, so match on the
+            // extension type instead — that's the only identity we actually
+            // care about and it is stable across every install path.
+            //
+            // DotNetCompat-server's RootNamespace is "ServerPlugin" (see
+            // ServerPlugin.csproj in the DotNetCompat repo), the same root
+            // namespace this plugin uses — every Pulsar side-plugin project
+            // of this shape shares it. The type we want is in *DotNetCompat's*
+            // ServerPlugin assembly, so exclude ourselves from the scan.
             Type extType = null;
             Assembly asm = null;
             foreach (var candidate in AppDomain.CurrentDomain.GetAssemblies())
             {
-                var name = candidate.GetName().Name;
-                if (name != "DotNetCompat" && !name.StartsWith("DotNetCompat_", StringComparison.Ordinal))
+                if (candidate == typeof(RewriterRegistration).Assembly)
                     continue;
-                // DotNetCompat-server's RootNamespace is "ServerPlugin" (see
-                // ServerPlugin.csproj in the DotNetCompat repo). The type we
-                // want is in *DotNetCompat's* ServerPlugin assembly, not in
-                // this one — they happen to share the namespace because
-                // every Pulsar side-plugin project of this shape uses the
-                // same root namespace per side. Disambiguation is by
-                // assembly identity (the filter above), not by namespace.
-                extType = candidate.GetType("ServerPlugin.Rewriter.CompilerHookExtensions", throwOnError: false);
+                extType = candidate.GetType(ExtensionTypeName, throwOnError: false);
                 if (extType != null)
                 {
                     asm = candidate;
                     break;
                 }
             }
-            if (asm == null)
-            {
-                Console.WriteLine("[LinuxCompat] PathSubstitutionRewriter: DotNetCompat assembly not loaded, skipping registration");
-                return;
-            }
             if (extType == null)
-            {
-                Console.WriteLine("[LinuxCompat] PathSubstitutionRewriter: CompilerHookExtensions type missing from DotNetCompat (incompatible version?)");
-                return;
-            }
+                throw new InvalidOperationException(
+                    $"No loaded assembly exports {ExtensionTypeName}. The DotNetCompat plugin must be " +
+                    "installed and loaded before LinuxCompat (check the Pulsar plugin list and profile order). " +
+                    $"Loaded assemblies: {string.Join(", ", AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetName().Name).OrderBy(n => n, StringComparer.Ordinal))}");
 
             var field = extType.GetField("RewriterFactories");
             if (field == null)
-            {
-                Console.WriteLine("[LinuxCompat] PathSubstitutionRewriter: RewriterFactories field missing on CompilerHookExtensions");
-                return;
-            }
+                throw new InvalidOperationException(
+                    $"RewriterFactories field missing on {ExtensionTypeName} in {asm.GetName().Name} (incompatible DotNetCompat version?)");
 
             // The element type Func<SemanticModel, CSharpSyntaxRewriter> is
             // identical across both assemblies (both reference the same
             // Microsoft.CodeAnalysis instance), so adding through IList works.
             if (field.GetValue(null) is not IList list)
-            {
-                Console.WriteLine("[LinuxCompat] PathSubstitutionRewriter: RewriterFactories is not an IList");
-                return;
-            }
+                throw new InvalidOperationException(
+                    $"{ExtensionTypeName}.RewriterFactories in {asm.GetName().Name} is not an IList " +
+                    $"(got {field.GetValue(null)?.GetType().FullName ?? "null"}; incompatible DotNetCompat version?)");
 
             Func<SemanticModel, CSharpSyntaxRewriter> factory = model => new PathSubstitutionRewriter(model);
             list.Add(factory);
 
-            Console.WriteLine("[LinuxCompat] PathSubstitutionRewriter registered with DotNetCompat compiler hook");
+            Console.WriteLine($"[LinuxCompat] PathSubstitutionRewriter registered with DotNetCompat compiler hook in {asm.GetName().Name}");
         }
         catch (Exception ex)
         {
+            // Log before rethrowing: the host does not reliably surface
+            // preloader exceptions, and this message is the only clue the
+            // user gets about why the server refused to start.
             Console.WriteLine($"[LinuxCompat] PathSubstitutionRewriter registration failed: {ex}");
+            try { VRage.Utils.MyLog.Default.WriteLineAndConsole($"[LinuxCompat] PathSubstitutionRewriter registration failed: {ex}"); } catch { }
+            throw;
         }
     }
+
+    private const string ExtensionTypeName = "ServerPlugin.Rewriter.CompilerHookExtensions";
 
     private static void PlumbRewriterShimReferences()
     {
@@ -132,10 +155,9 @@ internal static class RewriterRegistration
             var asm = typeof(WindowsPath).Assembly;
             var reference = BuildMetadataReferenceFromLoadedAssembly(asm);
             if (reference == null)
-            {
-                Console.WriteLine("[LinuxCompat] Rewriter shim plumb skipped: cannot extract in-memory metadata image");
-                return;
-            }
+                throw new InvalidOperationException(
+                    $"Cannot extract the in-memory metadata image of {asm.GetName().Name}; " +
+                    "the script compiler would reject every rewritten mod source file.");
 
             // Append directly to MyScriptCompiler.m_metadataReferences
             // (publicized via Krafs.Publicizer). We bypass the public
@@ -162,7 +184,12 @@ internal static class RewriterRegistration
         }
         catch (Exception ex)
         {
+            // Fatal, and logged before rethrow for the same reason as above:
+            // without the shim types on the compiler's reference list and
+            // whitelist, every rewritten mod source file fails to compile.
             Console.WriteLine($"[LinuxCompat] Rewriter shim plumb failed: {ex}");
+            try { VRage.Utils.MyLog.Default.WriteLineAndConsole($"[LinuxCompat] Rewriter shim plumb failed: {ex}"); } catch { }
+            throw;
         }
     }
 
