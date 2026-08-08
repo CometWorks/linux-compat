@@ -14,7 +14,7 @@ Default paths on Linux:
 Possible location of the source code of the related projects:
 - Pulsar for Linux: `../Pulsar`- Pulsar loader modified to run on Linux.
 - Magnetar for Linux: `../Magnetar`- Magnetar loader modified to run on Linux.
-- DotNetCompat plugin: `../se-dotnet-compat` - .NET 10 compatibility, shared with Pulsar for Windows.
+- DotNetCompat plugin: `../dotnet-compat` - .NET 10 compatibility, shared with Pulsar for Windows.
 
 This `se-linux-compat` plugin and the `se-dotnet-compat` are compiled from the local source folder by Pulsar for Linux
 only if they are properly configured both in `sources.xml` and `Current.xml` (profile). If you change the source code
