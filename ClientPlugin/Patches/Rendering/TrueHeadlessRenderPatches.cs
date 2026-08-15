@@ -81,6 +81,17 @@ static class MyProgramInitializeRenderPatch
             "[LinuxCompat] rendering disabled (PULSAR_NO_RENDER); using MyNullRender"
         );
         MyFakes.USE_NULL_AUDIO_DRIVER = true;
+
+        // MySandboxGame.AreClipmapsReady only ever becomes true when the render
+        // thread sends back MyRenderMessageEnum.ClipmapsReady, which MyNullRender
+        // never does. MyGuiScreenLoading.Update waits for it (through
+        // MySandboxGame.IsGameReady too) before closing itself, so loading a world
+        // with voxel maps would hang on the loading screen forever with the session
+        // loaded but not simulating. The game's own flag turns the wait off and
+        // makes the property report ready, which is what the dedicated server
+        // effectively gets from its MyGuiScreenLoading.IsDedicated branch.
+        MyFakes.ENABLE_WAIT_UNTIL_CLIPMAPS_READY = false;
+
         InstallHeadlessWindow(null);
         InstallHeadlessInput();
         _ = new MyEngine();
