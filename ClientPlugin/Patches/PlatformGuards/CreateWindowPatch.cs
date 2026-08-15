@@ -33,6 +33,7 @@ static class CreateWindowPatch
         // rethrows any exception thrown on the render thread.
         var sdlWindow = SdlGameWindow.Create("Space Engineers", initialW, initialH, initialX, initialY);
         SdlInput2Provider.Instance = sdlWindow;
+        SdlInput2Provider.Input2 = sdlWindow;
 
         var windows = MyVRage.Platform.Windows;
         var windowsType = windows.GetType();

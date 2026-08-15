@@ -15,14 +15,21 @@ static class MyVRagePlatformInput2Patch
 {
     static bool Prefix(ref IVRageInput2 __result)
     {
-        __result = SdlInput2Provider.Instance;
+        __result = SdlInput2Provider.Input2;
         return __result == null;
     }
 }
 
 static class SdlInput2Provider
 {
+    // The SDL3 game window, when rendering. Stays null under PULSAR_NO_RENDER,
+    // where InitializeRenderThread (and with it CreateWindowPatch) never runs.
+    // Window-management patches use this and must keep the concrete type.
     public static SdlGameWindow Instance { get; set; }
+
+    // The platform input device behind MyVRage.Platform.Input2: the SDL window
+    // when rendering, the HeadlessWindow no-op stub under PULSAR_NO_RENDER.
+    public static IVRageInput2 Input2 { get; set; }
 }
 
 [HarmonyPatch(typeof(MyVRageInput), nameof(MyVRageInput.LoadContent))]
