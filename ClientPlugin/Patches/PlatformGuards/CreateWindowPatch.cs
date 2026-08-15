@@ -39,6 +39,7 @@ static class CreateWindowPatch
             initialY
         );
         SdlInput2Provider.Instance = sdlWindow;
+        SdlInput2Provider.Input2 = sdlWindow;
 
         var windows = (MyWindowsWindows)MyVRage.Platform.Windows;
         windows.Window = sdlWindow;
