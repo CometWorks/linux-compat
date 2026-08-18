@@ -1,8 +1,11 @@
 <Project>
     <PropertyGroup>
         <!-- Folder containing SpaceEngineers.exe -->
-        <Bin64>/home/viktor/.steam/steam/steamapps/common/SpaceEngineers/Bin64</Bin64>
+        <Bin64></Bin64>
 
+        <!-- Folder containing SpaceEngineersDedicated.exe -->
+        <DS64></DS64>
+        
         <!-- Plugin version -->
         <Version>10.0.0</Version>
         <AssemblyVersion>1.0.17.0</AssemblyVersion>

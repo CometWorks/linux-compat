@@ -2,7 +2,7 @@
 // Define the class only if the project is built by Plugin Loader, because the Krafs.Publicizer
 // provides this already if the project is built directly in an IDE or by running msbuild.
 
-#if !DEV_BUILD
+#if PULSAR
 namespace System.Runtime.CompilerServices
 {
     
@@ -19,5 +19,4 @@ namespace System.Runtime.CompilerServices
     }
     
 }
-
 #endif

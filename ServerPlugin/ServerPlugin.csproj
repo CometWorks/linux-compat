@@ -9,10 +9,6 @@
         <!-- Ensure SDK generates assembly attributes (no need for AssemblyInfo) -->
         <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 
-        <!-- Default versions; override in Directory.Build.props  -->
-        <AssemblyVersion>1.0.9.0</AssemblyVersion>
-        <FileVersion>1.0.9.0</FileVersion>
-
         <!-- Default configuration if none supplied -->
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -20,33 +16,8 @@
         <!-- Keep original behaviour for post/pre build events -->
         <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
 
+        <!-- Required for OpenAL Silk.NET unsafe pointer APIs (Device*, Context*) -->
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
-        <!-- Override Bin64 from Directory.Build.props: link against the
-             dedicated server's DedicatedServer64 install instead of the
-             game client's Bin64. -->
-        <Bin64>/home/viktor/.steam/steam/steamapps/common/SpaceEngineersDedicatedServer/DedicatedServer64</Bin64>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-        <PlatformTarget>x64</PlatformTarget>
-        <DebugSymbols>true</DebugSymbols>
-        <DebugType>full</DebugType>
-        <Optimize>false</Optimize>
-        <OutputPath>bin\Debug\</OutputPath>
-        <DefineConstants>DEBUG;TRACE;DEV_BUILD</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-        <PlatformTarget>x64</PlatformTarget>
-        <DebugType>pdbonly</DebugType>
-        <Optimize>true</Optimize>
-        <OutputPath>bin\Release\</OutputPath>
-        <DefineConstants>TRACE;DEV_BUILD</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -66,81 +37,77 @@
     -->
     <ItemGroup>
         <Reference Include="HavokWrapper">
-            <HintPath>$(Bin64)\HavokWrapper.dll</HintPath>
+            <HintPath>$(DS64)/HavokWrapper.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="System.Collections.Immutable">
-            <HintPath>$(Bin64)\System.Collections.Immutable.dll</HintPath>
+            <HintPath>$(DS64)/System.Collections.Immutable.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Microsoft.CodeAnalysis">
-            <HintPath>$(Bin64)\Microsoft.CodeAnalysis.dll</HintPath>
+            <HintPath>$(DS64)/Microsoft.CodeAnalysis.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Microsoft.CodeAnalysis.CSharp">
-            <HintPath>$(Bin64)\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+            <HintPath>$(DS64)/Microsoft.CodeAnalysis.CSharp.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Sandbox.Common">
-            <HintPath>$(Bin64)\Sandbox.Common.dll</HintPath>
+            <HintPath>$(DS64)/Sandbox.Common.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Sandbox.Game">
-            <HintPath>$(Bin64)\Sandbox.Game.dll</HintPath>
+            <HintPath>$(DS64)/Sandbox.Game.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="SpaceEngineers.Game">
-            <HintPath>$(Bin64)\SpaceEngineers.Game.dll</HintPath>
+            <HintPath>$(DS64)/SpaceEngineers.Game.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="SpaceEngineers.ObjectBuilders">
-            <HintPath>$(Bin64)\SpaceEngineers.ObjectBuilders.dll</HintPath>
+            <HintPath>$(DS64)/SpaceEngineers.ObjectBuilders.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage">
-            <HintPath>$(Bin64)\VRage.dll</HintPath>
+            <HintPath>$(DS64)/VRage.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Ansel">
-            <HintPath>$(Bin64)\VRage.Ansel.dll</HintPath>
+            <HintPath>$(DS64)/VRage.Ansel.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Game">
-            <HintPath>$(Bin64)\VRage.Game.dll</HintPath>
+            <HintPath>$(DS64)/VRage.Game.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Library">
-            <HintPath>$(Bin64)\VRage.Library.dll</HintPath>
+            <HintPath>$(DS64)/VRage.Library.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Math">
-            <HintPath>$(Bin64)\VRage.Math.dll</HintPath>
+            <HintPath>$(DS64)/VRage.Math.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Platform.Windows">
-            <HintPath>$(Bin64)\VRage.Platform.Windows.dll</HintPath>
+            <HintPath>$(DS64)/VRage.Platform.Windows.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Render">
-            <HintPath>$(Bin64)\VRage.Render.dll</HintPath>
+            <HintPath>$(DS64)/VRage.Render.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Scripting">
-            <HintPath>$(Bin64)\VRage.Scripting.dll</HintPath>
+            <HintPath>$(DS64)/VRage.Scripting.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Steam">
-            <HintPath>$(Bin64)\VRage.Steam.dll</HintPath>
+            <HintPath>$(DS64)/VRage.Steam.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Steamworks.NET">
-            <HintPath>$(Bin64)\Steamworks.NET.dll</HintPath>
+            <HintPath>$(DS64)/Steamworks.NET.dll</HintPath>
             <Private>False</Private>
         </Reference>
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Include="App.config"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -155,7 +122,7 @@
     <PropertyGroup>
         <PublicizerClearCacheOnClean>true</PublicizerClearCacheOnClean>
         <PublicizerRuntimeStrategies>Unsafe;IgnoresAccessChecksTo</PublicizerRuntimeStrategies>
-        <PublicizerLogFilePath>$(MSBuildProjectDirectory)\$(OutputPath)Krafs.Publicizer.log</PublicizerLogFilePath>
+        <PublicizerLogFilePath>$(MSBuildProjectDirectory)/$(OutputPath)Krafs.Publicizer.log</PublicizerLogFilePath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -170,22 +137,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Patches\" />
+      <Folder Include="Patches/" />
     </ItemGroup>
-
-    <!-- Deploy LinuxCompatServer.dll to the Pulsar Local plugins folder
-         (~/.config/Pulsar/Local) so Pulsar picks it up automatically.
-         Overwrites any existing file at that path. -->
-    <Target Name="DeployToPulsarLocal"
-            AfterTargets="Build"
-            Condition="'$(OS)' != 'Windows_NT'">
-        <PropertyGroup>
-            <PulsarLocalDir>$(HOME)/.config/Pulsar/Local</PulsarLocalDir>
-        </PropertyGroup>
-        <MakeDir Directories="$(PulsarLocalDir)" />
-        <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll"
-              DestinationFolder="$(PulsarLocalDir)"
-              OverwriteReadOnlyFiles="true" />
-    </Target>
 
 </Project>

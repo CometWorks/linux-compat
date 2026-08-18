@@ -9,10 +9,6 @@
         <!-- Ensure SDK generates assembly attributes (no need for AssemblyInfo) -->
         <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 
-        <!-- Default versions; override in Directory.Build.props  -->
-        <AssemblyVersion>1.0.17.0</AssemblyVersion>
-        <FileVersion>1.0.17.0</FileVersion>
-
         <!-- Default configuration if none supplied -->
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -24,201 +20,176 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-        <PlatformTarget>x64</PlatformTarget>
-        <DebugSymbols>true</DebugSymbols>
-        <DebugType>full</DebugType>
-        <Optimize>false</Optimize>
-        <OutputPath>bin\Debug\</OutputPath>
-        <DefineConstants>DEBUG;TRACE;DEV_BUILD</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-        <PlatformTarget>x64</PlatformTarget>
-        <DebugType>pdbonly</DebugType>
-        <Optimize>true</Optimize>
-        <OutputPath>bin\Release\</OutputPath>
-        <DefineConstants>TRACE;DEV_BUILD</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
-
     <PropertyGroup>
         <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
     </PropertyGroup>
 
     <ItemGroup>
         <Reference Include="SharpDX">
-            <HintPath>$(Bin64)\SharpDX.dll</HintPath>
+            <HintPath>$(Bin64)/SharpDX.dll</HintPath>
         </Reference>
         <Reference Include="SharpDX.Direct3D11">
-            <HintPath>$(Bin64)\SharpDX.Direct3D11.dll</HintPath>
+            <HintPath>$(Bin64)/SharpDX.Direct3D11.dll</HintPath>
         </Reference>
         <Reference Include="SharpDX.DXGI">
-            <HintPath>$(Bin64)\SharpDX.DXGI.dll</HintPath>
+            <HintPath>$(Bin64)/SharpDX.DXGI.dll</HintPath>
         </Reference>
         <Reference Include="SixLabors.Core">
-            <HintPath>$(Bin64)\SixLabors.Core.dll</HintPath>
+            <HintPath>$(Bin64)/SixLabors.Core.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="SixLabors.ImageSharp">
-            <HintPath>$(Bin64)\SixLabors.ImageSharp.dll</HintPath>
+            <HintPath>$(Bin64)/SixLabors.ImageSharp.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="EmptyKeys.UserInterface, Version=3.2.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\EmptyKeys.UserInterface.dll</HintPath>
+            <HintPath>$(Bin64)/EmptyKeys.UserInterface.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="EmptyKeys.UserInterface.Core, Version=3.2.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\EmptyKeys.UserInterface.Core.dll</HintPath>
+            <HintPath>$(Bin64)/EmptyKeys.UserInterface.Core.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="HavokWrapper, Version=0.1.1.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\HavokWrapper.dll</HintPath>
+            <HintPath>$(Bin64)/HavokWrapper.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="System.Collections.Immutable">
-            <HintPath>$(Bin64)\System.Collections.Immutable.dll</HintPath>
+            <HintPath>$(Bin64)/System.Collections.Immutable.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Microsoft.CodeAnalysis">
-            <HintPath>$(Bin64)\Microsoft.CodeAnalysis.dll</HintPath>
+            <HintPath>$(Bin64)/Microsoft.CodeAnalysis.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Microsoft.CodeAnalysis.CSharp">
-            <HintPath>$(Bin64)\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+            <HintPath>$(Bin64)/Microsoft.CodeAnalysis.CSharp.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="RecastDetourWrapper, Version=0.1.1.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\RecastDetourWrapper.dll</HintPath>
+            <HintPath>$(Bin64)/RecastDetourWrapper.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Sandbox.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\Sandbox.Common.dll</HintPath>
+            <HintPath>$(Bin64)/Sandbox.Common.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Sandbox.Game, Version=0.1.1.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\Sandbox.Game.dll</HintPath>
+            <HintPath>$(Bin64)/Sandbox.Game.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Sandbox.Game.XmlSerializers, Version=0.1.1.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\Sandbox.Game.XmlSerializers.dll</HintPath>
+            <HintPath>$(Bin64)/Sandbox.Game.XmlSerializers.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Sandbox.Graphics, Version=0.1.1.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\Sandbox.Graphics.dll</HintPath>
+            <HintPath>$(Bin64)/Sandbox.Graphics.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Sandbox.RenderDirect, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\Sandbox.RenderDirect.dll</HintPath>
+            <HintPath>$(Bin64)/Sandbox.RenderDirect.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="SpaceEngineers.Game, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\SpaceEngineers.Game.dll</HintPath>
+            <HintPath>$(Bin64)/SpaceEngineers.Game.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="SpaceEngineers.ObjectBuilders, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\SpaceEngineers.ObjectBuilders.dll</HintPath>
+            <HintPath>$(Bin64)/SpaceEngineers.ObjectBuilders.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="SpaceEngineers.ObjectBuilders.XmlSerializers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\SpaceEngineers.ObjectBuilders.XmlSerializers.dll</HintPath>
+            <HintPath>$(Bin64)/SpaceEngineers.ObjectBuilders.XmlSerializers.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Ansel, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Ansel.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Ansel.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Audio, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Audio.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Audio.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.EOS, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.EOS.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.EOS.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.EOS.XmlSerializers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.EOS.XmlSerializers.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.EOS.XmlSerializers.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Game, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Game.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Game.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Game.XmlSerializers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Game.XmlSerializers.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Game.XmlSerializers.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Input, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Input.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Input.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Library, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Library.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Library.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Math, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Math.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Math.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Math.XmlSerializers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Math.XmlSerializers.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Math.XmlSerializers.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Mod.Io, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Mod.Io.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Mod.Io.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.NativeWrapper, Version=0.1.1.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.NativeWrapper.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.NativeWrapper.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Network, Version=1.0.63.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Network.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Network.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Platform.Windows, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Platform.Windows.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Platform.Windows.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Render, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Render.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Render.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Render11, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Render11.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Render11.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Scripting, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Scripting.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Scripting.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.Steam, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.Steam.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.Steam.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Steamworks.NET">
-            <HintPath>$(Bin64)\Steamworks.NET.dll</HintPath>
+            <HintPath>$(Bin64)/Steamworks.NET.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.UserInterface, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.UserInterface.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.UserInterface.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.XmlSerializers, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>$(Bin64)\VRage.XmlSerializers.dll</HintPath>
+            <HintPath>$(Bin64)/VRage.XmlSerializers.dll</HintPath>
             <Private>False</Private>
         </Reference>
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Include="App.config"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -239,7 +210,7 @@
     <PropertyGroup>
         <PublicizerClearCacheOnClean>true</PublicizerClearCacheOnClean>
         <PublicizerRuntimeStrategies>Unsafe;IgnoresAccessChecksTo</PublicizerRuntimeStrategies>
-        <PublicizerLogFilePath>$(MSBuildProjectDirectory)\$(OutputPath)Krafs.Publicizer.log</PublicizerLogFilePath>
+        <PublicizerLogFilePath>$(MSBuildProjectDirectory)/$(OutputPath)Krafs.Publicizer.log</PublicizerLogFilePath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -273,59 +244,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Patches\" />
+      <Folder Include="Patches/" />
     </ItemGroup>
-
-    <!-- Deploy LinuxCompat.dll to the Pulsar Local plugins folder
-         (~/.config/Pulsar/Local) so Pulsar picks it up automatically.
-         Overwrites any existing file at that path. -->
-    <Target Name="DeployToPulsarLocal"
-            AfterTargets="Build"
-            Condition="'$(OS)' != 'Windows_NT'">
-        <PropertyGroup>
-            <PulsarLocalDir>$(HOME)/.config/Pulsar/Local</PulsarLocalDir>
-        </PropertyGroup>
-        <MakeDir Directories="$(PulsarLocalDir)" />
-        <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll"
-              DestinationFolder="$(PulsarLocalDir)"
-              OverwriteReadOnlyFiles="true" />
-    </Target>
-
-    <!-- Stage FFmpeg.AutoGen.dll into the Pulsar dev build's probe path
-         (Bin/Libraries/Interim) so audio/video work when running the Interim
-         dev binary directly (e.g. via the Rider run config). The deployed
-         bundle stages this via Scripts/package_pulsar_for_linux.sh. -->
-    <Target Name="StageFFmpegForPulsarDev"
-            AfterTargets="Build"
-            Condition="Exists('$(MSBuildThisFileDirectory)..\..\Pulsar\Legacy\bin\$(Configuration)\net10.0')">
-        <PropertyGroup>
-            <PulsarDevLibrariesInterim>$(MSBuildThisFileDirectory)..\..\Pulsar\Legacy\bin\$(Configuration)\net10.0\Libraries\Interim</PulsarDevLibrariesInterim>
-        </PropertyGroup>
-        <MakeDir Directories="$(PulsarDevLibrariesInterim)" />
-        <Copy SourceFiles="$(PkgFFmpeg_AutoGen)\lib\netstandard2.1\FFmpeg.AutoGen.dll"
-              DestinationFolder="$(PulsarDevLibrariesInterim)"
-              SkipUnchangedFiles="true" />
-    </Target>
-
-    <!-- Stage Silk.NET.OpenAL + Silk.NET.Core into the Pulsar dev probe path.
-         OpenAL Soft (libopenal.so.1) is provided by the host (libopenal1
-         Debian package) or the bundle's Pulsar/Libraries folder, so only
-         the managed bindings need staging here. -->
-    <Target Name="StageSilkNetOpenALForPulsarDev"
-            AfterTargets="Build"
-            Condition="Exists('$(MSBuildThisFileDirectory)..\..\Pulsar\Legacy\bin\$(Configuration)\net10.0')">
-        <PropertyGroup>
-            <PulsarDevLibrariesInterim>$(MSBuildThisFileDirectory)..\..\Pulsar\Legacy\bin\$(Configuration)\net10.0\Libraries\Interim</PulsarDevLibrariesInterim>
-            <SilkNuGetRoot>$(NuGetPackageRoot)</SilkNuGetRoot>
-            <SilkNuGetRoot Condition="'$(SilkNuGetRoot)' == ''">$(HOME)/.nuget/packages/</SilkNuGetRoot>
-        </PropertyGroup>
-        <MakeDir Directories="$(PulsarDevLibrariesInterim)" />
-        <Copy SourceFiles="$(SilkNuGetRoot)silk.net.openal/2.23.0/lib/netstandard2.1/Silk.NET.OpenAL.dll"
-              DestinationFolder="$(PulsarDevLibrariesInterim)"
-              SkipUnchangedFiles="true" />
-        <Copy SourceFiles="$(SilkNuGetRoot)silk.net.core/2.23.0/lib/netstandard2.1/Silk.NET.Core.dll"
-              DestinationFolder="$(PulsarDevLibrariesInterim)"
-              SkipUnchangedFiles="true" />
-    </Target>
 
 </Project>
