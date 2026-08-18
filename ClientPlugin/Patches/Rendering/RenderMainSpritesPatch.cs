@@ -5,19 +5,8 @@ using VRageRender;
 
 namespace ClientPlugin.Patches.Rendering;
 
-// Mirrors the OperatingSystem.IsLinux() branch in MyRender11.RenderMainSprites()
-// (parameterless overload) from the recompiled Linux build.
-//
-// Stock Windows path:
-//   RenderMainSprites(Backbuffer, ScaleMainViewport(vp), vp, ViewportResolutionF)
-// where vp is sized to ViewportResolution (the 3D scene RT, which can be
-// smaller than the backbuffer due to render-scale / DRS / the
-// m_mainViewportScaleFactor centering).
-//
-// Linux path: render sprites at full backbuffer pixels (ResolutionI) so UI /
-// icons / text are not transformed through the 3D scene RT. Preserve the
-// SpriteMainViewportScale centering by remapping the stock ViewportResolution
-// region into backbuffer space.
+// Render Linux UI at backbuffer resolution instead of the scaled 3D target,
+// while preserving SpriteMainViewportScale centering.
 [HarmonyPatch(typeof(MyRender11), "RenderMainSprites", new Type[0])]
 [HarmonyPatchCategory("Finish")]
 static class RenderMainSpritesPatch

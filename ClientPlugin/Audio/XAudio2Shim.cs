@@ -63,15 +63,12 @@ public struct DeviceDetails
 
 	public DeviceRole Role;
 
-	// Must match SharpDX.XAudio2.DeviceDetails.OutputFormat (WaveFormatExtensible)
-	// so the game's IL (compiled against real SharpDX.XAudio2) binds the field.
+	// The field type must match SharpDX so the game's IL can bind it.
 	public WaveFormatExtensible OutputFormat;
 }
 
-// Struct layout must match stock SharpDX.XAudio2.VoiceDetails exactly:
-// VoiceFlags CreationFlags, int ActiveFlags (NOT VoiceFlags — int!),
-// int InputChannelCount, int InputSampleRate. Game IL does ldfld/stfld
-// with these exact field signatures.
+// CLR field signatures must match SharpDX.XAudio2.VoiceDetails exactly:
+// VoiceFlags CreationFlags, then three int fields in the order below.
 public struct VoiceDetails
 {
 	public VoiceFlags CreationFlags;
@@ -105,7 +102,7 @@ public enum VoiceSendFlags
 	None = 0
 }
 
-// Fields (not properties): stock VRage.Audio IL accesses
+// Fields, not properties: VRage.Audio IL accesses
 // VoiceSendDescriptor.Flags and .OutputVoice via ldfld/stfld.
 public struct VoiceSendDescriptor
 {
@@ -144,14 +141,8 @@ public class AudioBuffer
 
 	public byte[] Data;
 
-	// Must be a field, not a property: stock VRage.Audio.dll IL in
-	// MySourceVoice.SubmitBuffer(byte[]) reads it via `ldfld` inside its
-	// catch-block diagnostic log. As a get-only property it threw
-	// MissingFieldException on the first received voice-chat packet,
-	// crashing the game (see Docs/Fixes.md AudioBuffer.AudioDataPointer
-	// entry). Real SharpDX.XAudio2.AudioBuffer declares it as a public
-	// field; the shim never needs a non-zero value because our
-	// SubmitSourceBuffer reads Stream/Data, not the pointer.
+	// Must be a field with the SharpDX signature; game IL uses `ldfld`.
+	// The shim reads Stream/Data, so this pointer remains zero.
 	public IntPtr AudioDataPointer;
 
 	public AudioBuffer()
@@ -162,18 +153,8 @@ public class AudioBuffer
 	{
 		Stream = stream;
 
-		// Voice chat path: stock VRage.Audio.MySourceVoice.SubmitBuffer(byte[])
-		// creates a DataStream over the byte[] payload and constructs the
-		// AudioBuffer via this ctor. Our SourceVoice.PutBuffer reads only
-		// the managed `Data` field (SDL_PutAudioStreamData takes a byte[]),
-		// so unless we copy the bytes out now they will be silently lost.
-		//
-		// We copy upfront — not lazily inside PutBuffer — because by the
-		// time PutBuffer fires, the originating DataStream may already
-		// have been dequeued and disposed by MySourceVoice.OnStopPlayingBuffered
-		// (or its underlying pinned byte[] reused for a later packet).
-		// During this ctor the stream has just been created in
-		// SubmitBuffer and is guaranteed alive.
+		// Voice chat owns the DataStream only during construction. Copy its
+		// payload before it can be dequeued, disposed, or reused.
 		if (stream != null && stream.Length > 0)
 		{
 			int length = (int)stream.Length;
@@ -188,14 +169,8 @@ public class AudioBuffer
 	}
 }
 
-// Must inherit from SharpDX.CppObject (which itself extends DisposeBase):
-// stock VRage.Audio.dll IL uses `callvirt SharpDX.CppObject::get_NativePointer()`
-// on voice fields in MySourceVoice.IsNativeValid and VoiceExtensions.IsValid.
-// That getter reads CppObject._nativePointer directly — if we inherit DisposeBase
-// only, the getter silently returns IntPtr.Zero and IsValid becomes permanently
-// false, so MySourceVoice.Start early-returns and no sound ever plays.
-// We keep the CppObject base "alive" by setting `_nativePointer = (void*)1` in
-// the ctor and back to zero in Dispose.
+// Game IL calls CppObject.get_NativePointer() to validate voices. Keep the
+// CppObject sentinel nonzero while the managed voice is alive.
 public abstract unsafe class Voice : global::SharpDX.CppObject
 {
 	private float m_volume = 1f;
@@ -281,8 +256,7 @@ public abstract unsafe class Voice : global::SharpDX.CppObject
 		OutputVoice = descriptors != null && descriptors.Length != 0 ? descriptors[0].OutputVoice : null;
 	}
 
-	// Must be on Voice (not SourceVoice) — stock VRage.Audio IL in
-	// MyEffectInstance.Update calls
+	// Must be declared on Voice; game IL calls
 	// `callvirt SharpDX.XAudio2.Voice::SetFilterParameters(FilterParameters, int32)`.
 	public virtual void SetFilterParameters(FilterParameters _)
 	{
@@ -292,8 +266,7 @@ public abstract unsafe class Voice : global::SharpDX.CppObject
 	{
 	}
 
-	// Must be on Voice (not SourceVoice) — game IL binds the MethodRef
-	// against the declaring type Voice, regardless of runtime type.
+	// Must be declared on Voice to match the game's MethodRef.
 	public virtual void SetOutputMatrix(Voice destinationVoice, int sourceChannels, int destinationChannels, float[] matrix)
 	{
 	}
@@ -307,8 +280,7 @@ public abstract unsafe class Voice : global::SharpDX.CppObject
 		channelMask = (int)MySdlAudioInterop.GetSpeakerMask(VoiceDetails.InputChannelCount);
 	}
 
-	// Must be on Voice (not MasteringVoice) — game IL binds the MethodRef
-	// against the declaring type Voice, regardless of runtime type.
+	// Must be declared on Voice to match the game's MethodRef.
 	public virtual void GetVoiceDetails(out VoiceDetails voiceDetails)
 	{
 		voiceDetails = VoiceDetails;
@@ -339,23 +311,13 @@ public abstract unsafe class Voice : global::SharpDX.CppObject
 	}
 }
 
-// Must inherit from SharpDX.CppObject (which itself extends DisposeBase):
-// stock VRage.Audio.dll IL in MySourceVoice.IsNativeValid reads
-// `m_device.NativePointer` via `callvirt SharpDX.CppObject::get_NativePointer()`
-// and short-circuits playback if the result is IntPtr.Zero. We keep the base
-// `_nativePointer` non-zero while the device is alive.
-//
-// Backed by OpenAL Soft via Silk.NET.OpenAL. OpenAL handles spatial panning,
-// HRTF, and resampling natively; the game's custom distance attenuation and
-// Doppler are kept (DistanceModel.None / DopplerFactor 0) so the existing
-// volume curves and frequency-ratio math drive AL_GAIN / AL_PITCH directly.
+// Game IL validates the device through CppObject.NativePointer, so the sentinel
+// remains nonzero while alive. OpenAL handles panning, HRTF, and resampling;
+// the game retains attenuation and Doppler control.
 public sealed unsafe class XAudio2 : global::SharpDX.CppObject
 {
-	// FFmpeg/WAV loading still flows through MySdlAudioInterop, which decodes
-	// to format-agnostic byte[]s — so OpenAL receives PCM with no SDL coupling.
-	// The output spec is synthesised: OpenAL Soft picks its own device format,
-	// but VRage.Audio only reads channel count & sample rate to build
-	// WaveFormatExtensible for the game's mixing-graph metadata.
+	// OpenAL selects its device format. VRage only needs this synthetic spec
+	// for mixing-graph channel and sample-rate metadata.
 	private readonly MySdlAudioInterop.SdlAudioSpec m_outputSpec;
 
 	private readonly AL m_al;
@@ -388,9 +350,7 @@ public sealed unsafe class XAudio2 : global::SharpDX.CppObject
 	{
 		_nativePointer = (void*)1;
 
-		// FFmpeg bindings are still required by MySdlAudioInterop for WAV/audio
-		// decoding; SDL3 audio init is no-op for us but harmless if other paths
-		// still touch it (video playback owns its own SDL audio device).
+		// MySdlAudioInterop initializes the FFmpeg bindings used for decoding.
 		MySdlAudioInterop.EnsureInitialized();
 
 		m_alc = ALContext.GetApi(soft: true);
@@ -434,11 +394,7 @@ public sealed unsafe class XAudio2 : global::SharpDX.CppObject
 			Frequency = 48000
 		};
 
-		// Publish AL handle for X3DAudio.Calculate (listener properties) — the
-		// game constructs X3DAudio independently of XAudio2, so it has no
-		// reference; a static plug is the simplest hand-off that survives the
-		// game's construction order. Fully qualify because in SharpDX.XAudio2
-		// the bare `X3DAudio` resolves to the SharpDX.X3DAudio namespace.
+		// X3DAudio is constructed independently, so publish the AL handle and lock.
 		global::SharpDX.X3DAudio.X3DAudio.GlobalAl = m_al;
 		global::SharpDX.X3DAudio.X3DAudio.GlobalAlLock = m_alLock;
 	}
@@ -471,8 +427,7 @@ public sealed unsafe class XAudio2 : global::SharpDX.CppObject
 	{
 		_nativePointer = null;
 
-		// Detach the X3DAudio static plug first so a late Calculate call after
-		// dispose won't touch a destroyed AL instance.
+		// Detach X3DAudio before destroying the AL instance.
 		global::SharpDX.X3DAudio.X3DAudio.GlobalAl = null;
 		global::SharpDX.X3DAudio.X3DAudio.GlobalAlLock = null;
 
@@ -489,10 +444,7 @@ public sealed unsafe class XAudio2 : global::SharpDX.CppObject
 			}
 		}
 
-		// Silk.NET API objects are disposable. OpenAL Soft drains its mixing
-		// thread inside alcDestroyContext / alcCloseDevice, so by the time we
-		// reach here the audio thread has exited cleanly — no SDL-style
-		// use-after-free shutdown crash.
+		// OpenAL drains its mixing thread during context and device destruction.
 		try { m_al?.Dispose(); } catch { }
 		try { m_alc?.Dispose(); } catch { }
 	}
@@ -508,9 +460,7 @@ public sealed unsafe class XAudio2 : global::SharpDX.CppObject
 
 	public void StopEngine()
 	{
-		// OpenAL Soft owns its mixing thread internally and synchronises
-		// shutdown via alcDestroyContext; no equivalent of SDL's PipeWire
-		// use-after-free issue, so this can stay a near-no-op.
+		// OpenAL owns the mixing thread and stops it during context destruction.
 		if (IsDisposed)
 			return;
 	}
@@ -596,14 +546,10 @@ public sealed class SourceVoice : Voice
 	// completion must be silently consumed. Kept in lock-step with m_alBufferQueue.
 	private readonly Queue<bool> m_alBufferTracked = new Queue<bool>();
 
-	// PCM byte-counts in the same order as tracked AL buffers, used to map
-	// AL buffer-end events to the game's BufferEnd callback.
+	// PCM byte counts align tracked AL buffers with BufferEnd callbacks.
 	private readonly Queue<int> m_pushedBufferSizes = new Queue<int>();
 
-	// True while the loop buffer's BufferEnd callback is deferred. In real
-	// XAudio2 a buffer with LoopCount>0 fires BufferEnd only once, when the
-	// loop ends (voice stopped). Our shim emulates looping by re-queuing AL
-	// buffers, so we must defer the callback until the loop actually finishes.
+	// XAudio2 fires BufferEnd once after looping stops, not after each iteration.
 	private bool m_loopCallbackDeferred;
 
 	private readonly List<AudioBuffer> m_buffers = new List<AudioBuffer>();
@@ -622,12 +568,8 @@ public sealed class SourceVoice : Voice
 
 	private bool m_loopReplayEnabled;
 
-	// True once a buffer was submitted *after* Start() (i.e. streaming mode,
-	// e.g. voice chat). For static one-shot playback (sound effects, all
-	// buffers submitted up-front) we terminate the watcher on natural drain;
-	// for streaming we keep the watcher alive until explicit Stop/Flush/Dispose,
-	// because terminating-on-drain races against the next voice packet's
-	// m_dataStreams.Enqueue and would orphan the buffer.
+	// Streaming voices retain their watcher across underruns so the next packet
+	// cannot race a natural-drain shutdown.
 	private bool m_streaming;
 
 	private float m_frequencyRatio = 1f;
@@ -700,7 +642,7 @@ public sealed class SourceVoice : Voice
 			}
 			else
 			{
-				// Fall back: every PutBuffer will down-convert F32 → S16 before upload.
+				// Fall back to F32-to-S16 conversion before upload.
 				alFormatRaw = mono ? (int)BufferFormat.Mono16 : (int)BufferFormat.Stereo16;
 				convertF32ToS16 = true;
 			}
@@ -739,10 +681,7 @@ public sealed class SourceVoice : Voice
 		}
 		lock (m_sync)
 		{
-			// Streaming case (voice chat): playback already running, not in
-			// looping mode. Push directly to the AL queue — don't grow
-			// m_buffers, which is reserved for the static set used by
-			// QueueInitialBuffers and the loop-replay logic.
+			// Streaming buffers go directly to AL; m_buffers owns static loop data.
 			bool isLooping = GetLoopBufferIndexLocked() >= 0;
 			if (m_started && !m_stopRequested && !isLooping)
 			{
@@ -842,10 +781,8 @@ public sealed class SourceVoice : Voice
 
 	public override void SetOutputMatrix(Voice _, int sourceChannels, int destinationChannels, float[] matrix)
 	{
-		// Consume any emitter data left by X3DAudio.Calculate on this thread.
-		// MyXAudio2.Apply3D is a tightly coupled Calculate → SetOutputMatrix
-		// pair on a single thread, so [ThreadStatic] storage is sufficient
-		// hand-off without a queue.
+		// Apply3D calls Calculate then SetOutputMatrix on one thread, allowing
+		// emitter data to use [ThreadStatic] storage.
 		var emitter = global::SharpDX.X3DAudio.X3DAudio.ConsumeLastEmitter();
 		float gainFromMatrix = 1f;
 		RoutingMode routingMode = RoutingMode.Direct;
@@ -967,10 +904,7 @@ public sealed class SourceVoice : Voice
 			for (int i = 0; i <= loopBufferIndex; i++)
 			{
 				bool isLoopBuffer = i == loopBufferIndex;
-				// The loop buffer is queued as "untracked" — its BufferEnd
-				// callback is deferred until the loop actually ends (matching
-				// real XAudio2 behaviour where LoopCount>0 buffers fire
-				// BufferEnd only once, after all iterations complete).
+				// Defer the loop buffer's sole BufferEnd until all iterations finish.
 				PutBuffer(m_buffers[i], trackCallback: !isLoopBuffer);
 				if (isLoopBuffer)
 					m_loopCallbackDeferred = true;
@@ -1015,7 +949,6 @@ public sealed class SourceVoice : Voice
 						m_al.GetSourceProperty(m_source, GetSourceInteger.BuffersQueued, out queued);
 						m_al.GetSourceProperty(m_source, GetSourceInteger.SourceState, out sourceState);
 
-						// Unqueue and delete each processed AL buffer.
 						for (int i = 0; i < processed; i++)
 						{
 							uint[] tmp = new uint[1];
@@ -1025,19 +958,9 @@ public sealed class SourceVoice : Voice
 						}
 					}
 
-					// Fire BufferEnd callbacks only for game-submitted ("tracked")
-					// buffers. Internally re-fed loop buffers are "untracked" and
-					// must be silently consumed — firing BufferEnd for each loop
-					// iteration would exhaust the game's m_activeSourceBuffers
-					// counter and cause premature voice-pool recycling while the
-					// AL source is still playing.
-					//
-					// Callback count is driven by m_alBufferTracked ALONE — not
-					// gated on m_pushedBufferSizes. The size queue is bookkeeping
-					// only; an empty size queue while a tracked buffer drains
-					// must not suppress its BufferEnd, or the game's
-					// m_activeSourceBuffers counter never reaches zero and the
-					// voice is leaked from m_availableVoices.
+					// Only tracked game buffers fire BufferEnd. Loop re-feeds must not
+					// decrement m_activeSourceBuffers or recycle an active voice.
+					// m_alBufferTracked controls callbacks; size data is bookkeeping only.
 					for (int i = 0; i < processed; i++)
 					{
 						bool tracked = m_alBufferTracked.Count > 0 && m_alBufferTracked.Dequeue();
@@ -1061,17 +984,9 @@ public sealed class SourceVoice : Voice
 
 					if (!m_stopRequested && isLooping && queuedAfter <= 1)
 					{
-						// Keep the loop fed: when only one buffer remains queued,
-						// re-submit the loop body. (AL buffer count is the unit
-						// here, not byte fill — OpenAL doesn't expose queued bytes.)
-						// Mark as untracked to suppress BufferEnd callback.
+						// Re-feed the loop before its last queued AL buffer drains.
 						PutBuffer(m_buffers[loopBufferIndex], trackCallback: false);
-						// If the source already underran and went Stopped before
-						// our refeed, AL will not auto-resume on the freshly queued
-						// buffer — we must re-issue SourcePlay. This is the common
-						// case for short intro buffers that drain before the 20ms
-						// tick: without this restart, looping sounds (jetpack,
-						// drills, music with intro+loop+outro) stay silent forever.
+						// OpenAL does not auto-resume a stopped source after re-feed.
 						if (stateEnum == SourceState.Stopped)
 						{
 							needRestart = true;
@@ -1090,9 +1005,7 @@ public sealed class SourceVoice : Voice
 						}
 						m_loopReplayEnabled = false;
 
-						// The loop has ended — fire the deferred BufferEnd for the
-						// loop buffer. In real XAudio2 this fires when the looping
-						// buffer's LoopCount is exhausted or the voice is stopped.
+						// Match XAudio2's deferred BufferEnd when looping stops.
 						if (m_loopCallbackDeferred)
 						{
 							m_loopCallbackDeferred = false;
@@ -1102,23 +1015,17 @@ public sealed class SourceVoice : Voice
 						}
 					}
 
-					// Source can stop naturally if all buffers have been consumed,
-					// either at end-of-stream (one-shot) or on streaming under-run.
 					if (stateEnum == SourceState.Stopped && !needRestart)
 					{
 						if (m_streaming && queuedAfter > 0)
 						{
-							// Under-run during streaming: re-prime playback so newly
-							// submitted buffers continue.
+							// Resume after a streaming underrun.
 							lock (m_engine.AlLock)
 								m_al.SourcePlay(m_source);
 						}
 						else if (queuedAfter == 0 && !m_streaming && !m_loopReplayEnabled)
 						{
-							// Natural drain on a non-looping one-shot (sound effect
-							// or post-outro). Tear down state and exit. Looping
-							// voices never reach here while m_loopReplayEnabled is
-							// true — they get refed above.
+							// A non-looping natural drain ends the watcher.
 							m_started = false;
 							m_buffers.Clear();
 							m_state.BuffersQueued = 0;
@@ -1133,7 +1040,7 @@ public sealed class SourceVoice : Voice
 					}
 				}
 
-				// Fire BufferEnd outside m_sync — game callbacks can re-enter
+				// Fire BufferEnd outside m_sync because callbacks can re-enter
 				// the shim (e.g. SubmitSourceBuffer), and holding m_sync would
 				// deadlock the lock-on-itself path.
 				if (fireDeferredLoopCallback)
@@ -1161,7 +1068,7 @@ public sealed class SourceVoice : Voice
 		}
 	}
 
-	// Caller MUST hold m_sync. AL operations are taken with the engine lock.
+	// Requires m_sync. AL operations take the engine lock internally.
 	// trackCallback: true for game-submitted buffers (fire BufferEnd when
 	// consumed), false for internally re-fed loop buffers (silently consumed).
 	private unsafe void PutBuffer(AudioBuffer buffer, bool trackCallback = true)
@@ -1169,12 +1076,7 @@ public sealed class SourceVoice : Voice
 		if (m_source == 0)
 			return;
 
-		// Resolve the audio bytes. Voice-chat AudioBuffers (constructed via
-		// AudioBuffer(DataStream)) eagerly copy the unmanaged stream into
-		// `Data`, but statically-loaded MyInMemoryWaves on a non-Linux build
-		// only set `Stream` + `AudioBytes`. Read straight from the unmanaged
-		// pointer in that case so static cues (music, jetpack loop, drills)
-		// don't silently get dropped here.
+		// Voice chat uses Data; static waves may provide only Stream and AudioBytes.
 		byte[] managed = buffer.Data;
 		int len;
 		byte* unmanaged = null;
@@ -1214,9 +1116,9 @@ public sealed class SourceVoice : Voice
 			alBuf = m_al.GenBuffer();
 			if (convertF32ToS16)
 			{
-				// AL_EXT_float32 missing on this device — convert in-place. Two
+				// AL_EXT_float32 is unavailable; convert in place. Two
 				// bytes out per four bytes in; round-half-away-from-zero matches
-				// AVX-style F32→S16 conversion.
+				// AVX-style F32-to-S16 conversion.
 				int frames = len / 4;
 				short[] s16 = new short[frames];
 				if (managed != null)
@@ -1266,7 +1168,7 @@ public sealed class SourceVoice : Voice
 		}
 	}
 
-	// Caller MUST hold both m_sync AND m_engine.AlLock.
+	// Requires m_sync and m_engine.AlLock.
 	private void DrainAllBuffersLocked()
 	{
 		if (m_source == 0) return;
@@ -1284,7 +1186,7 @@ public sealed class SourceVoice : Voice
 		m_pushedBufferSizes.Clear();
 	}
 
-	// Caller MUST hold m_engine.AlLock.
+	// Requires m_engine.AlLock.
 	private void ResetSourceToRelative2DLocked()
 	{
 		if (m_source == 0)
@@ -1295,7 +1197,7 @@ public sealed class SourceVoice : Voice
 		m_al.SetSourceProperty(m_source, SourceVector3.Velocity, 0f, 0f, 0f);
 	}
 
-	// Caller MUST hold m_engine.AlLock.
+	// Requires m_engine.AlLock.
 	private void ConfigureDirectPlaybackLocked()
 	{
 		if (m_source == 0)
@@ -1316,7 +1218,7 @@ public sealed class SourceVoice : Voice
 		}
 	}
 
-	// Caller MUST hold m_engine.AlLock.
+	// Requires m_engine.AlLock.
 	private void ConfigureSpatialMono3DLocked()
 	{
 		if (m_source == 0)
@@ -1481,10 +1383,8 @@ public sealed class SourceVoice : Voice
 		}
 	}
 
-	// Duplicates mono PCM to stereo at full amplitude. Used for Direct-mode
-	// mono sources where the game's output matrix is {1,1} (both speakers at
-	// full level). Without this, OpenAL renders center mono to stereo with a
-	// significant per-channel reduction, causing ~3× quieter output vs Windows.
+	// Direct-mode {1,1} mono needs full-amplitude stereo duplication; OpenAL's
+	// centered mono mix is otherwise about three times quieter than Windows.
 	private byte[] RouteMonoToStereo(byte[] monoData)
 	{
 		if (monoData == null || monoData.Length == 0)
@@ -1530,7 +1430,7 @@ public sealed class SourceVoice : Voice
 		}
 	}
 
-	// Caller MUST hold m_sync.
+	// Requires m_sync.
 	private void EnsurePlayingLocked()
 	{
 		if (m_source == 0) return;
@@ -1552,7 +1452,7 @@ public sealed class SourceVoice : Voice
 		}
 	}
 
-	// Caller MUST hold m_sync.
+	// Requires m_sync.
 	private void ApplyGainLocked()
 	{
 		if (m_source == 0 || IsDisposed)
@@ -1574,7 +1474,7 @@ public sealed class SourceVoice : Voice
 		}
 	}
 
-	// Caller MUST hold m_sync.
+	// Requires m_sync.
 	private void ApplyFrequencyRatioLocked()
 	{
 		if (m_source == 0 || IsDisposed)
@@ -1606,7 +1506,7 @@ public sealed class SourceVoice : Voice
 		}
 	}
 
-	// Caller MUST hold m_sync.
+	// Requires m_sync.
 	private int GetLoopBufferIndexLocked()
 	{
 		for (int i = 0; i < m_buffers.Count; i++)
@@ -1633,26 +1533,9 @@ public interface AudioProcessor
 {
 }
 
-// Stub matching real SharpDX.XAPO.AudioProcessorParamNative<T>. Stock
-// VRage.Audio.dll IL accesses `masteringLimiter.Parameter` in
-// MyXAudio2.StartEngine(), which in real SharpDX is defined on this
-// generic base class as `instance !0 get_Parameter()`. The CLR must be
-// able to load the generic type definition before JIT can bind the
-// callsite, or StartEngine() throws TypeLoadException and the whole
-// audio engine is caught-and-disabled.
-//
-// Must inherit from the real SharpDX.CppObject (SharpDX.dll is NOT
-// assembly-redirected, so CppObject : DisposeBase here is the same type
-// the game IL binds against). The real hierarchy is
-// AudioProcessorParamNative<T> : AudioProcessorNative : ComObject :
-// CppObject : DisposeBase, and stock VRage.Audio IL disposes effects via
-// `callvirt SharpDX.DisposeBase::Dispose()` (MyCueBank.Dispose on the
-// Reverb, compiled against the declaring type). DisposeBase.Dispose()
-// virtually dispatches `Dispose(bool)` through vtable slot 5 — when this
-// stub derived from System.Object that slot did not exist and the
-// dispatch jumped into type metadata: a deterministic SIGSEGV at
-// RIP 0x2281 on world load (MyDefinitionManager.LoadSounds →
-// MyXAudio2.ReloadData → MyCueBank.Dispose).
+// The CLR binds `AudioProcessorParamNative<T>.get_Parameter()` from game IL.
+// Inheriting the real CppObject also supplies the Dispose(bool) virtual slot
+// used by `callvirt SharpDX.DisposeBase::Dispose()`.
 public abstract unsafe class AudioProcessorParamNative<T> : global::SharpDX.CppObject, AudioProcessor where T : struct
 {
 	private T m_parameter;
@@ -1684,12 +1567,8 @@ public struct ReverbParameters
 {
 }
 
-// Must mirror the real hierarchy (Reverb : AudioProcessorParamNative<
-// ReverbParameters>, rooted in the real SharpDX.DisposeBase — see the
-// comment on AudioProcessorParamNative<T>). MyCueBank stores this instance
-// and MyCueBank.Dispose calls `callvirt SharpDX.DisposeBase::Dispose()` on
-// it during MyXAudio2.ReloadData; a System.Object-based stub crashed there
-// with SIGSEGV at RIP 0x2281 (missing Dispose(bool) vtable slot).
+// Preserve the SharpDX hierarchy so DisposeBase.Dispose() dispatches through
+// the expected Dispose(bool) virtual slot.
 public sealed class Reverb : global::SharpDX.XAPO.AudioProcessorParamNative<ReverbParameters>
 {
 	public Reverb(global::SharpDX.XAudio2.XAudio2 engine)
@@ -1742,11 +1621,7 @@ public struct CurvePoint
 	public float DspSetting;
 }
 
-// Stub matching real SharpDX.X3DAudio.Cone reference type. VRage.Audio
-// only sets `emitter.Cone = null;` in X3DAudioExtensions.SetDefaultValues,
-// so members are not required — but the Cone type itself must exist as
-// a class so the FieldRef `class SharpDX.X3DAudio.Cone Emitter::Cone`
-// resolves when the CLR loads Emitter.
+// Must be a class so the CLR can resolve Emitter.Cone's exact FieldRef.
 public sealed class Cone
 {
 }
@@ -1789,11 +1664,7 @@ public sealed class Emitter
 
 	public float CurveDistanceScaler;
 
-	// Must be typed as SharpDX.X3DAudio.Cone (not object): stock
-	// VRage.Audio.dll IL has FieldRef
-	// `field class SharpDX.X3DAudio.Cone Emitter::Cone`, and the CLR
-	// matches fields by name AND signature — so `object Cone` looks
-	// like a different field and throws MissingFieldException.
+	// The field type must match VRage.Audio's Cone FieldRef.
 	public Cone Cone;
 
 	public CurvePoint[] VolumeCurve;
@@ -1805,10 +1676,7 @@ public sealed class Emitter
 	public float DopplerScaler;
 }
 
-// All DspSettings members must be FIELDS, not properties. Stock
-// VRage.Audio IL in MyXAudio2.Apply3D does `stfld` / `ldfld` on
-// these members — properties produce set_X/get_X methods that
-// don't match a `field` MemberRef and throw MissingFieldException.
+// These must be fields because VRage.Audio accesses them with ldfld/stfld.
 public sealed class DspSettings
 {
 	public DspSettings(int sourceChannelCount, int destinationChannelCount)
@@ -1847,10 +1715,7 @@ public sealed class DspSettings
 
 public sealed unsafe class X3DAudio
 {
-	// AL handle and lock are owned by XAudio2; X3DAudio is constructed
-	// independently by the game (`new X3DAudio(speakers)`) so it has no
-	// engine reference. XAudio2 publishes these on init / clears them on
-	// dispose, and Calculate is no-op until they're set.
+	// X3DAudio has no engine reference, so XAudio2 publishes its AL handle and lock.
 	internal static AL GlobalAl;
 	internal static object GlobalAlLock;
 
@@ -1861,9 +1726,9 @@ public sealed unsafe class X3DAudio
 		public bool Valid;
 	}
 
-	// Hand-off slot from Calculate → SourceVoice.SetOutputMatrix. The game's
+	// Handoff from Calculate to SourceVoice.SetOutputMatrix. The game's
 	// MyXAudio2.Apply3D calls them in immediate succession on the same thread,
-	// so a [ThreadStatic] field is enough — no queue, no GC pressure.
+	// so a [ThreadStatic] field needs no queue.
 	[ThreadStatic] private static EmitterData s_lastEmitter;
 
 	internal static EmitterData ConsumeLastEmitter()
@@ -1888,21 +1753,15 @@ public sealed unsafe class X3DAudio
 
 	public void Calculate(Listener listener, Emitter emitter, CalculateFlags flags, DspSettings dspSettings)
 	{
-		// Distance: the game reads this back to apply its own custom linear
-		// falloff to MatrixCoefficients before SetOutputMatrix.
+		// The game uses this distance to attenuate MatrixCoefficients.
 		float dx = emitter.Position.X - listener.Position.X;
 		float dy = emitter.Position.Y - listener.Position.Y;
 		float dz = emitter.Position.Z - listener.Position.Z;
 		float distance = MathF.Sqrt(dx * dx + dy * dy + dz * dz);
 		dspSettings.EmitterToListenerDistance = distance;
 
-		// Custom volume-curve attenuation — same shape as the legacy SDL
-		// implementation. Filled uniformly into MatrixCoefficients because the
-		// per-cell layout no longer matters: OpenAL handles spatial panning
-		// from the source's world position. The scalar magnitude must still be
-		// correct, since the game multiplies the matrix by its linear falloff
-		// after this returns and SourceVoice.SetOutputMatrix extracts it as
-		// AL_GAIN.
+		// OpenAL handles spatial panning. Matrix cells carry only the attenuation
+		// scalar consumed by the game's falloff and AL_GAIN path.
 		float attenuation = EvaluateCurve(emitter.VolumeCurve, emitter.CurveDistanceScaler, distance);
 		if (flags.HasFlag(CalculateFlags.Matrix))
 		{
@@ -1912,9 +1771,7 @@ public sealed unsafe class X3DAudio
 			}
 		}
 
-		// Doppler: the game reads DopplerFactor and feeds it into
-		// voice.SetFrequencyRatio. With OpenAL's own Doppler disabled
-		// (DopplerFactor(0) on the engine), there's no double-application.
+		// The game applies DopplerFactor through SetFrequencyRatio; OpenAL Doppler is disabled.
 		if (flags.HasFlag(CalculateFlags.Doppler) && distance > 1e-4f)
 		{
 			float invDist = 1f / distance;
@@ -1935,8 +1792,7 @@ public sealed unsafe class X3DAudio
 			dspSettings.DopplerFactor = 1f;
 		}
 
-		// Push listener pose to OpenAL. Apply3D fires every audio frame, so
-		// the listener tracks the camera continuously.
+		// Apply3D updates the OpenAL listener every audio frame.
 		var al = GlobalAl;
 		var alLock = GlobalAlLock;
 		if (al != null && alLock != null)
@@ -1947,12 +1803,8 @@ public sealed unsafe class X3DAudio
 					listener.Position.X, listener.Position.Y, listener.Position.Z);
 				al.SetListenerProperty(ListenerVector3.Velocity,
 					listener.Velocity.X, listener.Velocity.Y, listener.Velocity.Z);
-				// SE world is right-handed with -Z forward (Vector3D.Forward = (0,0,-1)).
-				// MySandboxGame.UpdateSound passes listenerFront = -MainCamera.ForwardVector
-				// to flip into X3DAudio's left-handed +Z forward convention. OpenAL is
-				// right-handed -Z forward (matches SE world), so we negate OrientFront
-				// here to recover the actual camera-look direction. OrientTop, positions
-				// and velocities are already in SE coords — no flip needed.
+				// SE and OpenAL use right-handed -Z forward. The game negates camera
+				// forward for X3DAudio, so negate OrientFront again for OpenAL.
 				float* ori = stackalloc float[6]
 				{
 					-listener.OrientFront.X, -listener.OrientFront.Y, -listener.OrientFront.Z,
@@ -1962,8 +1814,7 @@ public sealed unsafe class X3DAudio
 			}
 		}
 
-		// Stash emitter data for the matching SetOutputMatrix call. Same
-		// thread, immediate handoff — no queue needed.
+		// SetOutputMatrix consumes this emitter on the same thread.
 		s_lastEmitter = new EmitterData
 		{
 			X = emitter.Position.X, Y = emitter.Position.Y, Z = emitter.Position.Z,

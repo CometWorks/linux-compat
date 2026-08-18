@@ -12,28 +12,8 @@ using VRage.Utils;
 
 namespace ClientPlugin.Patches.PathHandling;
 
-// Regression detector for atlas-path resolution on Linux. The
-// MyTextureAtlas(string, string) ctor is invoked once from
-// MyBillboardRenderer.Init during CreateDeviceInternal, well before
-// MySandboxGame.Constructor() runs -- the earliest point that MyFileSystem
-// path-handling Prefixes are exercised under a Windows-style argument
-// ("Textures\\Particles\\ParticlesAtlas.tai"). If ParseAtlasDescription's
-// broad catch ever silently swallows OpenRead returning null again, every
-// later FindElement(material.Texture) call from MyBillboardRenderer
-// .GatherInternal throws KeyNotFoundException -- crash observed firing the
-// flare gun.
-//
-// Expected healthy log on Linux (each game start, single line):
-//   existsRaw=False           // backslash path is not a real file
-//   existsNormalized=True     // PathHelpers.Normalize finds it
-//   existsResolved=True       // PathCache.ResolveAbsolute finds it
-//   ContentPath populated, no getter exception
-// Any deviation (existsNormalized=False, ContentPath getter throws, etc.)
-// points at the layer that regressed -- MyFileSystem.Init ordering, the Open
-// Prefix, or PathCache.
-//
-// Cost: one Path.Combine, three File.Exists syscalls, one PathCache lookup,
-// one log line per render-device init. Not on any frame-time hot path.
+// Logs raw, normalized, and case-resolved atlas path availability during
+// render-device initialization. This must not affect startup.
 [HarmonyPatch(typeof(MyTextureAtlas), MethodType.Constructor, typeof(string), typeof(string))]
 [HarmonyPatchCategory("Finish")]
 // ReSharper disable once UnusedType.Global
@@ -78,25 +58,8 @@ static class MyTextureAtlasCtorRegressionPatch
     }
 }
 
-// MyTextureAtlas.ParseAtlasDescription builds dictionary keys as
-//   textureDir + Path.GetFileName(array[0])
-// where `array[0]` is the first column of a .tai manifest. The stock SE
-// manifests use Windows-style paths, e.g.
-//   "Textures\MuzzleFlashMachineGunFront.dds  ParticlesAtlas0.dds  ..."
-// On Linux `Path.GetFileName` does not recognize `\` as a separator, so the
-// returned "leaf" is the whole string, producing a doubled-prefix key like
-// "Textures\Particles\Textures\MuzzleFlashMachineGunFront.dds". The lookup
-// in MyBillboardRenderer.GatherInternal (m_atlas.FindElement(material.Texture))
-// uses the SBC-side string "Textures\Particles\<file>", so the key isn't
-// found and the render thread throws KeyNotFoundException — observed as a
-// crash when the flare gun (and any other weapon whose particle muzzle flash
-// references a sub-folder in the atlas) fires.
-//
-// Fix: transpile the single Path.GetFileName(string) call inside
-// ParseAtlasDescription to PathHelpers.GetFileName, which normalizes `\` to
-// `/` before delegating. Mod-API surface is unchanged — MyTextureAtlas is
-// internal, and MyTransparentMaterialDefinition.Texture (the lookup side)
-// stays in Windows form for mods that Split('\\') against it.
+// Atlas manifests contain Windows paths. Normalize only the GetFileName call;
+// keep material texture keys in Windows form for mod compatibility.
 [HarmonyPatch(typeof(MyTextureAtlas))]
 [HarmonyPatchCategory("Finish")]
 // ReSharper disable once UnusedType.Global

@@ -6,35 +6,17 @@
         <AssemblyName>LinuxCompatServer</AssemblyName>
         <LangVersion>13</LangVersion>
 
-        <!-- Ensure SDK generates assembly attributes (no need for AssemblyInfo) -->
         <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 
-        <!-- Default configuration if none supplied -->
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
 
-        <!-- Keep original behaviour for post/pre build events -->
         <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
-
-        <!-- Required for OpenAL Silk.NET unsafe pointer APIs (Device*, Context*) -->
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <DefineConstants>$(DefineConstants);DEDICATED</DefineConstants>
     </PropertyGroup>
 
-    <PropertyGroup>
-        <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
-    </PropertyGroup>
-
-    <!--
-        Reference set for the server plugin. Trimmed down from the client
-        plugin's set: graphics (SharpDX, SixLabors, EmptyKeys, Sandbox.Graphics,
-        Sandbox.RenderDirect), audio/input (VRage.Audio, VRage.Input,
-        VRage.UserInterface), Mod.Io and the unused VRage.Network/VRage.Ansel
-        bits are dropped because the dedicated server uses MyNullRender,
-        MyNullMicrophone, and never reaches the client-only code paths.
-        VRage.Render is still linked because LODDescriptorPatch and
-        ModelPathPatch reference the VRageRender.Import namespace, which is
-        traversed by model/LOD loading even on a MyNullRender server.
-    -->
+    <!-- Null-render servers require VRage.Render for model and LOD loading. -->
     <ItemGroup>
         <Reference Include="HavokWrapper">
             <HintPath>$(DS64)/HavokWrapper.dll</HintPath>
@@ -140,4 +122,5 @@
       <Folder Include="Patches/" />
     </ItemGroup>
 
+    <Import Project="../Shared/Shared.projitems" Label="Shared" />
 </Project>

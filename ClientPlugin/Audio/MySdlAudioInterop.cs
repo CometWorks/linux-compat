@@ -70,14 +70,9 @@ internal static unsafe class MySdlAudioInterop
 
 	private static void PinFfmpegLibraryVersions()
 	{
-		// Pin to FFmpeg 8.1 — the major bundled under Pulsar/Libraries and
-		// the major that FFmpeg.AutoGen 8.1.0's AVCodecContext layout
-		// assumes. Falling back to older majors re-introduces struct-layout
-		// drift (FFmpeg 8 removed AVCodecContext.ticks_per_frame, so 7.x
-		// libs would shift every field after `framerate` by 4 bytes).
-		// avdevice/avfilter are intentionally omitted — we don't call them
-		// and TryLoad'ing them would drag in a second FFmpeg via transitive
-		// deps that NativeLibrary.Free cannot undo.
+		// FFmpeg.AutoGen 8.1.0 requires the FFmpeg 8.1 ABI bundled by Pulsar.
+		// FFmpeg 7 has a different AVCodecContext layout after `framerate`.
+		// Omit unused libraries to avoid loading a second FFmpeg dependency set.
 		ffmpeg.LibraryVersionMap["avcodec"]    = 62;
 		ffmpeg.LibraryVersionMap["avformat"]   = 62;
 		ffmpeg.LibraryVersionMap["avutil"]     = 60;
@@ -121,12 +116,8 @@ internal static unsafe class MySdlAudioInterop
 			SdlAudio.Free(audioBuffer);
 		}
 
-		// SDL_LoadWAV expands 24-bit PCM WAVs to SDL_AUDIO_S32LE. SharpDX's
-		// WaveFormat(rate, bits, channels) constructor treats bits >= 32 as
-		// IeeeFloat, which would mis-tag these integer samples as 32-bit float
-		// and cause both diagnostics (~770 dB readings) and playback corruption
-		// (loud / distorted) downstream. Convert to S16 here so the rest of the
-		// shim never sees S32 integer PCM. See Docs/3DAudio.md "24-bit WAV bug".
+		// SDL_LoadWAV expands 24-bit PCM to S32LE, while SharpDX interprets
+		// 32-bit WaveFormat samples as float. Convert to S16 before tagging them.
 		if (spec.Format == SDL_AUDIO_S32LE)
 		{
 			data = ConvertS32LeToS16Le(data);
@@ -143,9 +134,7 @@ internal static unsafe class MySdlAudioInterop
 		byte[] s16 = new byte[sampleCount * 2];
 		for (int i = 0; i < sampleCount; i++)
 		{
-			// Read S32LE sample, take the high 16 bits (drops the low 16 bits
-			// of precision; for 24-bit-source data expanded to S32 the low byte
-			// is zero anyway).
+			// Keep the high 16 bits; SDL's expanded 24-bit source has a zero low byte.
 			int sample = s32[i * 4]
 				| (s32[i * 4 + 1] << 8)
 				| (s32[i * 4 + 2] << 16)
@@ -208,9 +197,6 @@ internal static unsafe class MySdlAudioInterop
 
 	public static string GetErrorString()
 	{
-		// Auto-marshals to the render thread; safe to call from anywhere
-		// (typically from exception paths logging the cause of a failed SDL
-		// op).
 		return SdlAudio.GetErrorString();
 	}
 }

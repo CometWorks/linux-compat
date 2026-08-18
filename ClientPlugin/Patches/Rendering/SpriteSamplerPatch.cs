@@ -12,9 +12,7 @@ using VRage.Render11.Sprites;
 
 namespace ClientPlugin.Patches.Rendering;
 
-// This patch sharpens text and UI sprites without rendering them to an oversized target.
-// The sampler manager owns the new state, so device reset and disposal work as usual.
-// Sprites.hlsl reads LinearSampler from slot 2, which must be rebound after StandardSamplers.
+// Sharpen UI sprites by rebinding Sprites.hlsl slot 2 after StandardSamplers.
 [HarmonyPatch(typeof(MySpritesManager), nameof(MySpritesManager.OnDeviceInit))]
 [HarmonyPatchCategory("Finish")]
 static class SpriteSamplerCreatePatch

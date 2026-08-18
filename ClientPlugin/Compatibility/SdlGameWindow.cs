@@ -22,9 +22,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     private const ulong SDL_WINDOW_VULKAN = 0x10000000uL;
 
     private const uint SDL_EVENT_QUIT = 0x100u;
-    // SDL3 window event codes (SDL_events.h): SHOWN=0x202, HIDDEN=0x203,
-    // EXPOSED=0x204, MOVED=0x205, RESIZED=0x206, PIXEL_SIZE_CHANGED=0x207.
-    // The MOUSE_ENTER/MOUSE_LEAVE/FOCUS_*/CLOSE_REQUESTED values below are correct.
+    // SDL3 window event codes from SDL_events.h.
     private const uint SDL_EVENT_WINDOW_MOVED = 0x205u;
     private const uint SDL_EVENT_WINDOW_RESIZED = 0x206u;
     private const uint SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED = 0x207u;
@@ -44,10 +42,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     private const uint SDL_BUTTON_X1MASK = 1u << 3;
     private const uint SDL_BUTTON_X2MASK = 1u << 4;
 
-    // Single lock guarding the input snapshot (mouse position, button state,
-    // accumulated relative delta, scroll wheel, buffered text input). The
-    // render thread's per-iteration MouseSnapshotCallback writes; readers on
-    // any thread (main game loop, IVRageInput2 callers) read.
+    // Guards the input snapshot written by SDL and read by game threads.
     private readonly object m_bufferLock = new object();
     private readonly Dictionary<uint, ActionRef<MyMessage>> m_messageHandlers = new Dictionary<uint, ActionRef<MyMessage>>();
     private List<char> m_bufferedChars = new List<char>();
@@ -66,38 +61,21 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     private bool m_showCursor = true;
     private bool m_mouseOutsideWindow;
 
-    // Tracks the last applied window mode so windowed-to-windowed updates
-    // (drag-resize) skip redundant SetWindowSize/Position which would fight the
-    // window manager.
+    // Prevents drag-resize feedback from redundant SDL geometry changes.
     private MyWindowModeEnum? m_appliedWindowMode;
 
-    // Last-known windowed (Window mode) size/position. Updated every time the
-    // user drags the window or resizes it, and before switching to a
-    // fullscreen mode. Restored when returning to Window mode on subsequent
-    // mode changes and on startup (loaded from the game config).
+    // Windowed geometry restored after fullscreen transitions and at startup.
     private Vector2I? m_savedWindowedSize;
     private Vector2I? m_savedWindowedPosition;
 
-    // Minimum window size we consider a valid "windowed" state. Guards
-    // against the WM or a buggy adapter (DXGI/DXVK reporting 58x128
-    // swapchain bounds as a display) briefly driving the window to a few
-    // pixels — we must neither persist that to config nor restore it as the
-    // remembered windowed size on the next launch. Well below the smallest
-    // conventional resolution (640x480) so any legitimate user choice passes.
+    // Reject transient tiny DXGI/DXVK bounds without blocking normal resolutions.
     private const int MIN_VALID_WINDOW_WIDTH = 480;
     private const int MIN_VALID_WINDOW_HEIGHT = 360;
 
     private static bool IsValidWindowedSize(int w, int h) =>
         w >= MIN_VALID_WINDOW_WIDTH && h >= MIN_VALID_WINDOW_HEIGHT;
 
-    // Debounced Config.Save(). MySandboxGame.OnExit does not save the config,
-    // so move-only changes would never reach disk unless we save ourselves.
-    // A WM drag emits many WINDOW_MOVED events per second — writing the XML
-    // config file on each one would hammer the disk, so we coalesce by
-    // scheduling a save a short time after the last geometry change. The
-    // schedule timestamp is read by main-thread UpdateMainThread and written
-    // by the render thread's HandleEvent — kept atomic via Volatile.Read /
-    // Volatile.Write of a long.
+    // Debounce geometry saves; the render thread schedules and the game thread saves.
     private long m_configSaveScheduledAtTicks;
     private const int CONFIG_SAVE_DEBOUNCE_MS = 500;
 
@@ -125,14 +103,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     public bool IsActive => m_isActive;
     public Vector2I ClientSize => m_clientSize;
 
-    // Physical pixel size of the window contents; on HiDPI displays this may be
-    // larger than ClientSize. MySandboxGame.UpdateLinuxWindowResize reads this
-    // to drive the DXVK backbuffer resize.
+    // Physical drawable size used for the DXVK backbuffer on HiDPI displays.
     internal Vector2I ClientSizePixels => m_clientSizePixels;
 
-    // Programmatic resize. Called from window-management patches when user
-    // video-settings trigger a mode change. Dispatches the SDL call onto the
-    // render thread.
+    // Applies a requested video-settings resize on the SDL thread.
     internal void SetClientSize(int width, int height)
     {
         if (width <= 0 || height <= 0 || Handle == IntPtr.Zero)
@@ -148,8 +122,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         });
     }
 
-    // Refresh the cached pixel size from SDL. Caller must be on the render
-    // thread.
+    // SDL thread only.
     private void RefreshPixelSize()
     {
         if (Handle == IntPtr.Zero)
@@ -211,13 +184,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     }
 
     /// <summary>
-    /// Tries to read the freshest in-window mouse position snapshot from the
-    /// SDL polling thread under <see cref="m_bufferLock"/>, so the Vector2
-    /// read is not torn against the per-iteration UpdateMouseSnapshot
-    /// writer. Returns false when the cursor is outside the window or the
-    /// snapshot is invalid — callers (the render-thread cursor repositioner)
-    /// should leave the queued sprite untouched in that case rather than
-    /// teleporting it to an off-window coordinate.
+    /// Reads an atomic in-window mouse snapshot for render-thread cursor placement.
     /// </summary>
     internal bool TryGetFreshInWindowMousePosition(out Vector2 position)
     {
@@ -239,9 +206,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     public event Action OnManualWindowCloseRequest;
 
     /// <summary>
-    /// Construct an SdlGameWindow on the render thread. The actual SDL3
-    /// window is created from inside the render-thread context so all
-    /// subsequent SDL calls remain affined to the same thread.
+    /// Constructs the native window on the SDL thread.
     /// </summary>
     internal static SdlGameWindow Create(string gameName, int width, int height, int? initialX = null, int? initialY = null)
     {
@@ -250,9 +215,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     private SdlGameWindow(string gameName, int width, int height, int? initialX, int? initialY)
     {
-        // Constructor MUST run on the render thread — `Create` enforces this.
-        // SDL_Init / SDL_SetHint / X11 driver selection are done once when
-        // SdlRenderThread starts, so we do not repeat them here.
+        // Native window creation must stay on the SDL thread.
         if (!SdlRenderThread.IsCurrent)
             throw new InvalidOperationException(
                 "SdlGameWindow constructor must run on the SDL render thread; use SdlGameWindow.Create.");
@@ -269,16 +232,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         if (Handle == IntPtr.Zero)
             throw new PlatformNotSupportedException("SDL3 window creation failed.");
 
-        // Set the window/taskbar icon while the window is still hidden so
-        // it appears with the correct icon the first time the WM maps it.
-        // SDL_SetWindowIcon writes _NET_WM_ICON on X11, which is what
-        // taskbars/launchers also read for the taskbar icon.
+        // Set _NET_WM_ICON before the window is mapped.
         SdlIconHelper.Apply(Handle, ResolveGameIcon());
 
-        // Apply the caller-supplied initial geometry while the window is
-        // still hidden so it shows up at the right place the first time
-        // the WM maps it — rather than snapping from SDL's default position
-        // to the saved position after the first ApplyModeChange.
+        // Apply saved geometry before the first map to avoid a visible jump.
         if (initialX.HasValue && initialY.HasValue)
         {
             SDL_SetWindowPosition(Handle, initialX.Value, initialY.Value);
@@ -291,8 +248,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         UpdateMouseModeOnRenderThread();
         RefreshPixelSize();
 
-        // Plug into the render-thread loop: HandleEvent runs for every
-        // polled SDL event, UpdateMouseSnapshot runs once per iteration.
+        // Receive events and one mouse snapshot per SDL loop.
         SdlRenderThread.EventHandler += HandleEvent;
         SdlRenderThread.MouseSnapshotCallback = UpdateMouseSnapshot;
 
@@ -302,9 +258,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             $"initialPos={(initialX.HasValue && initialY.HasValue ? $"({initialX},{initialY})" : "(default)")}");
     }
 
-    // Same fallback chain used by ShowSplashScreenPatch: prefer the
-    // explicit MyPerGameSettings.GameIcon, fall back to "<AppName>.ico"
-    // (which resolves to "SpaceEngineers.ico" for SE).
+    // Prefer the configured icon, then <ApplicationName>.ico.
     private static string ResolveGameIcon()
     {
         string gameIcon = Sandbox.Game.MyPerGameSettings.GameIcon;
@@ -323,19 +277,13 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         if (Handle == IntPtr.Zero)
             return;
 
-        // Mode-change requests come from various threads (MyWindowsRender's
-        // CreateRenderDevice / ApplyRenderSettings postfixes, video-settings
-        // dialog, etc.). All SDL window operations must happen on the render
-        // thread, so dispatch the apply there. FIFO ordering guarantees
-        // that subsequent calls (e.g. ShowAndFocus) see the new mode applied.
+        // Serialize mode changes with other SDL window operations.
         SdlRenderThread.Dispatch(() =>
         {
             if (Handle == IntPtr.Zero)
                 return;
             ApplyModeChange(mode, width, height, desktopBounds);
-            // The window's drawable size just changed (mode and/or
-            // dimensions). Ask the per-frame processor to re-check the
-            // backbuffer against the new SDL pixel size on its next tick.
+            // Reconcile the DXVK backbuffer on the next game tick.
             BackbufferResizeRequest.Request();
         });
     }
@@ -348,15 +296,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
         bool modeChanged = !m_appliedWindowMode.HasValue || m_appliedWindowMode.Value != mode;
 
-        // First time we're ever called: hydrate saved windowed state from the
-        // game config so subsequent Window transitions can restore it. This
-        // also lets us respect a saved windowed size across launches even
-        // when the initial mode is Fullscreen.
+        // Load saved windowed geometry before the first mode transition.
         if (!m_appliedWindowMode.HasValue && !m_savedWindowedSize.HasValue)
             LoadSavedWindowedState();
 
-        // Switching AWAY from Window mode: capture current window size and
-        // position so we can restore both when returning to Window.
         if (modeChanged
             && m_appliedWindowMode == MyWindowModeEnum.Window
             && mode != MyWindowModeEnum.Window)
@@ -375,9 +318,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 break;
 
             case MyWindowModeEnum.FullscreenWindow:
-                // XWayland does not honor the manual borderless+resize sequence
-                // reliably, so map borderless fullscreen to SDL fullscreen there.
-                // Native X11 keeps the borderless-window behavior.
+                // XWayland requires SDL fullscreen for reliable borderless mode.
                 if (IsXWayland())
                 {
                     ApplyFullscreenMode(displayBounds.Width, displayBounds.Height);
@@ -403,10 +344,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     private void ApplyWindowedMode(int desiredWidth, int desiredHeight, Rectangle displayBounds, bool modeChanged)
     {
-        // Only trust the display bounds for clamping when they look like a
-        // real desktop. DXGI adapter DesktopBounds on DXVK sometimes report
-        // the current swapchain buffer area (e.g. 58x128), which would
-        // otherwise shrink the window to a few pixels.
+        // DXVK can report tiny swapchain bounds instead of desktop bounds.
         bool boundsOk = IsPlausibleDisplayBounds(displayBounds);
 
         int targetW = desiredWidth;
@@ -421,9 +359,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
         if (modeChanged)
         {
-            // Transition INTO Window mode (either from startup, fullscreen,
-            // or fullscreen-window). Prefer the persisted size+position so
-            // the window returns to where the user left it.
+            // Restore persisted geometry when entering windowed mode.
             int w = m_savedWindowedSize?.X ?? targetW;
             int h = m_savedWindowedSize?.Y ?? targetH;
             if (boundsOk)
@@ -445,14 +381,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             }
             else
             {
-                // No trusted bounds and no saved position — let SDL keep its
-                // default (centered on primary at create time).
+                // Keep SDL's default position when no trusted bounds exist.
                 SDL_GetWindowPosition(Handle, out x, out y);
             }
 
-            // Ensure the window is fully inside the current display. If the
-            // saved position puts part of it offscreen (monitor reshuffle,
-            // screen resolution change), shrink and/or recenter as needed.
             if (boundsOk)
                 ClampWindowToDisplay(displayBounds, ref x, ref y, ref w, ref h);
 
@@ -470,9 +402,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         }
         else if (targetW != m_clientSize.X || targetH != m_clientSize.Y)
         {
-            // Settings-dialog resolution change while already in Window mode.
-            // Resize without repositioning; if the new size no longer fits at
-            // the current position, recenter it on the display.
+            // Preserve position for windowed resolution changes unless it no longer fits.
             bool havePos = SDL_GetWindowPosition(Handle, out int curX, out int curY);
             int x = havePos
                 ? curX
@@ -503,9 +433,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             m_savedWindowedPosition = new Vector2I(x, y);
             PersistSavedWindowedState();
         }
-        // else: already at the requested size (mirror-back from a user drag
-        // that UpdateLinuxWindowResize pushed through SwitchSettings). Leave
-        // the window geometry alone so we don't fight the window manager.
+        // Matching geometry came from the WM and must not be applied back to it.
 
         RefreshPixelSize();
     }
@@ -555,19 +483,8 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     private unsafe void ApplyFullscreenMode(int width, int height)
     {
-        // SDL3 requires a populated SDL_DisplayMode struct to be set on the
-        // window before SDL_SetWindowFullscreen(true) will switch resolutions.
-        // SDL_GetClosestFullscreenDisplayMode returns the closest supported
-        // mode for the requested size; pass it by pointer to
-        // SDL_SetWindowFullscreenMode.
-        //
-        // Pass includeHighDensityModes=true so SDL can pick a mode whose
-        // pixel_density matches the current desktop's content scale. On X11
-        // with `xrandr --scale`, going exclusive-fullscreen normally performs
-        // an XRRSetScreenConfigAndRate which drops the output's scale factor
-        // (xrandr treats scale as separate from mode), so the 200% desktop
-        // resets to 100% on exit. Picking a high-density mode lets SDL honor
-        // the existing pixel_density rather than forcing a scale-less mode.
+        // SDL requires a populated display mode before exclusive fullscreen.
+        // Include high-density modes to preserve X11 output scaling.
         uint displayId = SDL_GetDisplayForWindow(Handle);
         if (displayId != 0 &&
             SDL_GetClosestFullscreenDisplayMode(displayId, width, height, 0f, true, out SdlDisplayMode mode))
@@ -592,9 +509,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 return new Rectangle(rect.X, rect.Y, rect.W, rect.H);
         }
 
-        // Fall back to the primary display. SDL_GetDisplayForWindow can return
-        // 0 for a hidden / never-positioned window (first OnModeChanged fires
-        // before ShowAndFocus on Linux).
+        // Hidden or unpositioned windows may not have an assigned display.
         uint primary = SDL_GetPrimaryDisplay();
         if (primary != 0 && SDL_GetDisplayBounds(primary, out SdlRect prect)
             && prect.W > 0 && prect.H > 0)
@@ -603,9 +518,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         return default;
     }
 
-    // Rectangle looks like real desktop geometry (not a bogus DXGI adapter
-    // output that reports the swapchain buffer area). Used before clamping
-    // a requested window size so we don't shrink the window to a few pixels.
+    // Reject DXGI swapchain bounds masquerading as desktop geometry.
     private static bool IsPlausibleDisplayBounds(Rectangle r) =>
         r.Width >= 640 && r.Height >= 480;
 
@@ -666,9 +579,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     }
 
     /// <summary>
-    /// Stub. Event polling is owned by <see cref="SdlRenderThread"/>'s loop;
-    /// callers used to invoke this to nudge the SDL pump from main / SE
-    /// render thread, but that is no longer necessary.
+    /// Event polling is owned by <see cref="SdlRenderThread"/>.
     /// </summary>
     public void DoEvents()
     {
@@ -678,8 +589,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     {
         m_isVisible = false;
         m_isActive = false;
-        // Ensure any debounced window-geometry change reaches disk before the
-        // game tears down. MySandboxGame.OnExit does not flush the config.
+        // MySandboxGame.OnExit does not flush pending geometry changes.
         FlushPendingConfigSave(force: true);
         SdlRenderThread.Invoke(() =>
         {
@@ -697,12 +607,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     public void UpdateMainThread()
     {
-        // Event polling, mode-change application and clipboard pumping all
-        // live on SdlRenderThread now (see SdlRenderThread.Run). The only
-        // main-thread housekeeping left here is flushing any debounced
-        // window-config save once the user finishes dragging — that path
-        // writes the SE config XML and is intentionally kept off the SDL
-        // thread to avoid blocking event polling on disk I/O.
+        // Keep config file I/O off the SDL event thread.
         FlushPendingConfigSave();
     }
 
@@ -715,11 +620,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         m_isVisible = true;
         m_isActive = true;
 
-        // Any OnModeChanged dispatched before this call has already been
-        // queued onto the render thread; FIFO order ensures it runs before
-        // the SDL_ShowWindow we issue here, so fullscreen starts in the
-        // final mode rather than briefly flashing at the initial windowed
-        // geometry.
+        // FIFO dispatch applies the requested mode before showing the window.
         SdlRenderThread.Invoke(() =>
         {
             if (Handle != IntPtr.Zero)
@@ -744,14 +645,11 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             data[i] = m_keyStates[i];
     }
 
-    // IVRageInput2
     uint[] IVRageInput2.DeveloperKeys => new uint[4];
     bool IVRageInput2.IsCorrectlyInitialized => true;
 
     void IVRageInput2.GetMouseState(out MyMouseState state)
     {
-        // No DoEvents() needed: SdlRenderThread pumps events autonomously
-        // and refreshes our snapshot every iteration.
         GetMouseInputState(out var inputState);
         state = new MyMouseState
         {
@@ -775,10 +673,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     unsafe void IVRageInput2.GetAsyncKeyStates(byte* data) => CopyAsyncKeyStates(data);
     void IDisposable.Dispose() { }
 
-    /// <summary>
-    /// Returns the most recent input snapshot. Reads only cached fields;
-    /// the render thread's <see cref="UpdateMouseSnapshot"/> populates them.
-    /// </summary>
+    /// <summary>Returns the latest render-thread input snapshot.</summary>
     internal void GetMouseInputState(out MyMouseInputState state)
     {
         if (Handle == IntPtr.Zero)
@@ -815,11 +710,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     }
 
     /// <summary>
-    /// Render-thread callback invoked by <see cref="SdlRenderThread"/>'s
-    /// loop after each event-pump pass. Refreshes the cached mouse snapshot
-    /// (absolute position, button state, accumulated relative delta) and
-    /// the live window size so off-thread readers don't have to issue SDL
-    /// calls from the wrong thread.
+    /// Refreshes window and mouse snapshots after each SDL event-pump pass.
     /// </summary>
     private void UpdateMouseSnapshot()
     {
@@ -835,10 +726,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         lock (m_bufferLock)
         {
             m_mouseButtonState = buttonState;
-            // SDL_GetMouseState can stick to the last in-window coordinate
-            // after the pointer leaves. Trust SDL's leave/enter events
-            // first: once we know the pointer left, keep reporting an
-            // out-of-window position until an enter event arrives.
+            // SDL_GetMouseState retains the last coordinate after mouse leave.
             if (m_showCursor && m_mouseOutsideWindow)
                 m_mousePosition = -Vector2.One;
             else
@@ -850,16 +738,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             m_relativeDeltaYAccum += relY;
         }
 
-        // Mirror mouse buttons into the async-keystate buffer so that
-        // MyInput.IsKeyPress(MyKeys.LeftButton) etc. observe them. On
-        // Windows GetAsyncKeyState reports VK_LBUTTON/RBUTTON/MBUTTON/
-        // XBUTTON1/XBUTTON2 alongside keyboard keys, and game code plus
-        // mods (notably Build Vision 2 via RichHud, which polls
-        // MyAPIGateway.Input.IsKeyPress(MyKeys.LeftButton) for its
-        // "Select/Confirm" bind) rely on that. SDL3 keeps mouse buttons in
-        // a separate state stream, so without this mirror MyKeys-backed
-        // mouse-button binds never fire on Linux even though the
-        // MyMouseState path (IsLeftMousePressed/IsRightMousePressed) works.
+        // Match Windows GetAsyncKeyState by exposing mouse buttons as MyKeys.
         SetKeyState(MyKeys.LeftButton, (buttonState & SDL_BUTTON_LMASK) != 0);
         SetKeyState(MyKeys.RightButton, (buttonState & SDL_BUTTON_RMASK) != 0);
         SetKeyState(MyKeys.MiddleButton, (buttonState & SDL_BUTTON_MMASK) != 0);
@@ -877,9 +756,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     }
 
     /// <summary>
-    /// Render-thread event handler installed in
-    /// <see cref="SdlRenderThread.EventHandler"/>. All access to SDL3 inside
-    /// this method is therefore on the SDL-owning thread.
+    /// Handles SDL events on the SDL render thread.
     /// </summary>
     private void HandleEvent(ref SdlRenderThread.SdlEvent sdlEvent)
     {
@@ -909,10 +786,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 m_clientSize = new Vector2I(sdlEvent.Window.Data1, sdlEvent.Window.Data2);
                 RefreshPixelSize();
                 BackbufferResizeRequest.Request();
-                // Track the real windowed geometry whenever we're in Window
-                // mode — whether the user dragged the edge or settings drove
-                // it. Reject implausibly tiny sizes so we can't persist
-                // garbage if the WM or DXVK reports a transient bogus size.
+                // Persist valid windowed geometry from either the WM or settings.
                 if (m_appliedWindowMode == MyWindowModeEnum.Window
                     && IsValidWindowedSize(m_clientSize.X, m_clientSize.Y))
                 {
@@ -974,43 +848,8 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         }
     }
 
-    // When focus is restored (e.g. user alt-tabbed away with the cursor
-    // outside the window and came back), the OS pointer can be sitting
-    // anywhere — far outside the window, or pinned at the very last pixel
-    // of an adjacent screen edge. Two failure modes occur on Linux/X11:
-    //
-    //   1. Pointer ends up outside the window. The software cursor uses
-    //      window-relative coordinates and DrawMouseCursor hides itself
-    //      once those go negative or beyond the client size, so the
-    //      in-game cursor stays invisible until the user wiggles it back
-    //      inside. Fix: warp the OS pointer to the window center.
-    //
-    //   2. Pointer is technically inside the window (e.g. global x=3839
-    //      in a 3840-wide maximized window), but FOCUS_LOST set
-    //      m_mouseOutsideWindow=true and m_mousePosition=(-1,-1). SDL
-    //      does not reliably synthesize MOUSE_ENTER after FOCUS_GAINED
-    //      when the pointer was already inside the window at the moment
-    //      focus returned — verified at the right screen edge: FOCUS_LOST
-    //      → FOCUS_GAINED, then no MOUSE_ENTER for several seconds —
-    //      while the left edge happens to self-heal via a quick WM-driven
-    //      LEAVE/ENTER cycle (panel/hot-zone) so the bug appeared
-    //      asymmetric. GetMouseInputState then keeps clamping
-    //      m_mousePosition to (-1,-1) and the software cursor stays
-    //      invisible. Fix: clear m_mouseOutsideWindow and seed
-    //      m_mousePosition from the known global coords ourselves — we
-    //      have authoritative info that the pointer is in the window, no
-    //      need to wait for an event SDL may never deliver.
-    //
-    // Only acts when the GUI cursor is active (m_showCursor == true);
-    // during gameplay relative mouse mode already pins the cursor to the
-    // center.
-    //
-    // The global-vs-window-bounds test also distinguishes alt-tab from
-    // mouse-edge focus-follows-mouse in plain Window mode: a focus change
-    // caused by the pointer crossing the window edge necessarily leaves
-    // the pointer inside the window when FOCUS_GAINED fires, so it falls
-    // into the no-warp branch and the cursor stays where the user just
-    // moved it.
+    // SDL may omit MOUSE_ENTER after focus returns. Restore the software cursor
+    // from global coordinates, or recenter it when the pointer is outside.
     private void RecenterCursorIfOutsideWindow()
     {
         if (Handle == IntPtr.Zero)
@@ -1046,14 +885,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         if (Handle == IntPtr.Zero)
             return;
 
-        // On Linux, capture the cursor via relative mouse mode whenever the game
-        // wants it hidden (in-game camera control). In the main menu m_showCursor
-        // is true and the cursor moves freely.
+        // Use relative mode whenever the game hides its software cursor.
         SDL_SetWindowRelativeMouseMode(Handle, !m_showCursor);
 
-        // Always hide the OS/hardware cursor. The game renders its own software
-        // cursor; showing both produces a visible offset because the software
-        // cursor is drawn 1-2 frames behind the real pointer position.
+        // Keep the hardware cursor hidden because it renders ahead of the software cursor.
         SDL_HideCursor();
     }
 

@@ -5,18 +5,7 @@ using VRage.FileSystem;
 
 namespace ClientPlugin.Patches.PathHandling;
 
-// Ports Topic 4.10 (Crosshair indicator path) from dotnet-game-local.
-//
-// MyGuiScreenOptionsGame.InitCrosshairIndicators calls
-// Directory.EnumerateFiles(Path.Combine(ContentPath, "Textures\\GUI\\Indicators")).
-// The backslash-joined path bypasses MyFileSystem and goes straight to
-// System.IO which on Linux treats '\\' as part of the filename, so the
-// enumeration fails to find the Indicators directory and no crosshair
-// textures load.
-//
-// Replace the method body with an equivalent implementation that uses
-// the forward-slash path ("Textures/GUI/Indicators") and preserves the
-// HitIndicator filter.
+// Enumerate crosshair indicators through a Linux-compatible System.IO path.
 [HarmonyPatch(typeof(MyGuiScreenOptionsGame), "InitCrosshairIndicators")]
 [HarmonyPatchCategory("Finish")]
 static class MyGuiScreenOptionsGameInitCrosshairIndicatorsPatch

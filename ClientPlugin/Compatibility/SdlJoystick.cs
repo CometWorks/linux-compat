@@ -7,30 +7,9 @@ using VRage.Input;
 namespace ClientPlugin.Compatibility;
 
 /// <summary>
-/// SDL3 joystick/gamepad backend replacing the Windows DirectInput+XInput
-/// implementation (<c>VRage.Platform.Windows.Input.MyDirectInput</c>) behind
-/// the five joystick methods of <c>IVRageInput2</c> (see SdlGameWindow).
-///
-/// Threading contract (mirrors the mouse-snapshot pattern):
-///  - <see cref="Initialize"/>, <see cref="HandleEvent"/> and
-///    <see cref="UpdateSnapshot"/> run on the SDL render thread only.
-///  - The game thread reads a lock-protected snapshot
-///    (<see cref="IsJoystickConnected"/>, <see cref="GetJoystickState"/>,
-///    <see cref="EnumerateJoystickNames"/>, <see cref="IsJoystickAxisSupported"/>).
-///  - <see cref="InitializeJoystickIfPossible"/> is called by MyVRageInput
-///    every frame while no device is connected, so it must stay cheap: it
-///    only dispatches to the SDL thread when the requested name matches an
-///    attached device or a device is currently open.
-///
-/// State encoding matches what the game gets on Windows so the
-/// deadzone/sensitivity/exponent math in MyVRageInput/MyControllerHelper
-/// behaves identically:
-///  - axes 0..65535 with 32768 center (MyDirectInput forces InputRange(0, 65535)),
-///  - Buttons[] bytes with 0x80 = pressed (game tests &gt; 0),
-///  - POV hats in hundredths of degrees clockwise from north, -1 centered,
-///  - Xbox-class devices use the XInput-over-DirectInput layout: left stick
-///    on X/Y, right stick on RotationX/Y, combined triggers on Z plus
-///    separate Z_Left/Z_Right, buttons in XInput order, d-pad on POV 0.
+/// SDL3 joystick backend. SDL calls run on <see cref="SdlRenderThread"/> and
+/// game threads read a locked snapshot encoded like DirectInput: 0..65535
+/// axes, 0x80 buttons, and hundredth-degree POV values.
 /// </summary>
 internal static class SdlJoystick
 {
@@ -42,7 +21,6 @@ internal static class SdlJoystick
     private const uint SDL_EVENT_JOYSTICK_ADDED = 0x605u;
     private const uint SDL_EVENT_JOYSTICK_REMOVED = 0x606u;
 
-    // SDL_GamepadAxis
     private const int SDL_GAMEPAD_AXIS_LEFTX = 0;
     private const int SDL_GAMEPAD_AXIS_LEFTY = 1;
     private const int SDL_GAMEPAD_AXIS_RIGHTX = 2;
@@ -50,7 +28,6 @@ internal static class SdlJoystick
     private const int SDL_GAMEPAD_AXIS_LEFT_TRIGGER = 4;
     private const int SDL_GAMEPAD_AXIS_RIGHT_TRIGGER = 5;
 
-    // SDL_GamepadButton
     private const int SDL_GAMEPAD_BUTTON_SOUTH = 0;
     private const int SDL_GAMEPAD_BUTTON_EAST = 1;
     private const int SDL_GAMEPAD_BUTTON_WEST = 2;
@@ -66,15 +43,12 @@ internal static class SdlJoystick
     private const int SDL_GAMEPAD_BUTTON_DPAD_LEFT = 13;
     private const int SDL_GAMEPAD_BUTTON_DPAD_RIGHT = 14;
 
-    // SDL hat bitmask
     private const byte SDL_HAT_UP = 0x01;
     private const byte SDL_HAT_RIGHT = 0x02;
     private const byte SDL_HAT_DOWN = 0x04;
     private const byte SDL_HAT_LEFT = 0x08;
 
-    // XInput button order produced by the Windows xusb driver through
-    // DirectInput: A, B, X, Y, LB, RB, Back, Start, LS, RS. The game's
-    // default controller bindings (J01..J10) assume this order.
+    // Default J01..J10 bindings expect the Windows XInput button order.
     private static readonly int[] GamepadButtonOrder =
     {
         SDL_GAMEPAD_BUTTON_SOUTH,
@@ -96,7 +70,7 @@ internal static class SdlJoystick
     private static IntPtr s_joystick;
     private static IntPtr s_gamepad;
 
-    // Shared, guarded by Lock
+    // Guarded by Lock and read from the game thread.
     private static List<string> s_deviceNames = new List<string>();
     private static string s_openDeviceName;
     private static bool s_connected;
@@ -107,9 +81,6 @@ internal static class SdlJoystick
 
     #region SDL render thread
 
-    /// <summary>
-    /// Called once from SdlRenderThread.Run after SDL_Init(VIDEO) succeeded.
-    /// </summary>
     internal static void Initialize()
     {
         // Keep reporting device state while the game window is unfocused;
@@ -127,10 +98,6 @@ internal static class SdlJoystick
         Console.WriteLine("[LinuxCompat] SdlJoystick initialised SDL3 (joystick, gamepad)");
     }
 
-    /// <summary>
-    /// Called from the SDL event loop for every polled event; reacts to
-    /// device hotplug. Cheap no-op for all other event types.
-    /// </summary>
     internal static void HandleEvent(uint eventType)
     {
         if (!s_subsystemReady)
@@ -143,23 +110,12 @@ internal static class SdlJoystick
                 ? "[LinuxCompat] SdlJoystick device added"
                 : "[LinuxCompat] SdlJoystick device removed");
 
-            // Tell the game a device changed so the Options -> Controller list
-            // refreshes live and a just-plugged-in selected device gets opened
-            // without a restart. On Windows MyGameForm drives this from the
-            // WM_DEVICECHANGE window message; SDL has no such pump on Linux, so
-            // bridge the SDL hotplug event to the same MyVRageInput callback.
-            // DeviceChangeCallback mutates game-thread input state, so it must
-            // run on the main thread — hop off the SDL thread via the queue
-            // that Plugin.Update drains. MyInput.Static is null until input is
-            // initialized (early startup hotplug), hence the null-guard.
+            // Bridge SDL hotplug to the game's WM_DEVICECHANGE-equivalent callback.
+            // The callback mutates game-thread state and must run there.
             MainThreadDispatcher.Post(() => MyInput.Static?.DeviceChangeCallback());
         }
     }
 
-    /// <summary>
-    /// Called every SDL loop iteration after the event pump. Refreshes the
-    /// state snapshot of the open device; detects physical disconnect.
-    /// </summary>
     internal static void UpdateSnapshot()
     {
         if (!s_subsystemReady || s_joystick == IntPtr.Zero)
@@ -195,9 +151,7 @@ internal static class SdlJoystick
         state.RotationX = SDL_GetGamepadAxis(s_gamepad, SDL_GAMEPAD_AXIS_RIGHTX) + 32768;
         state.RotationY = SDL_GetGamepadAxis(s_gamepad, SDL_GAMEPAD_AXIS_RIGHTY) + 32768;
 
-        // Triggers 0..32767. The xusb driver reports them combined on Z
-        // (32768 + (LT - RT) scaled); XInput additionally provides separate
-        // Z_Left/Z_Right which MyDirectInput copies as trigger*256 (0..65280).
+        // Match xusb: combined triggers on Z and separate scaled trigger axes.
         int lt = SDL_GetGamepadAxis(s_gamepad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER);
         int rt = SDL_GetGamepadAxis(s_gamepad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
         state.Z = Math.Clamp(32768 + lt - rt, 0, 65535);
@@ -260,8 +214,8 @@ internal static class SdlJoystick
     }
 
     /// <summary>
-    /// Digital directions to a DirectInput POV angle in hundredths of
-    /// degrees clockwise from north; -1 when centered.
+    /// Converts digital directions to a DirectInput POV angle in hundredths
+    /// of a degree clockwise from north, or -1 when centered.
     /// </summary>
     private static int DirectionsToPov(bool up, bool right, bool down, bool left)
     {
@@ -276,9 +230,6 @@ internal static class SdlJoystick
         return -1;
     }
 
-    /// <summary>
-    /// Refresh the attached-device name list. SDL thread only.
-    /// </summary>
     private static unsafe void RefreshDeviceNames()
     {
         var names = new List<string>();
@@ -303,9 +254,7 @@ internal static class SdlJoystick
             s_deviceNames = names;
         }
 
-        // Log the attached device names whenever the set changes. This is the
-        // string the player must match in Options -> Controller (substring),
-        // so surfacing it makes "why isn't my controller selected" debuggable.
+        // The Options controller selection matches these names by substring.
         if (changed)
             Console.WriteLine(names.Count == 0
                 ? "[LinuxCompat] SdlJoystick devices: (none)"
@@ -313,23 +262,14 @@ internal static class SdlJoystick
     }
 
     /// <summary>
-    /// Open the first attached device whose name contains
-    /// <paramref name="joystickInstanceName"/>, mirroring
-    /// MyDirectInput.InitializeJoystickIfPossible exactly: a null name means
-    /// "Disabled" (Options -> Controller sets the instance name to null when
-    /// the user picks the "Disabled" entry, see MyGuiScreenOptionsController)
-    /// and opens NO device. A non-null name opens only the matching device,
-    /// so an unselected controller — e.g. one the player never chose but
-    /// leaves plugged in — never becomes active on its own. SDL thread only.
+    /// Opens the selected controller by substring. A null name means disabled.
+    /// SDL thread only.
     /// </summary>
     private static unsafe string OpenDevice(string joystickInstanceName)
     {
         CloseDevice();
 
-        // Disabled / nothing selected: open no device, just like Windows.
-        // Opening the first available device here was the cause of the
-        // "cannot disable the controller" and "unselected controllers
-        // activate" bugs.
+        // Disabled means no device, even when controllers are attached.
         if (joystickInstanceName == null)
             return null;
 
@@ -453,10 +393,7 @@ internal static class SdlJoystick
         if (!s_subsystemReady)
             return null;
 
-        // Disabled / nothing selected. Mirror MyDirectInput: open no device.
-        // If one is currently open (the user just switched the Options ->
-        // Controller selection to "Disabled"), close it so its input stops
-        // immediately. Never fall back to the first available device.
+        // Close the active device when the controller setting is disabled.
         if (joystickInstanceName == null)
         {
             lock (Lock)
@@ -469,11 +406,8 @@ internal static class SdlJoystick
             return null;
         }
 
-        // A specific device is selected. Fast path without dispatching to the
-        // SDL thread: MyVRageInput calls this every frame while disconnected
-        // (ResetJoystickState -> SearchForJoystickNow). Only cross threads
-        // when there is a matching device to open, or a device open under a
-        // different name that must be replaced/closed.
+        // MyVRageInput polls this every frame while disconnected. Dispatch only
+        // when a matching device can be opened or an existing one must close.
         lock (Lock)
         {
             bool anyMatch = false;

@@ -7,22 +7,7 @@ using Sandbox.Graphics.GUI;
 
 namespace ClientPlugin.Patches.PathHandling;
 
-// Fixes a path-separator bug in MyGuiFolderScreen.RepopulateList that makes
-// the "Directory selection" dialog (folder icon in the F10 paste-blueprint
-// menu, local mods browser, etc.) show each entry's full absolute path
-// instead of just the folder name.
-//
-// The original derives the display name for every subdirectory with
-// directory.Split(new[] { '\\' })[^1] — a hardcoded backslash. On Linux
-// Directory.GetDirectories returns '/'-separated paths with no backslashes,
-// so the split is a no-op and the leaf name becomes the whole path.
-//
-// Same fix as the reworked-screen twin MyGuiBlueprintScreenGetBlueprintsPatch:
-// re-implement the method with Path.GetFileName for the display name. The
-// paths come straight from Directory.GetDirectories (native separator), so
-// Path.GetFileName is correct on both platforms; everything else — the item
-// vs. directory split via m_isItem, icon textures, the "[..]" parent entry,
-// and the directories-then-items ordering — is preserved verbatim.
+// Use Path.GetFileName for native directory paths shown in folder browsers.
 [HarmonyPatch(typeof(MyGuiFolderScreen), "RepopulateList")]
 [HarmonyPatchCategory("Finish")]
 static class MyGuiFolderScreenRepopulatePatch

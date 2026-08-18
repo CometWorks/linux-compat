@@ -20,7 +20,7 @@ namespace ClientPlugin.Patches.Rendering;
 [HarmonyPatchCategory("Finish")]
 static class CreateAdaptersListPatch
 {
-    const int MaxTextureSize = 16384; // D3D11 spec does not support textures with a width or height larger then this 
+    const int MaxTextureSize = 16384; // D3D11 limits texture dimensions to 16384 pixels.
     const ulong FallbackVideoMemory = 4294967296uL; // 4 GiB
     const ulong MinimumSupportedVideoMemory = 536870912uL; // 512 MiB
 

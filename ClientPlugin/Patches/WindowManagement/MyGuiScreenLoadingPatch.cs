@@ -6,10 +6,7 @@ using VRage;
 
 namespace ClientPlugin.Patches.WindowManagement;
 
-// During loading screens the original code hides the cursor. In windowed modes
-// on Linux this traps the user - they cannot switch back to other apps while
-// the game is loading. Show the cursor in any non-fullscreen mode, matching
-// the recompiled game. Fullscreen hides it for immersion.
+// Keep the cursor available during windowed loading screens.
 [HarmonyPatch(typeof(MyGuiScreenLoading), MethodType.Constructor,
     typeof(MyGuiScreenBase), typeof(MyGuiScreenGamePlay), typeof(string), typeof(string))]
 [HarmonyPatchCategory("Finish")]

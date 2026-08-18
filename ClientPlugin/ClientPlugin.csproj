@@ -6,22 +6,14 @@
         <AssemblyName>LinuxCompat</AssemblyName>
         <LangVersion>13</LangVersion>
 
-        <!-- Ensure SDK generates assembly attributes (no need for AssemblyInfo) -->
         <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 
-        <!-- Default configuration if none supplied -->
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
 
-        <!-- Keep original behaviour for post/pre build events -->
         <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
 
-        <!-- Required for OpenAL Silk.NET unsafe pointer APIs (Device*, Context*) -->
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    </PropertyGroup>
-
-    <PropertyGroup>
-        <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
     </PropertyGroup>
 
     <ItemGroup>
@@ -200,10 +192,7 @@
         </PackageReference>
         <PackageReference Include="Mono.Cecil" Version="0.11.6"/>
         <PackageReference Include="FFmpeg.AutoGen" Version="8.1.0" GeneratePathProperty="true" />
-        <!-- 3D positional audio backend.
-             libopenal.so.1 resolves via ldconfig at runtime (provided by libopenal1
-             Debian package on the host, by org.freedesktop.Platform on the Flatpak,
-             and bundled into the developer-bundle's Pulsar/Libraries folder). -->
+        <!-- libopenal.so.1 is supplied by the host, Flatpak runtime, or developer bundle. -->
         <PackageReference Include="Silk.NET.OpenAL" Version="2.23.0" />
     </ItemGroup>
 
@@ -247,4 +236,5 @@
       <Folder Include="Patches/" />
     </ItemGroup>
 
+    <Import Project="../Shared/Shared.projitems" Label="Shared" />
 </Project>

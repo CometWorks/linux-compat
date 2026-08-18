@@ -19,26 +19,8 @@ using VRageRender;
 
 namespace ClientPlugin.Patches.UIDisplay;
 
-// Ports Topic 11.3 (commits 2b408cdd, 9c48c159) from dotnet-game-local.
-//
-// Two structural changes to save thumbnail loading:
-//
-// 1. Prefer the main save's thumb.jpg over any backup-folder thumb. The
-//    original code consulted the Backup/ subdirectory first, which
-//    occasionally surfaced a stale, partly-rendered thumbnail captured
-//    early during a save.
-//
-// 2. Sort the backup directory list with StringComparer.OrdinalIgnoreCase
-//    before calling .Last(). On Linux ext4/btrfs Directory.GetDirectories
-//    returns entries in inode/hash order rather than alphabetical, so
-//    .Last() previously picked an arbitrary backup; date-stamped folder
-//    names sort lexicographically when ordinal-sorted.
-//
-// Both LoadImagePreview (Load Game screen) and GetThumbnail (main menu
-// Continue button) are patched. The methods are private and embed several
-// branches that have to fire in a specific order, so a prefix returning
-// false and re-implementing the body is clearer than a transpiler. All
-// referenced fields are made accessible via Krafs.Publicizer.
+// Prefer the main save thumbnail. Linux directory enumeration is unordered,
+// so sort dated backup folders before selecting the latest fallback.
 
 [HarmonyPatch(typeof(MyGuiScreenLoadSandbox), "LoadImagePreview")]
 [HarmonyPatchCategory("Finish")]

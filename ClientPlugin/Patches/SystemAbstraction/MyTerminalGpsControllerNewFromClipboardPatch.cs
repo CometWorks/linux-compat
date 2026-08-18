@@ -1,32 +1,5 @@
-// Skip the Win32-only STA worker thread that the GPS terminal tab spins up
-// to read the clipboard. Stock
-// Sandbox.Game.Screens.Terminal.MyTerminalGpsController.OnButtonPressedNewFromClipboard
-// does:
-//
-//     Thread thread = new Thread(PasteFromClipboard);
-//     thread.SetApartmentState(ApartmentState.STA);   // <-- throws here
-//     thread.Start();
-//     thread.Join();
-//
-// Thread.SetApartmentState(STA) is a Windows-only COM apartment configuration
-// and throws System.PlatformNotSupportedException("COM Interop is not
-// supported on this platform") on the Linux .NET runtime, crashing the game
-// the moment the user clicks "New from clipboard" in the GPS terminal tab.
-//
-// Same root cause as MyGuiControlClipboardPastePatches.cs: the STA apartment
-// was historically required because the original implementation called
-// System.Windows.Forms.Clipboard, which uses OLE and must run on an STA
-// thread. Since we redirect MyWindowsSystem.Clipboard to SDL3 (see
-// MyWindowsSystemClipboardPatch / SdlClipboard), there is no COM-affinity
-// requirement anymore and the worker thread is pure overhead.
-//
-// We replace OnButtonPressedNewFromClipboard with a two-phase version. The
-// Prefix returns immediately and asks SdlClipboard.RequestText for the OS
-// clipboard contents; the SDL read runs on the render thread. The
-// continuation (main game thread, next Plugin.Update tick) hands the text
-// to MyGpsCollection.ScanText — identical to the stock behaviour minus the
-// STA dance and minus blocking the main thread on the X11 selection
-// round-trip.
+// Linux does not support the COM STA clipboard worker. Read through SDL and
+// continue GPS parsing on the next game-thread update.
 
 using System;
 using ClientPlugin.Compatibility;
@@ -66,8 +39,7 @@ static class MyTerminalGpsControllerNewFromClipboardPatch
             }
             catch (Exception)
             {
-                // GPS tab may have been closed between the click and the
-                // callback. Nothing meaningful to do.
+                // The GPS tab may close before the callback.
             }
         });
 

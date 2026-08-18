@@ -13,6 +13,7 @@
 plugin by the Linux version of Pulsar.</Description>
 
     <SourceDirectories>
+        <Directory>Shared</Directory>
         <Directory>ClientPlugin</Directory>
     </SourceDirectories>
 

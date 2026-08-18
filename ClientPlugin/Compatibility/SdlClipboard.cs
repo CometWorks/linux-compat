@@ -6,39 +6,9 @@ using VRage.Utils;
 namespace ClientPlugin.Compatibility;
 
 /// <summary>
-/// SDL3-backed clipboard for Linux. Replaces the stock
-/// <c>VRage.Platform.Windows.Forms.MyClipboardHelper</c> path which goes
-/// through <c>System.Windows.Forms.Clipboard</c> + COM/OLE on an STA worker
-/// thread. That path is fundamentally Windows-only: WinForms is unavailable on
-/// the .NET 9 Linux runtime the game ships, and even when types resolve the
-/// Win32 P/Invokes (<c>OleSetClipboard</c>, <c>RegisterClipboardFormat</c>,
-/// <c>user32.dll</c>) terminate the process. The recompiled Linux build of
-/// the game replaces the helper with an in-process string cache; we go a step
-/// further and integrate with the actual desktop clipboard via SDL3 so
-/// copy/paste interoperates with other applications.
-///
-/// Thread affinity:
-///  - All SDL3 calls in this plugin are funnelled through
-///    <see cref="SdlRenderThread"/>. The clipboard is no exception — X11
-///    selection / Wayland data-device traffic piggy-backs on the SDL event
-///    loop running there.
-///  - On the render thread, <see cref="GetText"/> / <see cref="SetText"/> /
-///    <see cref="HasText"/> call SDL3 directly.
-///  - Off the render thread, sets are queued and drained by
-///    <see cref="PumpRenderThread"/> (called from
-///    <c>SdlRenderThread.Run</c>'s loop). The in-process cache is updated
-///    synchronously so a subsequent <c>Get</c> on any thread observes the
-///    value just written. Off-thread reads of the legacy synchronous getter
-///    return the cache (last value the render thread observed or wrote)
-///    without driving SDL — kept for property-getter compatibility, but it
-///    can return stale data if another application has changed the OS
-///    clipboard since the last render-thread access.
-///  - <see cref="RequestText"/> is the non-blocking fresh-read API: the SDL
-///    call is dispatched to the render thread; the result is posted to
-///    <see cref="MainThreadDispatcher"/>, which delivers the callback on the
-///    main game thread during the next <c>Plugin.Update()</c>. Paste
-///    handlers (textbox, multiline, GPS) use this so the OS clipboard is
-///    actually consulted on Ctrl+V without blocking the main thread.
+/// SDL3 clipboard access serialized through <see cref="SdlRenderThread"/>.
+/// Synchronous off-thread reads use a cache; <see cref="RequestText"/> returns
+/// fresh text asynchronously on the game thread.
 /// </summary>
 internal static class SdlClipboard
 {
@@ -52,9 +22,7 @@ internal static class SdlClipboard
     {
         if (!SdlRenderThread.IsCurrent)
         {
-            // Off-thread reads serve from cache to keep this fast. The
-            // cache is refreshed every time the render thread reads or
-            // writes the system clipboard.
+            // SDL access is confined to the render thread.
             lock (s_cacheLock)
                 return s_cachedText;
         }
@@ -77,8 +45,7 @@ internal static class SdlClipboard
         }
         catch (Exception ex)
         {
-            // libSDL3.so missing or symbol mismatch — fall back to cache so
-            // copy-within-game keeps working even if the native binding fails.
+            // Preserve in-game clipboard access if the native binding fails.
             try { MyLog.Default?.WriteLineAndConsole($"[LinuxCompat] SdlClipboard.GetText failed: {ex.Message}"); } catch { }
             lock (s_cacheLock)
                 return s_cachedText;
@@ -89,8 +56,7 @@ internal static class SdlClipboard
     {
         text ??= string.Empty;
 
-        // Update the cache first so any subsequent read (even from another
-        // thread before the render-thread pump runs) observes the new value.
+        // Publish the value before the render-thread pump reaches SDL.
         lock (s_cacheLock)
             s_cachedText = text;
 
@@ -124,13 +90,8 @@ internal static class SdlClipboard
     }
 
     /// <summary>
-    /// Non-blocking fresh-read API. The SDL clipboard read is dispatched to
-    /// the render thread; the result (or <c>null</c> if the clipboard is
-    /// empty / SDL failed and no cached value is available) is posted to
-    /// <see cref="MainThreadDispatcher"/>, which invokes the callback on the
-    /// main game thread during the next <c>Plugin.Update()</c>. Use this
-    /// from paste handlers — never the synchronous <see cref="GetText"/>,
-    /// which returns stale cache off the render thread.
+    /// Reads SDL clipboard text on the render thread and invokes the callback
+    /// on the next game-thread update. Off-thread <see cref="GetText"/> is cached.
     /// </summary>
     public static void RequestText(Action<string> callback)
     {
@@ -171,13 +132,11 @@ internal static class SdlClipboard
     }
 
     /// <summary>
-    /// Drains pending off-render-thread clipboard sets. Called from the
-    /// render-thread loop every iteration.
+    /// Applies pending clipboard writes from the render thread.
     /// </summary>
     public static void PumpRenderThread()
     {
-        // Coalesce: only the most recent enqueued value matters for the
-        // system clipboard. Drain everything but only push the last.
+        // Only the newest pending clipboard value matters.
         string latest = null;
         bool any = false;
         while (s_pendingSets.TryDequeue(out var value))

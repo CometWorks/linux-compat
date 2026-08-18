@@ -1,8 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
 
-// Assemblies that need to be publicized for accessing internal/protected/private members
-// Used by Harmony patches in this plugin
-
 [assembly: IgnoresAccessChecksTo("Sandbox.Game")]
 [assembly: IgnoresAccessChecksTo("Sandbox.Graphics")]
 [assembly: IgnoresAccessChecksTo("Sandbox.ObjectBuilders")]

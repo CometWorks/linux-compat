@@ -8,52 +8,18 @@ using VRage.Utils;
 namespace ClientPlugin.Compatibility;
 
 /// <summary>
-/// Dedicated thread that owns the SDL3 library for the entire process
-/// lifetime. Started once from <see cref="Plugin.Init"/> and runs until
-/// process exit.
-///
-/// Why a dedicated thread:
-///  - SDL3 video / window / event-pump / clipboard functions must be issued
-///    by a single thread (the one that initialised video). Calling them from
-///    multiple threads — even with our own external lock — risks racing the
-///    X11/Wayland connection state SDL holds internally.
-///  - Initialising SDL once early (before splash and before the SE render
-///    thread is created) lets us share the same SDL context across the
-///    splash window, the main game window, and clipboard access.
-///  - Both `MySdlSplashScreen` and `SdlGameWindow` are constructed on this
-///    thread via <see cref="Invoke"/>; afterwards every SDL3 call coming
-///    from main / SE render thread / worker threads is funnelled through
-///    <see cref="Dispatch"/> or <see cref="Invoke"/>.
-///
-/// Loop:
-///  1. Drain queued actions (mode changes, window create/destroy, clipboard
-///     sets, etc.) on this thread.
-///  2. Pump SDL events with `SDL_PollEvent` and forward each to the
-///     registered <see cref="EventHandler"/> (see <see cref="SdlGameWindow"/>).
-///  3. Refresh the shared mouse / window-size snapshot via
-///     <see cref="MouseSnapshotCallback"/> so off-thread readers don't have
-///     to dispatch for every frame.
-///  4. Sleep briefly to keep the loop cooperative.
+/// Owns SDL video, windows, event pumping, and clipboard access. All SDL video
+/// calls use this thread to protect SDL's X11 connection state.
 /// </summary>
 internal static class SdlRenderThread
 {
     private const string Lib = "libSDL3.so";
     private const uint SDL_INIT_VIDEO = 0x20u;
 
-    // Loop sleep. 1ms is responsive enough for a 60+ FPS game and keeps the
-    // thread from busy-spinning. SDL's own internal buffering coalesces
-    // events between iterations.
+    // Avoid busy-spinning while retaining sub-frame input polling.
     private const int LOOP_SLEEP_MS = 1;
 
-    // Maximum time Start() waits for the render thread to finish SDL_Init
-    // and signal s_started. SDL_Init normally completes in well under a
-    // second; a 10 s budget is generous enough to absorb a slow X11 server
-    // or sluggish dlopen of libSDL3 + transitive deps without false-failing,
-    // but short enough that a hung init terminates the process while the
-    // user is still in front of the screen rather than letting them stare
-    // at a frozen window. On timeout we treat the init as fatal: write a
-    // diagnostic to stderr (Pulsar's launcher captures it) and kill the
-    // process so the user sees a clear failure rather than an opaque hang.
+    // Treat SDL initialization that exceeds ten seconds as a native deadlock.
     private const int START_TIMEOUT_MS = 10_000;
 
     private static Thread s_thread;
@@ -66,18 +32,14 @@ internal static class SdlRenderThread
     private static readonly ManualResetEventSlim s_started = new ManualResetEventSlim(false);
 
     /// <summary>
-    /// Receives parsed SDL events polled by the render-thread loop. Invoked
-    /// on the render thread. Set by <see cref="SdlGameWindow"/> after the
-    /// game window is created.
+    /// Receives parsed SDL events on the render thread after the game window
+    /// is created.
     /// </summary>
     internal delegate void SdlEventHandlerDelegate(ref SdlEvent ev);
     internal static SdlEventHandlerDelegate EventHandler;
 
     /// <summary>
-    /// Per-iteration callback invoked on the render thread, after events are
-    /// pumped. <see cref="SdlGameWindow"/> uses this to refresh the cached
-    /// mouse / window-size snapshot from SDL state without forcing readers
-    /// to dispatch synchronously.
+    /// Runs after each event-pump pass to refresh cached SDL state.
     /// </summary>
     internal static Action MouseSnapshotCallback;
 
@@ -89,9 +51,7 @@ internal static class SdlRenderThread
     internal static bool IsInitialized => s_initOk;
 
     /// <summary>
-    /// Spawn the render thread and run SDL_Init on it. Idempotent — calling
-    /// twice is a no-op. Blocks the caller until SDL is initialised so the
-    /// next call site can issue SDL operations via Invoke without races.
+    /// Starts SDL once and blocks until initialization completes.
     /// </summary>
     internal static void Start()
     {
@@ -100,40 +60,30 @@ internal static class SdlRenderThread
 
         var thread = new Thread(Run)
         {
-            // Foreground so the SDL context outlives `Plugin.Dispose`. The
-            // thread terminates itself when `Stop` is called from process
-            // exit, otherwise it persists for the game's lifetime.
+            // Keep the SDL context alive for the process lifetime.
             IsBackground = false,
             Name = "LinuxCompat-SDL",
         };
         s_thread = thread;
         thread.Start();
 
-        // Bounded wait so a hang in SDL_Init / X11 connection setup
-        // surfaces as a logged failure rather than an opaque deadlock at
-        // first SDL3 use. The render thread sets s_started unconditionally
-        // (whether SDL_Init succeeded or failed), so reaching the timeout
-        // means the thread is wedged before that point — typically in the
-        // dlopen of libSDL3.so or inside SDL_Init itself.
+        // s_started is signaled for both success and failure; timeout means
+        // native loading or SDL_Init is wedged.
         if (!s_started.Wait(START_TIMEOUT_MS))
         {
             Console.Error.WriteLine(
                 $"[LinuxCompat] SdlRenderThread.Start: SDL_Init did not complete within {START_TIMEOUT_MS / 1000} s. " +
                 "The render thread is wedged; killing the process to surface the failure.");
             try { Console.Error.Flush(); } catch { }
-            // SIGKILL via Process.Kill — Environment.Exit / FailFast can
-            // themselves block on runtime shutdown if a thread is stuck in
-            // unmanaged code. We want a hard, unconditional kill here.
+            // Runtime shutdown can block when a thread is stuck in native code.
             try { Process.GetCurrentProcess().Kill(); } catch { }
-            // Defensive fallback if Kill() somehow returns without ending
-            // the process (it shouldn't on Linux).
+            // Fallback if Process.Kill returns.
             Environment.FailFast("SdlRenderThread SDL_Init timeout");
         }
     }
 
     /// <summary>
-    /// Request the render thread to terminate and join it. Called from
-    /// process shutdown paths; safe to call from any thread.
+    /// Stops and joins the render thread. Safe from any thread.
     /// </summary>
     internal static void Stop()
     {
@@ -141,7 +91,6 @@ internal static class SdlRenderThread
             return;
 
         s_running = false;
-        // Wake the loop so it observes `s_running == false` immediately.
         Dispatch(static () => { });
 
         if (!IsCurrent)
@@ -152,10 +101,7 @@ internal static class SdlRenderThread
     }
 
     /// <summary>
-    /// Queue an action for execution on the render thread. Returns
-    /// immediately. If the caller is already on the render thread, runs
-    /// inline so re-entrant calls (event handler → SetClientSize → etc.)
-    /// don't deadlock.
+    /// Queues an action, or runs it inline when already on the render thread.
     /// </summary>
     internal static void Dispatch(Action action)
     {
@@ -177,9 +123,7 @@ internal static class SdlRenderThread
     }
 
     /// <summary>
-    /// Synchronously execute an action on the render thread. Blocks the
-    /// caller until completion and rethrows any exception thrown by the
-    /// action.
+    /// Runs an action on the render thread and propagates its exception.
     /// </summary>
     internal static void Invoke(Action action)
     {
@@ -209,8 +153,7 @@ internal static class SdlRenderThread
     }
 
     /// <summary>
-    /// Synchronously execute a function on the render thread and return its
-    /// result.
+    /// Runs a function synchronously on the render thread and returns its result.
     /// </summary>
     internal static T Invoke<T>(Func<T> func)
     {
@@ -223,18 +166,11 @@ internal static class SdlRenderThread
     {
         s_threadManagedId = Thread.CurrentThread.ManagedThreadId;
 
-        // Force the X11 video driver before SDL_Init so SDL doesn't pick
-        // Wayland (DXVK + Wayland is not the path we test). This must
-        // happen on the same thread that calls SDL_Init since SDL_GetEnvironment
-        // returns SDL's own environment view.
+        // DXVK uses the tested X11 path. Set SDL's environment before SDL_Init.
         ForceX11VideoDriver();
 
-        // Disable _NET_WM_PING advertisement on X11 — large world loads block
-        // the game's main thread for tens of seconds, during which the WM's
-        // ping goes unanswered and triggers the "Window not responding"
-        // dialog. With this hint the WM removes _NET_WM_PING from
-        // WM_PROTOCOLS. Must be set before SDL_CreateWindow; pre-init is
-        // safest.
+        // Long world loads cannot answer _NET_WM_PING. Disable it before
+        // window creation to avoid false "not responding" dialogs.
         SDL_SetHint("SDL_VIDEO_X11_NET_WM_PING", "0");
 
         s_initOk = SDL_Init(SDL_INIT_VIDEO);
@@ -280,10 +216,7 @@ internal static class SdlRenderThread
                 catch (Exception ex) { LogException("clipboard pump", ex); }
             }
 
-            // Wait briefly for either new work or the next pump tick. Using
-            // Monitor.Wait with a timeout means dispatched work wakes us
-            // immediately; otherwise we tick at LOOP_SLEEP_MS for event
-            // polling.
+            // Dispatch pulses wake the timed event-poll wait immediately.
             lock (s_queueLock)
             {
                 if (s_queue.Count == 0 && s_running)
@@ -291,16 +224,12 @@ internal static class SdlRenderThread
             }
         }
 
-        // No SDL_Quit on shutdown: process is exiting and the SE main loop
-        // calls Process.Kill (see MySandboxGameExitPatch). SDL state cleanup
-        // would only matter for orderly teardown, which we explicitly
-        // bypass.
+        // Process shutdown bypasses orderly SDL teardown.
     }
 
     private static void DrainQueue()
     {
-        // Snapshot under lock and execute outside so a long-running action
-        // doesn't block other threads from enqueueing.
+        // Execute outside the lock so producers can continue enqueueing.
         Action[] batch = null;
         lock (s_queueLock)
         {
@@ -349,9 +278,7 @@ internal static class SdlRenderThread
     #region Shared SDL event structs
 
     /// <summary>
-    /// SDL3 event structure. The layout matches SDL's <c>SDL_Event</c> union
-    /// — explicit field offsets give us access to whichever sub-event
-    /// applies to the current type.
+    /// SDL_Event union with explicit offsets for the handled event types.
     /// </summary>
     [StructLayout(LayoutKind.Explicit, Size = 128)]
     internal struct SdlEvent

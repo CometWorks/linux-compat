@@ -18,12 +18,7 @@ using VRage.Utils;
 namespace ClientPlugin.Compatibility.Video;
 
 /// <summary>
-/// Linux replacement for VRage.Platform.Windows.DShow.MyVideoPlayer.
-/// Uses FFmpeg for video/audio decoding (DirectShow is unavailable on Linux)
-/// and SDL3 for audio playback. Video frames are uploaded to a SharpDX
-/// Texture2D on MyPlatformRender.DeviceInstance (which equals
-/// MyRender11.DeviceInstance); stock VRage.Render11.MyVideoPlayer wraps the
-/// SRV via `new MySrvWrapper(player.TextureSrv, ...)`.
+/// FFmpeg video decoder with SDL audio and a SharpDX texture for VRage's SRV wrapper.
 /// </summary>
 internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
 {
@@ -33,7 +28,6 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
 
     private readonly object m_syncRoot = new object();
 
-    // Video decode
     private AVFormatContext* m_formatContext;
     private AVCodecContext* m_codecContext;
     private AVPacket* m_packet;
@@ -45,7 +39,6 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
     private int m_videoHeight;
     private long m_avgTimePerFrame;
 
-    // Timing / state
     private VideoState m_currentState = VideoState.Stopped;
     private double m_durationSeconds;
     private double m_currentPositionSeconds;
@@ -58,16 +51,13 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
     private bool m_endOfStream;
     private bool m_disposed;
 
-    // Frame buffer
     private MySwapQueue<byte[]> m_videoDataRgba;
     private byte[] m_currentFrame;
     private byte m_alphaTransparency = 255;
 
-    // GPU texture (owned by this player)
     private Texture2D m_texture;
     private ShaderResourceView m_srv;
 
-    // Audio
     private float m_volume = 1f;
     private byte[] m_audioData;
     private IntPtr m_audioStream;
@@ -111,8 +101,7 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
                 if (m_disposed)
                     throw new ObjectDisposedException(nameof(MyLinuxVideoPlayer));
 
-                // Normalize Windows backslashes to forward slashes — the stock
-                // game hardcodes "Videos\\KSH.wmv" / "Videos\\BackgroundNN.wmv".
+                // Game video paths use Windows separators.
                 if (!string.IsNullOrEmpty(fileName))
                     fileName = fileName.Replace('\\', '/');
                 EnsureFfmpegInitialized();
@@ -166,12 +155,8 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
                 ThrowIfError(ffmpeg.av_frame_get_buffer(m_convertedFrame, 0),
                     $"allocate converted video frame for '{fileName}'");
 
-                // SwsContext is created lazily in ConvertFrame once the decoder
-                // reveals the actual source pixel format. For codecs like WMV3
-                // (VC-1 family) the container does not declare pix_fmt and
-                // codec_ctx->pix_fmt stays AV_PIX_FMT_NONE until the first
-                // frame is decoded — calling sws_getContext with it here would
-                // trip an assertion in libswscale.
+                // WMV3 may not expose pix_fmt until its first decoded frame.
+                // Creating SwsContext earlier can assert inside libswscale.
 
                 InitTextures();
 
@@ -531,22 +516,15 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
 
     private static void PinFfmpegLibraryVersions()
     {
-        // Pin to FFmpeg 8.1 — the major bundled under Pulsar/Libraries and
-        // the major that FFmpeg.AutoGen 8.1.0's AVCodecContext layout
-        // assumes. Falling back to older majors re-introduces struct-layout
-        // drift (FFmpeg 8 removed AVCodecContext.ticks_per_frame, so 7.x
-        // libs would shift every field after `framerate` by 4 bytes).
-        // avdevice/avfilter are intentionally omitted — we don't call them
-        // and TryLoad'ing them would drag in a second FFmpeg via transitive
-        // deps that NativeLibrary.Free cannot undo.
+        // FFmpeg.AutoGen 8.1.0 requires the FFmpeg 8.1 ABI bundled by Pulsar.
+        // FFmpeg 7 has a different AVCodecContext layout after `framerate`.
+        // Omit unused libraries to avoid loading a second dependency set.
         ffmpeg.LibraryVersionMap["avcodec"]    = 62;
         ffmpeg.LibraryVersionMap["avformat"]   = 62;
         ffmpeg.LibraryVersionMap["avutil"]     = 60;
         ffmpeg.LibraryVersionMap["swresample"] = 6;
         ffmpeg.LibraryVersionMap["swscale"]    = 9;
     }
-
-    // ---------------- Audio ----------------
 
     private void LoadAudio(string fileName)
     {

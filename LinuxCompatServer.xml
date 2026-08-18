@@ -15,6 +15,7 @@ Do NOT add this plugin manually, it won't work.
 It is added by Magnetar automatically on demand.</Description>
 
     <SourceDirectories>
+        <Directory>Shared</Directory>
         <Directory>ServerPlugin</Directory>
     </SourceDirectories>
 

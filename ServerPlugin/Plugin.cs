@@ -1,7 +1,6 @@
 using HarmonyLib;
 using VRage.Plugins;
 
-// Set the assembly version manually if compiled by Pulsar (it won't create what was in AssemblyInfo.cs before)
 #if PULSAR
 using System.Reflection;
 
@@ -19,11 +18,7 @@ public class Plugin : IPlugin
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     public void Init(object gameInstance)
     {
-        // NOTE: PathTranslation.Init() and RewriterRegistration.Register() are
-        // performed from Preloader.Finish, not here. On the dedicated server
-        // IPlugin.Init runs AFTER the auto-loaded session has already
-        // compiled its mods — too late for the path-substitution rewriter to
-        // take effect on mod source. See Preloader.cs Finish() for details.
+        // Path rewriting must start in Preloader.Finish before server mod compilation.
 
         var harmony = new Harmony("LinuxCompatServer");
         harmony.PatchCategory("Init");
