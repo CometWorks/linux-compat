@@ -87,7 +87,7 @@
             <Private>False</Private>
         </Reference>
         <Reference Include="Steamworks.NET">
-            <HintPath>$(DS64)/Steamworks.NET.dll</HintPath>
+            <HintPath>$(Steamworks)/Steamworks.NET.dll</HintPath>
             <Private>False</Private>
         </Reference>
     </ItemGroup>
@@ -121,6 +121,30 @@
     <ItemGroup>
       <Folder Include="Patches/" />
     </ItemGroup>
+
+    <Target Name="ValidateDS64" BeforeTargets="PrepareForBuild">
+        <Error Condition="!Exists('$(DS64)')" Text="Specify SpaceEngineers DedicatedServer64 path!" />
+        <Error Condition="!Exists('$(Steamworks)/Steamworks.NET.dll')" Text="Specify Steamworks path!" />
+        <Warning Condition="!Exists('$(Dependencies)')" Text="Plugin will fail at runtime without linux-dependencies!" />
+        <Warning Condition="!Exists('$(Wrappers)')" Text="Plugin will fail at runtime without linux-native-wrappers!" />
+        <Warning Condition="'$(Magnetar)' == ''" Text="Skipping deployment due to unset Magnetar folder!" />
+    </Target>
+
+    <Target Name="DeployPlugin" AfterTargets="Build" Condition="'$(Magnetar)' != ''">
+        <PropertyGroup>
+            <FolderName>Legacy</FolderName>
+            <FolderName Condition="Exists('$(Magnetar)/Interim')">Interim</FolderName>
+            <PluginDirectory>$(Magnetar)/$(FolderName)/Local/linux-compat</PluginDirectory>
+        </PropertyGroup>
+        <ItemGroup>
+            <Deploy Include="$(Dependencies)/**/*" Condition="'$(Dependencies)' != ''" />
+            <Deploy Include="$(Wrappers)/**/*" Condition="'$(Wrappers)' != ''" />
+        </ItemGroup>
+        <MakeDir Directories="$(PluginDirectory)" />
+        <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(PluginDirectory)/plugin.dll" />
+        <Copy SourceFiles="@(Deploy)" DestinationFolder="$(PluginDirectory)" />
+        <Copy SourceFiles="$(MSBuildProjectDirectory)/ServerPlugin.xml" DestinationFiles="$(PluginDirectory)/plugin.xml" />
+    </Target>
 
     <Import Project="../Shared/Shared.projitems" Label="Shared" />
 </Project>

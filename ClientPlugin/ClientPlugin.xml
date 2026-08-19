@@ -1,16 +1,14 @@
 <?xml version="1.0"?>
 <PluginData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GitHubPlugin">
 
-    <Id>se-linux-compat</Id>
-    <GroupId>se-linux-compat</GroupId>
-    <RepoId>viktor-ferenczi/se-linux-compat</RepoId>
+    <Id>linux-compat</Id>
+    <RepoId>CometWorks/linux-compat</RepoId>
 
     <FriendlyName>LinuxCompat</FriendlyName>
     <Author>Viktor</Author>
 
-    <Tooltip>Linux compatibility</Tooltip>
-    <Description>This is applied right after the `se-dotnet-compat` 
-plugin by the Linux version of Pulsar.</Description>
+    <Tooltip>Linux support for Space Engineers</Tooltip>
+    <Description>Patches Space Engineers to run natively on Linux. The plugin loads automatically when needed.</Description>
 
     <SourceDirectories>
         <Directory>Shared</Directory>
@@ -22,11 +20,9 @@ plugin by the Linux version of Pulsar.</Description>
         <PackageReference Include="Silk.NET.OpenAL" Version="2.23.0" />
 	</NuGetReferences>
 
-    <Runtimes>NETCoreApp</Runtimes>
+    <Runtimes>CoreCLR</Runtimes>
     <Platforms>Linux</Platforms>
-
     <Hidden>true</Hidden>
-    
     <Commit>TODO</Commit>
 
 </PluginData>

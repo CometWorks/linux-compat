@@ -5,10 +5,33 @@
 
         <!-- Folder containing SpaceEngineersDedicated.exe -->
         <DS64></DS64>
+
+        <!-- Plugin loader folders for automatic deployment -->
+        <Pulsar></Pulsar>
+        <Magnetar></Magnetar>
+
+        <!-- Steam release of https://github.com/CometWorks/linux-dependencies -->
+        <Steamworks></Steamworks>
+
+        <!-- SE1 release of https://github.com/CometWorks/linux-dependencies -->
+        <Dependencies></Dependencies>
+
+        <!-- Release of https://github.com/CometWorks/linux-native-wrappers -->
+        <Wrappers></Wrappers>
         
         <!-- Plugin version -->
         <Version>10.0.0</Version>
         <AssemblyVersion>1.0.17.0</AssemblyVersion>
         <FileVersion>1.0.17.0</FileVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+        <Bin64 Condition="'$(Bin64)' == ''">$(registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 244850@InstallLocation)\Bin64</Bin64>
+        <DS64 Condition="'$(DS64)' == ''">$(registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 298740@InstallLocation)\DedicatedServer64</DS64>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+        <Bin64 Condition="'$(Bin64)' == '' and Exists('$(HOME)/.steam/steam/steamapps/common/SpaceEngineers/Bin64')">$(HOME)/.steam/steam/steamapps/common/SpaceEngineers/Bin64</Bin64>
+        <DS64 Condition="'$(DS64)' == '' and Exists('$(HOME)/.steam/steam/steamapps/common/SpaceEngineersDedicatedServer/DedicatedServer64')">$(HOME)/.steam/steam/steamapps/common/SpaceEngineersDedicatedServer/DedicatedServer64</DS64>
     </PropertyGroup>
 </Project>

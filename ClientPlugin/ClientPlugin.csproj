@@ -171,7 +171,7 @@
             <Private>False</Private>
         </Reference>
         <Reference Include="Steamworks.NET">
-            <HintPath>$(Bin64)/Steamworks.NET.dll</HintPath>
+            <HintPath>$(Steamworks)/Steamworks.NET.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="VRage.UserInterface, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
@@ -193,7 +193,7 @@
         <PackageReference Include="Mono.Cecil" Version="0.11.6"/>
         <PackageReference Include="FFmpeg.AutoGen" Version="8.1.0" GeneratePathProperty="true" />
         <!-- libopenal.so.1 is supplied by the host, Flatpak runtime, or developer bundle. -->
-        <PackageReference Include="Silk.NET.OpenAL" Version="2.23.0" />
+        <PackageReference Include="Silk.NET.OpenAL" Version="2.23.0" GeneratePathProperty="true" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -235,6 +235,35 @@
     <ItemGroup>
       <Folder Include="Patches/" />
     </ItemGroup>
+
+    <Target Name="ValidateBin64" BeforeTargets="PrepareForBuild">
+        <Error Condition="!Exists('$(Bin64)')" Text="Specify SpaceEngineers Bin64 path!" />
+        <Error Condition="!Exists('$(Steamworks)/Steamworks.NET.dll')" Text="Specify Steamworks path!" />
+        <Warning Condition="!Exists('$(Dependencies)')" Text="Plugin will fail at runtime without linux-dependencies!" />
+        <Warning Condition="!Exists('$(Wrappers)')" Text="Plugin will fail at runtime without linux-native-wrappers!" />
+        <Warning Condition="'$(Pulsar)' == ''" Text="Skipping deployment due to unset Pulsar folder!" />
+    </Target>
+
+    <Target Name="DeployPlugin" AfterTargets="Build" Condition="'$(Pulsar)' != ''">
+        <PropertyGroup>
+            <FolderName>Legacy</FolderName>
+            <FolderName Condition="Exists('$(Pulsar)/Interim')">Interim</FolderName>
+            <PluginDirectory>$(Pulsar)/$(FolderName)/Local/linux-compat</PluginDirectory>
+        </PropertyGroup>
+        <ItemGroup>
+            <Deploy Include="$(Dependencies)/**/*" Condition="'$(Dependencies)' != ''" />
+            <Deploy Include="$(Wrappers)/**/*" Condition="'$(Wrappers)' != ''" />
+        </ItemGroup>
+        <MakeDir Directories="$(PluginDirectory)" />
+        <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(PluginDirectory)/plugin.dll" />
+        <Copy SourceFiles="$(PkgFFmpeg_AutoGen)/lib/netstandard2.1/FFmpeg.AutoGen.dll" DestinationFolder="$(PluginDirectory)" />
+        <Copy SourceFiles="$(PkgSilk_NET_OpenAL)/lib/net5.0/Silk.NET.OpenAL.dll" DestinationFolder="$(PluginDirectory)" />
+        <Copy SourceFiles="$(NuGetPackageRoot)silk.net.core/2.23.0/lib/net6.0/Silk.NET.Core.dll" DestinationFolder="$(PluginDirectory)" />
+        <Copy SourceFiles="$(NuGetPackageRoot)microsoft.dotnet.platformabstractions/3.1.6/lib/netstandard2.0/Microsoft.DotNet.PlatformAbstractions.dll" DestinationFolder="$(PluginDirectory)" />
+        <Copy SourceFiles="$(NuGetPackageRoot)microsoft.extensions.dependencymodel/9.0.9/lib/net9.0/Microsoft.Extensions.DependencyModel.dll" DestinationFolder="$(PluginDirectory)" />
+        <Copy SourceFiles="@(Deploy)" DestinationFolder="$(PluginDirectory)" />
+        <Copy SourceFiles="$(MSBuildProjectDirectory)/ClientPlugin.xml" DestinationFiles="$(PluginDirectory)/plugin.xml" />
+    </Target>
 
     <Import Project="../Shared/Shared.projitems" Label="Shared" />
 </Project>
