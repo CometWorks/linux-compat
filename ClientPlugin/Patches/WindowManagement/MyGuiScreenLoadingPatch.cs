@@ -7,8 +7,14 @@ using VRage;
 namespace ClientPlugin.Patches.WindowManagement;
 
 // Keep the cursor available during windowed loading screens.
-[HarmonyPatch(typeof(MyGuiScreenLoading), MethodType.Constructor,
-    typeof(MyGuiScreenBase), typeof(MyGuiScreenGamePlay), typeof(string), typeof(string))]
+[HarmonyPatch(
+    typeof(MyGuiScreenLoading),
+    MethodType.Constructor,
+    typeof(MyGuiScreenBase),
+    typeof(MyGuiScreenGamePlay),
+    typeof(string),
+    typeof(string)
+)]
 [HarmonyPatchCategory("Finish")]
 static class MyGuiScreenLoadingConstructorPatch
 {

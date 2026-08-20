@@ -12,7 +12,8 @@ static class MyModelImporterPatch
 {
     static void Prefix(ref string assetFileName)
     {
-        if (assetFileName == null) return;
+        if (assetFileName == null)
+            return;
 
         assetFileName = assetFileName.Replace('\\', '/');
 

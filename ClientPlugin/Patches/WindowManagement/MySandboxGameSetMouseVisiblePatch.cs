@@ -29,7 +29,8 @@ static class MySandboxGameSetMouseVisiblePatch
             return false;
         }
 
-        __state = visible
+        __state =
+            visible
             && !__instance.IsCursorVisible
             && MySession.Static?.ControlledEntity != null
             && !MyExternalAppBase.IsEditorActive;

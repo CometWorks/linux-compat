@@ -26,11 +26,18 @@ public static class D3DCompilerLinux
 
     [DllImport("libD3DCompiler.so")]
     private static extern int SE_D3DCompile(
-        IntPtr pSrcData, ulong srcDataSize,
-        IntPtr pSourceName, IntPtr pDefines, IntPtr pInclude,
-        IntPtr pEntrypoint, IntPtr pTarget,
-        uint flags1, uint flags2,
-        out IntPtr ppCode, out IntPtr ppErrorMsgs);
+        IntPtr pSrcData,
+        ulong srcDataSize,
+        IntPtr pSourceName,
+        IntPtr pDefines,
+        IntPtr pInclude,
+        IntPtr pEntrypoint,
+        IntPtr pTarget,
+        uint flags1,
+        uint flags2,
+        out IntPtr ppCode,
+        out IntPtr ppErrorMsgs
+    );
 
     [DllImport("libD3DCompiler.so")]
     private static extern IntPtr SE_BlobGetBufferPointer(IntPtr blob);
@@ -58,7 +65,13 @@ public static class D3DCompilerLinux
             string found = null;
             foreach (string entry in Directory.EnumerateFileSystemEntries(current))
             {
-                if (string.Equals(Path.GetFileName(entry), segment, StringComparison.OrdinalIgnoreCase))
+                if (
+                    string.Equals(
+                        Path.GetFileName(entry),
+                        segment,
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
                 {
                     found = entry;
                     break;
@@ -73,9 +86,14 @@ public static class D3DCompilerLinux
 
     private static readonly Regex IncludeRegex = new Regex(
         @"^\s*#include\s+[<""]([^>""]+)[>""]",
-        RegexOptions.Multiline | RegexOptions.Compiled);
+        RegexOptions.Multiline | RegexOptions.Compiled
+    );
 
-    private static string PreprocessIncludes(string sourceFilePath, IReadOnlyList<string> includeDirs, HashSet<string> stack = null)
+    private static string PreprocessIncludes(
+        string sourceFilePath,
+        IReadOnlyList<string> includeDirs,
+        HashSet<string> stack = null
+    )
     {
         stack ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string fullPath = Path.GetFullPath(sourceFilePath);
@@ -85,34 +103,44 @@ public static class D3DCompilerLinux
         string source = File.ReadAllText(sourceFilePath);
         string sourceDir = Path.GetDirectoryName(fullPath);
 
-        string result = IncludeRegex.Replace(source, match =>
-        {
-            string includeFile = match.Groups[1].Value;
-
-            string[] searchDirs = new string[includeDirs.Count + 1];
-            searchDirs[0] = sourceDir;
-            for (int i = 0; i < includeDirs.Count; i++)
-                searchDirs[i + 1] = includeDirs[i];
-
-            foreach (string dir in searchDirs)
+        string result = IncludeRegex.Replace(
+            source,
+            match =>
             {
-                string resolved = Path.Combine(dir, includeFile);
-                if (File.Exists(resolved))
-                    return PreprocessIncludes(resolved, includeDirs, stack);
+                string includeFile = match.Groups[1].Value;
 
-                resolved = FindFileCaseInsensitive(dir, includeFile);
-                if (resolved != null)
-                    return PreprocessIncludes(resolved, includeDirs, stack);
+                string[] searchDirs = new string[includeDirs.Count + 1];
+                searchDirs[0] = sourceDir;
+                for (int i = 0; i < includeDirs.Count; i++)
+                    searchDirs[i + 1] = includeDirs[i];
+
+                foreach (string dir in searchDirs)
+                {
+                    string resolved = Path.Combine(dir, includeFile);
+                    if (File.Exists(resolved))
+                        return PreprocessIncludes(resolved, includeDirs, stack);
+
+                    resolved = FindFileCaseInsensitive(dir, includeFile);
+                    if (resolved != null)
+                        return PreprocessIncludes(resolved, includeDirs, stack);
+                }
+
+                return match.Value;
             }
-
-            return match.Value;
-        });
+        );
 
         stack.Remove(fullPath);
         return result;
     }
 
-    internal static byte[] Compile(string sourceFilePath, ShaderMacro[] macros, string entryPoint, string profile, bool optimize, out string compileLog)
+    internal static byte[] Compile(
+        string sourceFilePath,
+        ShaderMacro[] macros,
+        string entryPoint,
+        string profile,
+        bool optimize,
+        out string compileLog
+    )
     {
         uint flags = 0;
         if (optimize)
@@ -182,11 +210,18 @@ public static class D3DCompilerLinux
             Marshal.StructureToPtr(terminator, pDefines + structSize * idx, false);
 
             int hr = SE_D3DCompile(
-                pSrcData, (ulong)sourceBytes.Length,
-                pSourceName, pDefines, IntPtr.Zero,
-                pEntryPoint, pTarget,
-                flags, 0,
-                out ppCode, out ppErrorMsgs);
+                pSrcData,
+                (ulong)sourceBytes.Length,
+                pSourceName,
+                pDefines,
+                IntPtr.Zero,
+                pEntryPoint,
+                pTarget,
+                flags,
+                0,
+                out ppCode,
+                out ppErrorMsgs
+            );
 
             compileLog = null;
             if (ppErrorMsgs != IntPtr.Zero)
@@ -208,13 +243,20 @@ public static class D3DCompilerLinux
         }
         finally
         {
-            if (ppCode != IntPtr.Zero) SE_BlobRelease(ppCode);
-            if (ppErrorMsgs != IntPtr.Zero) SE_BlobRelease(ppErrorMsgs);
-            if (pSourceName != IntPtr.Zero) Marshal.FreeHGlobal(pSourceName);
-            if (pEntryPoint != IntPtr.Zero) Marshal.FreeHGlobal(pEntryPoint);
-            if (pTarget != IntPtr.Zero) Marshal.FreeHGlobal(pTarget);
-            if (pSrcData != IntPtr.Zero) Marshal.FreeHGlobal(pSrcData);
-            if (pDefines != IntPtr.Zero) Marshal.FreeHGlobal(pDefines);
+            if (ppCode != IntPtr.Zero)
+                SE_BlobRelease(ppCode);
+            if (ppErrorMsgs != IntPtr.Zero)
+                SE_BlobRelease(ppErrorMsgs);
+            if (pSourceName != IntPtr.Zero)
+                Marshal.FreeHGlobal(pSourceName);
+            if (pEntryPoint != IntPtr.Zero)
+                Marshal.FreeHGlobal(pEntryPoint);
+            if (pTarget != IntPtr.Zero)
+                Marshal.FreeHGlobal(pTarget);
+            if (pSrcData != IntPtr.Zero)
+                Marshal.FreeHGlobal(pSrcData);
+            if (pDefines != IntPtr.Zero)
+                Marshal.FreeHGlobal(pDefines);
             foreach (IntPtr ptr in pinnedStrings)
                 Marshal.FreeHGlobal(ptr);
         }

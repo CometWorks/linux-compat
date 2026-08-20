@@ -42,14 +42,16 @@ static class MyWindowsSystemGetTotalPhysicalMemoryPatch
                 }
             }
         }
-        catch
-        {
-        }
+        catch { }
         return 0;
     }
 }
 
-[HarmonyPatch("VRage.Platform.Windows.Sys.MyWindowsSystem", "ThreeLetterISORegionName", MethodType.Getter)]
+[HarmonyPatch(
+    "VRage.Platform.Windows.Sys.MyWindowsSystem",
+    "ThreeLetterISORegionName",
+    MethodType.Getter
+)]
 [HarmonyPatchCategory("Finish")]
 static class MyWindowsSystemThreeLetterISOPatch
 {
@@ -60,7 +62,11 @@ static class MyWindowsSystemThreeLetterISOPatch
     }
 }
 
-[HarmonyPatch("VRage.Platform.Windows.Sys.MyWindowsSystem", "TwoLetterISORegionName", MethodType.Getter)]
+[HarmonyPatch(
+    "VRage.Platform.Windows.Sys.MyWindowsSystem",
+    "TwoLetterISORegionName",
+    MethodType.Getter
+)]
 [HarmonyPatchCategory("Finish")]
 static class MyWindowsSystemTwoLetterISOPatch
 {
@@ -93,7 +99,11 @@ static class MyWindowsSystemRegionLongitudePatch
     }
 }
 
-[HarmonyPatch("VRage.Platform.Windows.Sys.MyWindowsSystem", "HasSwappedMouseButtons", MethodType.Getter)]
+[HarmonyPatch(
+    "VRage.Platform.Windows.Sys.MyWindowsSystem",
+    "HasSwappedMouseButtons",
+    MethodType.Getter
+)]
 [HarmonyPatchCategory("Finish")]
 static class MyWindowsSystemHasSwappedMouseButtonsPatch
 {
@@ -115,7 +125,11 @@ static class MyWindowsSystemIsUsingGeforceNowPatch
     }
 }
 
-[HarmonyPatch("VRage.Platform.Windows.Sys.MyWindowsSystem", "IsUsingGeforceNowCloud", MethodType.Getter)]
+[HarmonyPatch(
+    "VRage.Platform.Windows.Sys.MyWindowsSystem",
+    "IsUsingGeforceNowCloud",
+    MethodType.Getter
+)]
 [HarmonyPatchCategory("Finish")]
 static class MyWindowsSystemIsUsingGeforceNowCloudPatch
 {
@@ -158,11 +172,9 @@ static class MyWindowsSystemOpenUrlPatch
             var uri = new Uri(url);
             if (uri.Scheme == "https")
             {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = uri.ToString(),
-                    UseShellExecute = true
-                });
+                Process.Start(
+                    new ProcessStartInfo { FileName = uri.ToString(), UseShellExecute = true }
+                );
             }
             __result = true;
         }

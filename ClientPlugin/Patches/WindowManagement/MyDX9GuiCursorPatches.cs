@@ -20,7 +20,8 @@ static class MyDX9GuiMouseCursorPositionPatch
     {
         __result = MyGuiManager.GetNormalizedMousePosition(
             MyInput.Static.GetMousePosition(),
-            MyInput.Static.GetMouseAreaSize());
+            MyInput.Static.GetMouseAreaSize()
+        );
         return false;
     }
 }
@@ -37,12 +38,13 @@ static class MyDX9GuiDrawMouseCursorPatch
 
         // Hide the software cursor only after the pointer leaves the window.
         var config = MySandboxGame.Config;
-        if (config != null && config.CaptureMouse == false && config.WindowMode == MyWindowModeEnum.Window)
+        if (
+            config != null
+            && config.CaptureMouse == false
+            && config.WindowMode == MyWindowModeEnum.Window
+        )
         {
-            shouldDrawCursor = raw.X >= 0f
-                && raw.Y >= 0f
-                && raw.X < area.X
-                && raw.Y < area.Y;
+            shouldDrawCursor = raw.X >= 0f && raw.Y >= 0f && raw.X < area.X && raw.Y < area.Y;
         }
 
         if (mouseCursorTexture != null && shouldDrawCursor)
@@ -62,7 +64,8 @@ static class MyDX9GuiDrawMouseCursorPatch
                 null,
                 0f,
                 0f,
-                ignoreBounds: true);
+                ignoreBounds: true
+            );
         }
 
         return false;

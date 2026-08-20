@@ -28,7 +28,9 @@ static class ShowSplashScreenPatch
                 gameIcon = appName + ".ico";
         }
 
-        Console.WriteLine($"[LinuxCompat] ShowSplashScreen prefix: image='{image}' gameIcon='{gameIcon}' scale=({scale.X},{scale.Y})");
+        Console.WriteLine(
+            $"[LinuxCompat] ShowSplashScreen prefix: image='{image}' gameIcon='{gameIcon}' scale=({scale.X},{scale.Y})"
+        );
         MySdlSplashScreen.Show(image, gameIcon, scale);
         return false;
     }

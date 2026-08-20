@@ -23,7 +23,11 @@ static class MyLODDescriptorGetModelAbsoluteFilePathPatch
             modelFile += ".mwm";
 
         var lowered = parentAssetFilePath?.ToLower() ?? "";
-        if (parentAssetFilePath != null && Path.IsPathRooted(parentAssetFilePath) && lowered.Contains("models"))
+        if (
+            parentAssetFilePath != null
+            && Path.IsPathRooted(parentAssetFilePath)
+            && lowered.Contains("models")
+        )
         {
             var rootPath = parentAssetFilePath.Substring(0, lowered.IndexOf("models"));
             var candidate = PathHelpers.ResolveContentFilePath(modelFile, rootPath);

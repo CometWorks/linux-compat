@@ -57,9 +57,7 @@ internal static class PluginWindowConfig
         {
             MySandboxGame.Config?.Save();
         }
-        catch (Exception)
-        {
-        }
+        catch (Exception) { }
     }
 
     private static int? GetInt(string key)
@@ -72,8 +70,14 @@ internal static class PluginWindowConfig
             var raw = config.GetParameterValue(key);
             if (string.IsNullOrEmpty(raw))
                 return null;
-            if (int.TryParse(raw, System.Globalization.NumberStyles.Integer,
-                    System.Globalization.CultureInfo.InvariantCulture, out int value))
+            if (
+                int.TryParse(
+                    raw,
+                    System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out int value
+                )
+            )
                 return value;
             return null;
         }
@@ -92,8 +96,6 @@ internal static class PluginWindowConfig
         {
             config.SetParameterValue(key, value);
         }
-        catch (Exception)
-        {
-        }
+        catch (Exception) { }
     }
 }

@@ -12,7 +12,10 @@ using VRage;
 
 namespace ClientPlugin.Patches.SystemAbstraction;
 
-[HarmonyPatch(typeof(MyTerminalGpsController), nameof(MyTerminalGpsController.OnButtonPressedNewFromClipboard))]
+[HarmonyPatch(
+    typeof(MyTerminalGpsController),
+    nameof(MyTerminalGpsController.OnButtonPressedNewFromClipboard)
+)]
 [HarmonyPatchCategory("Finish")]
 static class MyTerminalGpsControllerNewFromClipboardPatch
 {
@@ -32,7 +35,8 @@ static class MyTerminalGpsControllerNewFromClipboardPatch
                 {
                     MySession.Static?.Gpss?.ScanText(
                         controller.m_clipboardText,
-                        MyTexts.Get(MySpaceTexts.TerminalTab_GPS_NewFromClipboard_Desc));
+                        MyTexts.Get(MySpaceTexts.TerminalTab_GPS_NewFromClipboard_Desc)
+                    );
                 }
                 if (controller.m_searchBox != null)
                     controller.m_searchBox.SearchText = string.Empty;

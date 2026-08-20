@@ -32,7 +32,12 @@ internal static class ModeChangeForwarder
         var adapters = MyPlatformRender.GetAdaptersList();
         if (adapters == null || s.AdapterOrdinal < 0 || s.AdapterOrdinal >= adapters.Length)
             return;
-        sdl.OnModeChanged(s.WindowMode, s.BackBufferWidth, s.BackBufferHeight, adapters[s.AdapterOrdinal].DesktopBounds);
+        sdl.OnModeChanged(
+            s.WindowMode,
+            s.BackBufferWidth,
+            s.BackBufferHeight,
+            adapters[s.AdapterOrdinal].DesktopBounds
+        );
     }
 
     // Explicit settings choices may resize SDL without changing mode.
@@ -43,9 +48,18 @@ internal static class ModeChangeForwarder
         if (sdl == null)
             return;
         var adapters = MyPlatformRender.GetAdaptersList();
-        if (adapters == null || settings.AdapterOrdinal < 0 || settings.AdapterOrdinal >= adapters.Length)
+        if (
+            adapters == null
+            || settings.AdapterOrdinal < 0
+            || settings.AdapterOrdinal >= adapters.Length
+        )
             return;
-        sdl.OnModeChanged(settings.WindowMode, settings.BackBufferWidth, settings.BackBufferHeight, adapters[settings.AdapterOrdinal].DesktopBounds);
+        sdl.OnModeChanged(
+            settings.WindowMode,
+            settings.BackBufferWidth,
+            settings.BackBufferHeight,
+            adapters[settings.AdapterOrdinal].DesktopBounds
+        );
     }
 }
 

@@ -20,8 +20,10 @@ public static class PathHelpers
         {
             int start = 0;
             int end = path.Length;
-            while (start < end && char.IsWhiteSpace(path[start])) start++;
-            while (end > start && char.IsWhiteSpace(path[end - 1])) end--;
+            while (start < end && char.IsWhiteSpace(path[start]))
+                start++;
+            while (end > start && char.IsWhiteSpace(path[end - 1]))
+                end--;
             if (start == 0 && end == path.Length)
                 return path;
             return path.Substring(start, end - start);
@@ -44,8 +46,13 @@ public static class PathHelpers
         var translated = PathTranslation.Translate(flipped);
         if (!ReferenceEquals(translated, flipped))
             return translated;
-        if (flipped.Length >= 2 && flipped[1] == ':' &&
-            ((flipped[0] >= 'A' && flipped[0] <= 'Z') || (flipped[0] >= 'a' && flipped[0] <= 'z')))
+        if (
+            flipped.Length >= 2
+            && flipped[1] == ':'
+            && (
+                (flipped[0] >= 'A' && flipped[0] <= 'Z') || (flipped[0] >= 'a' && flipped[0] <= 'z')
+            )
+        )
             return flipped;
         if (flipped.Length > 0 && flipped[0] == '\\')
             return "C:" + flipped;
@@ -79,8 +86,8 @@ public static class PathHelpers
 
 static class CaseInsensitivePathResolver
 {
-    public static string Resolve(string relativePath, string rootPath)
-        => PathCache.Resolve(relativePath, rootPath);
+    public static string Resolve(string relativePath, string rootPath) =>
+        PathCache.Resolve(relativePath, rootPath);
 }
 
 /// <summary>
@@ -92,6 +99,7 @@ public static class PathCache
     // Lower-cased absolute and root-relative paths map to real disk casing.
     private static Dictionary<string, string> s_staticMap;
     private static volatile bool s_staticReady;
+
     // Known roots avoid walking from "/" for dynamic lookups.
     private static string s_contentRoot;
     private static string s_bin64Root;
@@ -105,8 +113,9 @@ public static class PathCache
     }
 
     // Keys are canonical, real-cased absolute directory paths.
-    private static readonly ConcurrentDictionary<string, DirEntry> s_dirs =
-        new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, DirEntry> s_dirs = new(
+        StringComparer.Ordinal
+    );
 
     private static string s_modsRoot;
     private static string s_userDataRoot;
@@ -158,8 +167,7 @@ public static class PathCache
         IEnumerable<string> entries;
         try
         {
-            entries = Directory.EnumerateFileSystemEntries(
-                root, "*", SearchOption.AllDirectories);
+            entries = Directory.EnumerateFileSystemEntries(root, "*", SearchOption.AllDirectories);
         }
         catch
         {
@@ -170,17 +178,25 @@ public static class PathCache
         foreach (var raw in entries)
         {
             string sub;
-            try { sub = PathHelpers.Normalize(raw); }
-            catch { continue; }
+            try
+            {
+                sub = PathHelpers.Normalize(raw);
+            }
+            catch
+            {
+                continue;
+            }
 
             if (string.IsNullOrEmpty(sub))
                 continue;
 
             map[sub.ToLowerInvariant()] = sub;
 
-            if (sub.Length > rootLen &&
-                sub.StartsWith(root, StringComparison.Ordinal) &&
-                sub[rootLen] == '/')
+            if (
+                sub.Length > rootLen
+                && sub.StartsWith(root, StringComparison.Ordinal)
+                && sub[rootLen] == '/'
+            )
             {
                 var rel = sub.Substring(rootLen + 1);
                 if (rel.Length > 0)
@@ -196,8 +212,10 @@ public static class PathCache
 
         var mods = NormalizeRoot(MyFileSystem.ModsPath);
         var user = NormalizeRoot(MyFileSystem.UserDataPath);
-        if (mods != null) s_modsRoot = mods;
-        if (user != null) s_userDataRoot = user;
+        if (mods != null)
+            s_modsRoot = mods;
+        if (user != null)
+            s_userDataRoot = user;
         if (s_modsRoot != null && s_userDataRoot != null)
             s_mutableRootsResolved = 1;
     }
@@ -224,8 +242,13 @@ public static class PathCache
         if (File.Exists(path) || Directory.Exists(path))
             return path;
 
-        try { path = Path.GetFullPath(path); }
-        catch { /* keep input on canonicalization failure */ }
+        try
+        {
+            path = Path.GetFullPath(path);
+        }
+        catch
+        { /* keep input on canonicalization failure */
+        }
 
         if (s_staticReady)
         {
@@ -282,14 +305,23 @@ public static class PathCache
         string startRoot = "/";
         if (s_userDataRoot != null && PrefixMatches(fullPath, s_userDataRoot))
             startRoot = s_userDataRoot;
-        if (s_modsRoot != null && PrefixMatches(fullPath, s_modsRoot) &&
-            (startRoot == "/" || s_modsRoot.Length > startRoot.Length))
+        if (
+            s_modsRoot != null
+            && PrefixMatches(fullPath, s_modsRoot)
+            && (startRoot == "/" || s_modsRoot.Length > startRoot.Length)
+        )
             startRoot = s_modsRoot;
-        if (s_contentRoot != null && PrefixMatches(fullPath, s_contentRoot) &&
-            (startRoot == "/" || s_contentRoot.Length > startRoot.Length))
+        if (
+            s_contentRoot != null
+            && PrefixMatches(fullPath, s_contentRoot)
+            && (startRoot == "/" || s_contentRoot.Length > startRoot.Length)
+        )
             startRoot = s_contentRoot;
-        if (s_bin64Root != null && PrefixMatches(fullPath, s_bin64Root) &&
-            (startRoot == "/" || s_bin64Root.Length > startRoot.Length))
+        if (
+            s_bin64Root != null
+            && PrefixMatches(fullPath, s_bin64Root)
+            && (startRoot == "/" || s_bin64Root.Length > startRoot.Length)
+        )
             startRoot = s_bin64Root;
 
         string rel;
@@ -299,9 +331,10 @@ public static class PathCache
         }
         else
         {
-            rel = fullPath.Length == startRoot.Length
-                ? string.Empty
-                : fullPath.Substring(startRoot.Length).TrimStart('/');
+            rel =
+                fullPath.Length == startRoot.Length
+                    ? string.Empty
+                    : fullPath.Substring(startRoot.Length).TrimStart('/');
         }
 
         if (rel.Length == 0)
@@ -323,8 +356,7 @@ public static class PathCache
             }
 
             var lower = seg.ToLowerInvariant();
-            if (!ReferenceEquals(lower, seg) &&
-                entry.ChildMap.TryGetValue(lower, out realName))
+            if (!ReferenceEquals(lower, seg) && entry.ChildMap.TryGetValue(lower, out realName))
             {
                 current = AppendChild(current, realName);
                 continue;
@@ -343,8 +375,8 @@ public static class PathCache
         return fullPath.Length == root.Length || fullPath[root.Length] == '/';
     }
 
-    private static string AppendChild(string parent, string child)
-        => parent == "/" ? "/" + child : parent + "/" + child;
+    private static string AppendChild(string parent, string child) =>
+        parent == "/" ? "/" + child : parent + "/" + child;
 
     private static DirEntry GetOrRefresh(string realCasedDirPath)
     {
@@ -368,8 +400,14 @@ public static class PathCache
 
     private static long ReadMtime(string dirPath)
     {
-        try { return Directory.GetLastWriteTimeUtc(dirPath).Ticks; }
-        catch { return 0; }
+        try
+        {
+            return Directory.GetLastWriteTimeUtc(dirPath).Ticks;
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     private static void Populate(DirEntry entry, string dirPath, long mtime)

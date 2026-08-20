@@ -3,7 +3,11 @@ using VRageRender;
 
 namespace ClientPlugin.Patches.NullSafety;
 
-[HarmonyPatch(typeof(MyShadowCascades), nameof(MyShadowCascades.CascadeResolution), MethodType.Getter)]
+[HarmonyPatch(
+    typeof(MyShadowCascades),
+    nameof(MyShadowCascades.CascadeResolution),
+    MethodType.Getter
+)]
 [HarmonyPatchCategory("Finish")]
 static class MyShadowCascadesCascadeResolutionPatch
 {

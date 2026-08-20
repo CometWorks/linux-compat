@@ -22,6 +22,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     private const ulong SDL_WINDOW_VULKAN = 0x10000000uL;
 
     private const uint SDL_EVENT_QUIT = 0x100u;
+
     // SDL3 window event codes from SDL_events.h.
     private const uint SDL_EVENT_WINDOW_MOVED = 0x205u;
     private const uint SDL_EVENT_WINDOW_RESIZED = 0x206u;
@@ -44,7 +45,8 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     // Guards the input snapshot written by SDL and read by game threads.
     private readonly object m_bufferLock = new object();
-    private readonly Dictionary<uint, ActionRef<MyMessage>> m_messageHandlers = new Dictionary<uint, ActionRef<MyMessage>>();
+    private readonly Dictionary<uint, ActionRef<MyMessage>> m_messageHandlers =
+        new Dictionary<uint, ActionRef<MyMessage>>();
     private List<char> m_bufferedChars = new List<char>();
     private readonly byte[] m_keyStates = new byte[32];
 
@@ -81,8 +83,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     private void ScheduleConfigSave()
     {
-        Volatile.Write(ref m_configSaveScheduledAtTicks,
-            DateTime.UtcNow.AddMilliseconds(CONFIG_SAVE_DEBOUNCE_MS).Ticks);
+        Volatile.Write(
+            ref m_configSaveScheduledAtTicks,
+            DateTime.UtcNow.AddMilliseconds(CONFIG_SAVE_DEBOUNCE_MS).Ticks
+        );
     }
 
     private void FlushPendingConfigSave(bool force = false)
@@ -168,12 +172,15 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         }
         set
         {
-            bool shouldWarp = Math.Abs(m_mousePosition.X - value.X) > 0.5f || Math.Abs(m_mousePosition.Y - value.Y) > 0.5f;
+            bool shouldWarp =
+                Math.Abs(m_mousePosition.X - value.X) > 0.5f
+                || Math.Abs(m_mousePosition.Y - value.Y) > 0.5f;
             m_mouseOutsideWindow = false;
             m_mousePosition = value;
             if (shouldWarp && Handle != IntPtr.Zero)
             {
-                float wx = value.X, wy = value.Y;
+                float wx = value.X,
+                    wy = value.Y;
                 SdlRenderThread.Dispatch(() =>
                 {
                     if (Handle != IntPtr.Zero)
@@ -208,9 +215,17 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     /// <summary>
     /// Constructs the native window on the SDL thread.
     /// </summary>
-    internal static SdlGameWindow Create(string gameName, int width, int height, int? initialX = null, int? initialY = null)
+    internal static SdlGameWindow Create(
+        string gameName,
+        int width,
+        int height,
+        int? initialX = null,
+        int? initialY = null
+    )
     {
-        return SdlRenderThread.Invoke(() => new SdlGameWindow(gameName, width, height, initialX, initialY));
+        return SdlRenderThread.Invoke(() =>
+            new SdlGameWindow(gameName, width, height, initialX, initialY)
+        );
     }
 
     private SdlGameWindow(string gameName, int width, int height, int? initialX, int? initialY)
@@ -218,7 +233,8 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         // Native window creation must stay on the SDL thread.
         if (!SdlRenderThread.IsCurrent)
             throw new InvalidOperationException(
-                "SdlGameWindow constructor must run on the SDL render thread; use SdlGameWindow.Create.");
+                "SdlGameWindow constructor must run on the SDL render thread; use SdlGameWindow.Create."
+            );
 
         if (!SdlRenderThread.IsInitialized)
             throw new PlatformNotSupportedException("SDL3 video initialization failed.");
@@ -226,8 +242,15 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         if (width > 0 && height > 0)
             m_clientSize = new Vector2I(width, height);
 
-        Handle = SDL_CreateWindow(gameName ?? "SpaceEngineers", m_clientSize.X, m_clientSize.Y,
-            SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_VULKAN);
+        Handle = SDL_CreateWindow(
+            gameName ?? "SpaceEngineers",
+            m_clientSize.X,
+            m_clientSize.Y,
+            SDL_WINDOW_HIDDEN
+                | SDL_WINDOW_RESIZABLE
+                | SDL_WINDOW_HIGH_PIXEL_DENSITY
+                | SDL_WINDOW_VULKAN
+        );
 
         if (Handle == IntPtr.Zero)
             throw new PlatformNotSupportedException("SDL3 window creation failed.");
@@ -253,9 +276,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         SdlRenderThread.MouseSnapshotCallback = UpdateMouseSnapshot;
 
         Console.WriteLine(
-            $"[LinuxCompat] SDL3 window created: logical={m_clientSize.X}x{m_clientSize.Y} " +
-            $"pixels={m_clientSizePixels.X}x{m_clientSizePixels.Y} " +
-            $"initialPos={(initialX.HasValue && initialY.HasValue ? $"({initialX},{initialY})" : "(default)")}");
+            $"[LinuxCompat] SDL3 window created: logical={m_clientSize.X}x{m_clientSize.Y} "
+                + $"pixels={m_clientSizePixels.X}x{m_clientSizePixels.Y} "
+                + $"initialPos={(initialX.HasValue && initialY.HasValue ? $"({initialX},{initialY})" : "(default)")}"
+        );
     }
 
     // Prefer the configured icon, then <ApplicationName>.ico.
@@ -288,7 +312,12 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         });
     }
 
-    private void ApplyModeChange(MyWindowModeEnum mode, int width, int height, Rectangle desktopBounds)
+    private void ApplyModeChange(
+        MyWindowModeEnum mode,
+        int width,
+        int height,
+        Rectangle desktopBounds
+    )
     {
         Rectangle displayBounds = GetWindowDisplayBounds();
         if (displayBounds.Width <= 0 || displayBounds.Height <= 0)
@@ -300,9 +329,11 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         if (!m_appliedWindowMode.HasValue && !m_savedWindowedSize.HasValue)
             LoadSavedWindowedState();
 
-        if (modeChanged
+        if (
+            modeChanged
             && m_appliedWindowMode == MyWindowModeEnum.Window
-            && mode != MyWindowModeEnum.Window)
+            && mode != MyWindowModeEnum.Window
+        )
         {
             CaptureCurrentWindowedState();
         }
@@ -342,7 +373,12 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         m_appliedWindowMode = mode;
     }
 
-    private void ApplyWindowedMode(int desiredWidth, int desiredHeight, Rectangle displayBounds, bool modeChanged)
+    private void ApplyWindowedMode(
+        int desiredWidth,
+        int desiredHeight,
+        Rectangle displayBounds,
+        bool modeChanged
+    )
     {
         // DXVK can report tiny swapchain bounds instead of desktop bounds.
         bool boundsOk = IsPlausibleDisplayBounds(displayBounds);
@@ -354,8 +390,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             targetW = Math.Min(desiredWidth, displayBounds.Width);
             targetH = Math.Min(desiredHeight, displayBounds.Height);
         }
-        if (targetW <= 0) targetW = desiredWidth;
-        if (targetH <= 0) targetH = desiredHeight;
+        if (targetW <= 0)
+            targetW = desiredWidth;
+        if (targetH <= 0)
+            targetH = desiredHeight;
 
         if (modeChanged)
         {
@@ -368,7 +406,8 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 h = Math.Min(h, displayBounds.Height);
             }
 
-            int x, y;
+            int x,
+                y;
             if (m_savedWindowedPosition.HasValue)
             {
                 x = m_savedWindowedPosition.Value.X;
@@ -389,9 +428,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 ClampWindowToDisplay(displayBounds, ref x, ref y, ref w, ref h);
 
             Console.WriteLine(
-                $"[LinuxCompat] ApplyWindowedMode (transition): requested={desiredWidth}x{desiredHeight} " +
-                $"applied={w}x{h} at ({x},{y}) displayBounds={displayBounds.Width}x{displayBounds.Height}" +
-                $" trusted={boundsOk} savedSize={m_savedWindowedSize} savedPos={m_savedWindowedPosition}");
+                $"[LinuxCompat] ApplyWindowedMode (transition): requested={desiredWidth}x{desiredHeight} "
+                    + $"applied={w}x{h} at ({x},{y}) displayBounds={displayBounds.Width}x{displayBounds.Height}"
+                    + $" trusted={boundsOk} savedSize={m_savedWindowedSize} savedPos={m_savedWindowedPosition}"
+            );
 
             SDL_SetWindowSize(Handle, w, h);
             SDL_SetWindowPosition(Handle, x, y);
@@ -406,14 +446,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             bool havePos = SDL_GetWindowPosition(Handle, out int curX, out int curY);
             int x = havePos
                 ? curX
-                : (boundsOk
-                    ? displayBounds.X + (displayBounds.Width - targetW) / 2
-                    : 0);
+                : (boundsOk ? displayBounds.X + (displayBounds.Width - targetW) / 2 : 0);
             int y = havePos
                 ? curY
-                : (boundsOk
-                    ? displayBounds.Y + (displayBounds.Height - targetH) / 2
-                    : 0);
+                : (boundsOk ? displayBounds.Y + (displayBounds.Height - targetH) / 2 : 0);
 
             int w = targetW;
             int h = targetH;
@@ -421,9 +457,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 ClampWindowToDisplay(displayBounds, ref x, ref y, ref w, ref h);
 
             Console.WriteLine(
-                $"[LinuxCompat] ApplyWindowedMode (resize): requested={desiredWidth}x{desiredHeight} " +
-                $"applied={w}x{h} at ({x},{y}) displayBounds={displayBounds.Width}x{displayBounds.Height}" +
-                $" trusted={boundsOk}");
+                $"[LinuxCompat] ApplyWindowedMode (resize): requested={desiredWidth}x{desiredHeight} "
+                    + $"applied={w}x{h} at ({x},{y}) displayBounds={displayBounds.Width}x{displayBounds.Height}"
+                    + $" trusted={boundsOk}"
+            );
 
             SDL_SetWindowSize(Handle, w, h);
             if (!havePos || x != curX || y != curY)
@@ -438,14 +475,24 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         RefreshPixelSize();
     }
 
-    private static void ClampWindowToDisplay(Rectangle displayBounds, ref int x, ref int y, ref int w, ref int h)
+    private static void ClampWindowToDisplay(
+        Rectangle displayBounds,
+        ref int x,
+        ref int y,
+        ref int w,
+        ref int h
+    )
     {
         if (displayBounds.Width <= 0 || displayBounds.Height <= 0)
             return;
-        if (w > displayBounds.Width) w = displayBounds.Width;
-        if (h > displayBounds.Height) h = displayBounds.Height;
-        if (x < displayBounds.X) x = displayBounds.X;
-        if (y < displayBounds.Y) y = displayBounds.Y;
+        if (w > displayBounds.Width)
+            w = displayBounds.Width;
+        if (h > displayBounds.Height)
+            h = displayBounds.Height;
+        if (x < displayBounds.X)
+            x = displayBounds.X;
+        if (y < displayBounds.Y)
+            y = displayBounds.Y;
         if (x + w > displayBounds.X + displayBounds.Width)
             x = displayBounds.X + displayBounds.Width - w;
         if (y + h > displayBounds.Y + displayBounds.Height)
@@ -465,17 +512,26 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     private void PersistSavedWindowedState()
     {
-        if (m_savedWindowedSize.HasValue
-            && IsValidWindowedSize(m_savedWindowedSize.Value.X, m_savedWindowedSize.Value.Y))
-            PluginWindowConfig.SetWindowedSize(m_savedWindowedSize.Value.X, m_savedWindowedSize.Value.Y);
+        if (
+            m_savedWindowedSize.HasValue
+            && IsValidWindowedSize(m_savedWindowedSize.Value.X, m_savedWindowedSize.Value.Y)
+        )
+            PluginWindowConfig.SetWindowedSize(
+                m_savedWindowedSize.Value.X,
+                m_savedWindowedSize.Value.Y
+            );
         if (m_savedWindowedPosition.HasValue)
-            PluginWindowConfig.SetWindowedPosition(m_savedWindowedPosition.Value.X, m_savedWindowedPosition.Value.Y);
+            PluginWindowConfig.SetWindowedPosition(
+                m_savedWindowedPosition.Value.X,
+                m_savedWindowedPosition.Value.Y
+            );
     }
 
     private void LoadSavedWindowedState()
     {
-        if (PluginWindowConfig.TryGetWindowedSize(out int w, out int h)
-            && IsValidWindowedSize(w, h))
+        if (
+            PluginWindowConfig.TryGetWindowedSize(out int w, out int h) && IsValidWindowedSize(w, h)
+        )
             m_savedWindowedSize = new Vector2I(w, h);
         if (PluginWindowConfig.TryGetWindowedPosition(out int x, out int y))
             m_savedWindowedPosition = new Vector2I(x, y);
@@ -486,11 +542,22 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         // SDL requires a populated display mode before exclusive fullscreen.
         // Include high-density modes to preserve X11 output scaling.
         uint displayId = SDL_GetDisplayForWindow(Handle);
-        if (displayId != 0 &&
-            SDL_GetClosestFullscreenDisplayMode(displayId, width, height, 0f, true, out SdlDisplayMode mode))
+        if (
+            displayId != 0
+            && SDL_GetClosestFullscreenDisplayMode(
+                displayId,
+                width,
+                height,
+                0f,
+                true,
+                out SdlDisplayMode mode
+            )
+        )
         {
-            Console.WriteLine($"[LinuxCompat] Fullscreen mode: requested {width}x{height}, " +
-                              $"picked {mode.W}x{mode.H} @ {mode.RefreshRate:F2}Hz, pixel_density={mode.PixelDensity:F2}");
+            Console.WriteLine(
+                $"[LinuxCompat] Fullscreen mode: requested {width}x{height}, "
+                    + $"picked {mode.W}x{mode.H} @ {mode.RefreshRate:F2}Hz, pixel_density={mode.PixelDensity:F2}"
+            );
             SdlDisplayMode* modePtr = &mode;
             SDL_SetWindowFullscreenMode(Handle, (IntPtr)modePtr);
         }
@@ -504,23 +571,30 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         if (Handle != IntPtr.Zero)
         {
             uint displayId = SDL_GetDisplayForWindow(Handle);
-            if (displayId != 0 && SDL_GetDisplayBounds(displayId, out SdlRect rect)
-                && rect.W > 0 && rect.H > 0)
+            if (
+                displayId != 0
+                && SDL_GetDisplayBounds(displayId, out SdlRect rect)
+                && rect.W > 0
+                && rect.H > 0
+            )
                 return new Rectangle(rect.X, rect.Y, rect.W, rect.H);
         }
 
         // Hidden or unpositioned windows may not have an assigned display.
         uint primary = SDL_GetPrimaryDisplay();
-        if (primary != 0 && SDL_GetDisplayBounds(primary, out SdlRect prect)
-            && prect.W > 0 && prect.H > 0)
+        if (
+            primary != 0
+            && SDL_GetDisplayBounds(primary, out SdlRect prect)
+            && prect.W > 0
+            && prect.H > 0
+        )
             return new Rectangle(prect.X, prect.Y, prect.W, prect.H);
 
         return default;
     }
 
     // Reject DXGI swapchain bounds masquerading as desktop geometry.
-    private static bool IsPlausibleDisplayBounds(Rectangle r) =>
-        r.Width >= 640 && r.Height >= 480;
+    private static bool IsPlausibleDisplayBounds(Rectangle r) => r.Width >= 640 && r.Height >= 480;
 
     private static bool IsXWayland()
     {
@@ -550,7 +624,8 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     public void AddMessageHandler(uint wm, ActionRef<MyMessage> action)
     {
         if (m_messageHandlers.ContainsKey(wm))
-            m_messageHandlers[wm] = (ActionRef<MyMessage>)Delegate.Combine(m_messageHandlers[wm], action);
+            m_messageHandlers[wm] =
+                (ActionRef<MyMessage>)Delegate.Combine(m_messageHandlers[wm], action);
         else
             m_messageHandlers.Add(wm, action);
     }
@@ -558,7 +633,8 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     public void RemoveMessageHandler(uint wm, ActionRef<MyMessage> action)
     {
         if (m_messageHandlers.ContainsKey(wm))
-            m_messageHandlers[wm] = (ActionRef<MyMessage>)Delegate.Remove(m_messageHandlers[wm], action);
+            m_messageHandlers[wm] =
+                (ActionRef<MyMessage>)Delegate.Remove(m_messageHandlers[wm], action);
     }
 
     public void CloseManually()
@@ -581,9 +657,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     /// <summary>
     /// Event polling is owned by <see cref="SdlRenderThread"/>.
     /// </summary>
-    public void DoEvents()
-    {
-    }
+    public void DoEvents() { }
 
     public void Exit()
     {
@@ -611,9 +685,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         FlushPendingConfigSave();
     }
 
-    public void SetCursor(Stream stream)
-    {
-    }
+    public void SetCursor(Stream stream) { }
 
     public void ShowAndFocus()
     {
@@ -665,12 +737,28 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     }
 
     List<string> IVRageInput2.EnumerateJoystickNames() => SdlJoystick.EnumerateJoystickNames();
-    string IVRageInput2.InitializeJoystickIfPossible(string joystickInstanceName) => SdlJoystick.InitializeJoystickIfPossible(joystickInstanceName);
-    bool IVRageInput2.IsJoystickAxisSupported(MyJoystickAxesEnum axis) => SdlJoystick.IsJoystickAxisSupported(axis);
+
+    string IVRageInput2.InitializeJoystickIfPossible(string joystickInstanceName) =>
+        SdlJoystick.InitializeJoystickIfPossible(joystickInstanceName);
+
+    bool IVRageInput2.IsJoystickAxisSupported(MyJoystickAxesEnum axis) =>
+        SdlJoystick.IsJoystickAxisSupported(axis);
+
     bool IVRageInput2.IsJoystickConnected() => SdlJoystick.IsJoystickConnected();
-    void IVRageInput2.GetJoystickState(ref MyJoystickState state) => SdlJoystick.GetJoystickState(ref state);
-    void IVRageInput2.ShowVirtualKeyboardIfNeeded(Action<string> onSuccess, Action onCancel, string defaultText, string title, int maxLength) { }
+
+    void IVRageInput2.GetJoystickState(ref MyJoystickState state) =>
+        SdlJoystick.GetJoystickState(ref state);
+
+    void IVRageInput2.ShowVirtualKeyboardIfNeeded(
+        Action<string> onSuccess,
+        Action onCancel,
+        string defaultText,
+        string title,
+        int maxLength
+    ) { }
+
     unsafe void IVRageInput2.GetAsyncKeyStates(byte* data) => CopyAsyncKeyStates(data);
+
     void IDisposable.Dispose() { }
 
     /// <summary>Returns the latest render-thread input snapshot.</summary>
@@ -683,7 +771,8 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         }
 
         uint buttonState;
-        float relX, relY;
+        float relX,
+            relY;
         int scrollWheel;
         lock (m_bufferLock)
         {
@@ -787,8 +876,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 RefreshPixelSize();
                 BackbufferResizeRequest.Request();
                 // Persist valid windowed geometry from either the WM or settings.
-                if (m_appliedWindowMode == MyWindowModeEnum.Window
-                    && IsValidWindowedSize(m_clientSize.X, m_clientSize.Y))
+                if (
+                    m_appliedWindowMode == MyWindowModeEnum.Window
+                    && IsValidWindowedSize(m_clientSize.X, m_clientSize.Y)
+                )
                 {
                     m_savedWindowedSize = m_clientSize;
                     PluginWindowConfig.SetWindowedSize(m_clientSize.X, m_clientSize.Y);
@@ -915,7 +1006,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     private void ApplyModifierAliases()
     {
         SetKeyState(MyKeys.Shift, GetKeyState(MyKeys.LeftShift) || GetKeyState(MyKeys.RightShift));
-        SetKeyState(MyKeys.Control, GetKeyState(MyKeys.LeftControl) || GetKeyState(MyKeys.RightControl));
+        SetKeyState(
+            MyKeys.Control,
+            GetKeyState(MyKeys.LeftControl) || GetKeyState(MyKeys.RightControl)
+        );
         SetKeyState(MyKeys.Alt, GetKeyState(MyKeys.LeftAlt) || GetKeyState(MyKeys.RightAlt));
     }
 
@@ -1069,15 +1163,24 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     [DllImport(Lib, EntryPoint = "SDL_SetWindowBordered")]
     [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_SetWindowBordered(IntPtr window, [MarshalAs(UnmanagedType.I1)] bool bordered);
+    private static extern bool SDL_SetWindowBordered(
+        IntPtr window,
+        [MarshalAs(UnmanagedType.I1)] bool bordered
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_SetWindowAlwaysOnTop")]
     [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_SetWindowAlwaysOnTop(IntPtr window, [MarshalAs(UnmanagedType.I1)] bool onTop);
+    private static extern bool SDL_SetWindowAlwaysOnTop(
+        IntPtr window,
+        [MarshalAs(UnmanagedType.I1)] bool onTop
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_SetWindowFullscreen")]
     [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_SetWindowFullscreen(IntPtr window, [MarshalAs(UnmanagedType.I1)] bool enabled);
+    private static extern bool SDL_SetWindowFullscreen(
+        IntPtr window,
+        [MarshalAs(UnmanagedType.I1)] bool enabled
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_SetWindowFullscreenMode")]
     [return: MarshalAs(UnmanagedType.I1)]
@@ -1085,7 +1188,14 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     [DllImport(Lib, EntryPoint = "SDL_GetClosestFullscreenDisplayMode")]
     [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_GetClosestFullscreenDisplayMode(uint displayId, int w, int h, float refreshRate, [MarshalAs(UnmanagedType.I1)] bool includeHighDensityModes, out SdlDisplayMode mode);
+    private static extern bool SDL_GetClosestFullscreenDisplayMode(
+        uint displayId,
+        int w,
+        int h,
+        float refreshRate,
+        [MarshalAs(UnmanagedType.I1)] bool includeHighDensityModes,
+        out SdlDisplayMode mode
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_GetDisplayForWindow")]
     private static extern uint SDL_GetDisplayForWindow(IntPtr window);
@@ -1123,7 +1233,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     [DllImport(Lib, EntryPoint = "SDL_SetWindowRelativeMouseMode")]
     [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_SetWindowRelativeMouseMode(IntPtr window, [MarshalAs(UnmanagedType.I1)] bool enabled);
+    private static extern bool SDL_SetWindowRelativeMouseMode(
+        IntPtr window,
+        [MarshalAs(UnmanagedType.I1)] bool enabled
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_HideCursor")]
     [return: MarshalAs(UnmanagedType.I1)]

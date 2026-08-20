@@ -62,7 +62,8 @@ internal static class BackbufferResizeRequest
         current.BackBufferWidth = target.X;
         current.BackBufferHeight = target.Y;
         MyLog.Default.WriteLine(
-            $"Backbuffer resize: {backbuffer.X}x{backbuffer.Y} -> {target.X}x{target.Y} (mode={current.WindowMode})");
+            $"Backbuffer resize: {backbuffer.X}x{backbuffer.Y} -> {target.X}x{target.Y} (mode={current.WindowMode})"
+        );
 
         game.SwitchSettings(current);
     }

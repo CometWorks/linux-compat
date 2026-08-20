@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 using ClientPlugin.Audio;
 using FFmpeg.AutoGen;
 using SharpDX;
-using SharpDX.DXGI;
 using SharpDX.Direct3D11;
+using SharpDX.DXGI;
 using VRage;
 using VRage.Audio;
 using VRage.Collections;
@@ -109,27 +109,44 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
 
                 fixed (AVFormatContext** formatContext = &m_formatContext)
                 {
-                    ThrowIfError(ffmpeg.avformat_open_input(formatContext, fileName, null, null),
-                        $"open video '{fileName}'");
+                    ThrowIfError(
+                        ffmpeg.avformat_open_input(formatContext, fileName, null, null),
+                        $"open video '{fileName}'"
+                    );
                 }
-                ThrowIfError(ffmpeg.avformat_find_stream_info(m_formatContext, null),
-                    $"read stream info for '{fileName}'");
+                ThrowIfError(
+                    ffmpeg.avformat_find_stream_info(m_formatContext, null),
+                    $"read stream info for '{fileName}'"
+                );
 
                 AVCodec* codec = null;
-                m_streamIndex = ffmpeg.av_find_best_stream(m_formatContext, AVMediaType.AVMEDIA_TYPE_VIDEO,
-                    -1, -1, &codec, 0);
+                m_streamIndex = ffmpeg.av_find_best_stream(
+                    m_formatContext,
+                    AVMediaType.AVMEDIA_TYPE_VIDEO,
+                    -1,
+                    -1,
+                    &codec,
+                    0
+                );
                 ThrowIfError(m_streamIndex, $"find video stream in '{fileName}'");
 
                 m_codecContext = ffmpeg.avcodec_alloc_context3(codec);
                 if (m_codecContext == null)
-                    throw new InvalidOperationException($"FFmpeg failed to allocate a video decoder for '{fileName}'.");
+                    throw new InvalidOperationException(
+                        $"FFmpeg failed to allocate a video decoder for '{fileName}'."
+                    );
 
                 ThrowIfError(
-                    ffmpeg.avcodec_parameters_to_context(m_codecContext,
-                        m_formatContext->streams[m_streamIndex]->codecpar),
-                    $"copy codec parameters for '{fileName}'");
-                ThrowIfError(ffmpeg.avcodec_open2(m_codecContext, codec, null),
-                    $"open video decoder for '{fileName}'");
+                    ffmpeg.avcodec_parameters_to_context(
+                        m_codecContext,
+                        m_formatContext->streams[m_streamIndex]->codecpar
+                    ),
+                    $"copy codec parameters for '{fileName}'"
+                );
+                ThrowIfError(
+                    ffmpeg.avcodec_open2(m_codecContext, codec, null),
+                    $"open video decoder for '{fileName}'"
+                );
 
                 m_videoWidth = m_codecContext->width;
                 m_videoHeight = m_codecContext->height;
@@ -137,23 +154,30 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
                 m_nominalFrameDurationSeconds = GetNominalFrameDurationSeconds();
                 m_avgTimePerFrame = (long)(m_nominalFrameDurationSeconds * 10000000.0);
 
-                m_videoDataRgba = new MySwapQueue<byte[]>(() => new byte[m_videoHeight * m_videoWidth * 4]);
+                m_videoDataRgba = new MySwapQueue<byte[]>(() =>
+                    new byte[m_videoHeight * m_videoWidth * 4]
+                );
 
                 m_packet = ffmpeg.av_packet_alloc();
                 m_decodedFrame = ffmpeg.av_frame_alloc();
                 m_convertedFrame = ffmpeg.av_frame_alloc();
                 if (m_packet == null || m_decodedFrame == null || m_convertedFrame == null)
-                    throw new InvalidOperationException($"FFmpeg failed to allocate video decode buffers for '{fileName}'.");
+                    throw new InvalidOperationException(
+                        $"FFmpeg failed to allocate video decode buffers for '{fileName}'."
+                    );
 
                 m_convertedFrame->format = (int)AVPixelFormat.AV_PIX_FMT_BGRA;
                 m_convertedFrame->width = m_videoWidth;
                 m_convertedFrame->height = m_videoHeight;
 
                 MyLog.Default.WriteLineAndConsole(
-                    $"[LinuxCompat] VideoPlayer codec={m_codecContext->codec_id} w={m_videoWidth} h={m_videoHeight} pix_fmt={m_codecContext->pix_fmt}");
+                    $"[LinuxCompat] VideoPlayer codec={m_codecContext->codec_id} w={m_videoWidth} h={m_videoHeight} pix_fmt={m_codecContext->pix_fmt}"
+                );
 
-                ThrowIfError(ffmpeg.av_frame_get_buffer(m_convertedFrame, 0),
-                    $"allocate converted video frame for '{fileName}'");
+                ThrowIfError(
+                    ffmpeg.av_frame_get_buffer(m_convertedFrame, 0),
+                    $"allocate converted video frame for '{fileName}'"
+                );
 
                 // WMV3 may not expose pix_fmt until its first decoded frame.
                 // Creating SwsContext earlier can assert inside libswscale.
@@ -172,7 +196,8 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
             catch (Exception inner)
             {
                 MyLog.Default.WriteLineAndConsole(
-                    $"[LinuxCompat] VideoPlayer.Init FAILED for '{fileName}': {inner}");
+                    $"[LinuxCompat] VideoPlayer.Init FAILED for '{fileName}': {inner}"
+                );
                 throw new Exception("Unable to load or play the video file", inner);
             }
         }
@@ -191,7 +216,7 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
             Usage = ResourceUsage.Dynamic,
             CpuAccessFlags = CpuAccessFlags.Write,
             SampleDescription = new SampleDescription(1, 0),
-            OptionFlags = ResourceOptionFlags.None
+            OptionFlags = ResourceOptionFlags.None,
         };
         m_texture = new Texture2D(MyPlatformRender.DeviceInstance, description);
         m_texture.DebugName = "MyLinuxVideoPlayer.Texture";
@@ -216,10 +241,11 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
                 return;
 
             MyLog.Default.WriteLineAndConsole(
-                $"[LinuxCompat] VideoPlayer.Play w={m_videoWidth} h={m_videoHeight} dur={m_durationSeconds:F2}s audio={(m_audioStream != IntPtr.Zero)}");
+                $"[LinuxCompat] VideoPlayer.Play w={m_videoWidth} h={m_videoHeight} dur={m_durationSeconds:F2}s audio={(m_audioStream != IntPtr.Zero)}"
+            );
             QueueAudioFromCurrentPosition();
-            m_playbackStartTicks = Stopwatch.GetTimestamp()
-                - (long)(m_currentPositionSeconds * Stopwatch.Frequency);
+            m_playbackStartTicks =
+                Stopwatch.GetTimestamp() - (long)(m_currentPositionSeconds * Stopwatch.Frequency);
             m_currentState = VideoState.Playing;
         }
     }
@@ -252,8 +278,10 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
     {
         if (m_currentState == VideoState.Playing)
         {
-            double targetSeconds = Math.Max(0.0,
-                (Stopwatch.GetTimestamp() - m_playbackStartTicks) / (double)Stopwatch.Frequency);
+            double targetSeconds = Math.Max(
+                0.0,
+                (Stopwatch.GetTimestamp() - m_playbackStartTicks) / (double)Stopwatch.Frequency
+            );
 
             while (true)
             {
@@ -269,8 +297,11 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
                 m_hasPendingFrame = false;
             }
 
-            if (!m_hasPendingFrame && m_endOfStream
-                && (m_durationSeconds <= 0.0 || targetSeconds >= m_durationSeconds))
+            if (
+                !m_hasPendingFrame
+                && m_endOfStream
+                && (m_durationSeconds <= 0.0 || targetSeconds >= m_durationSeconds)
+            )
             {
                 ClearQueuedAudio();
                 m_audioQueued = false;
@@ -291,7 +322,12 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
 
     private void OnFrame(DeviceContext context, byte[] frameData)
     {
-        DataBox box = context.MapSubresource(m_texture, 0, MapMode.WriteDiscard, SharpDX.Direct3D11.MapFlags.None);
+        DataBox box = context.MapSubresource(
+            m_texture,
+            0,
+            MapMode.WriteDiscard,
+            SharpDX.Direct3D11.MapFlags.None
+        );
         if (box.IsEmpty)
             return;
         try
@@ -332,15 +368,19 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
             if (readResult < 0)
             {
                 m_endOfStream = true;
-                ThrowIfError(ffmpeg.avcodec_send_packet(m_codecContext, null),
-                    "flush video decoder");
+                ThrowIfError(
+                    ffmpeg.avcodec_send_packet(m_codecContext, null),
+                    "flush video decoder"
+                );
                 continue;
             }
             try
             {
                 if (m_packet->stream_index == m_streamIndex)
-                    ThrowIfError(ffmpeg.avcodec_send_packet(m_codecContext, m_packet),
-                        "send video packet");
+                    ThrowIfError(
+                        ffmpeg.avcodec_send_packet(m_codecContext, m_packet),
+                        "send video packet"
+                    );
             }
             finally
             {
@@ -353,21 +393,41 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
     {
         AVPixelFormat sourceFormat = (AVPixelFormat)sourceFrame->format;
         bool wasNull = m_scaleContext == null;
-        m_scaleContext = ffmpeg.sws_getCachedContext(m_scaleContext,
-            m_videoWidth, m_videoHeight, sourceFormat,
-            m_videoWidth, m_videoHeight, AVPixelFormat.AV_PIX_FMT_BGRA,
-            2, null, null, null);
+        m_scaleContext = ffmpeg.sws_getCachedContext(
+            m_scaleContext,
+            m_videoWidth,
+            m_videoHeight,
+            sourceFormat,
+            m_videoWidth,
+            m_videoHeight,
+            AVPixelFormat.AV_PIX_FMT_BGRA,
+            2,
+            null,
+            null,
+            null
+        );
         if (m_scaleContext == null)
             throw new InvalidOperationException(
-                $"FFmpeg failed to create a video conversion context (source pix_fmt={sourceFormat}).");
+                $"FFmpeg failed to create a video conversion context (source pix_fmt={sourceFormat})."
+            );
         if (wasNull)
             MyLog.Default.WriteLineAndConsole(
-                $"[LinuxCompat] VideoPlayer scaler ready: source pix_fmt={sourceFormat} -> BGRA");
+                $"[LinuxCompat] VideoPlayer scaler ready: source pix_fmt={sourceFormat} -> BGRA"
+            );
 
-        ThrowIfError(ffmpeg.av_frame_make_writable(m_convertedFrame),
-            "prepare converted video frame");
-        ffmpeg.sws_scale(m_scaleContext, sourceFrame->data, sourceFrame->linesize,
-            0, m_videoHeight, m_convertedFrame->data, m_convertedFrame->linesize);
+        ThrowIfError(
+            ffmpeg.av_frame_make_writable(m_convertedFrame),
+            "prepare converted video frame"
+        );
+        ffmpeg.sws_scale(
+            m_scaleContext,
+            sourceFrame->data,
+            sourceFrame->linesize,
+            0,
+            m_videoHeight,
+            m_convertedFrame->data,
+            m_convertedFrame->linesize
+        );
 
         byte[] write = m_videoDataRgba.Write;
         int sourceStride = m_convertedFrame->linesize[0];
@@ -391,8 +451,10 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
             m_currentPositionSeconds = 0.0;
             return;
         }
-        ThrowIfError(ffmpeg.av_seek_frame(m_formatContext, m_streamIndex, 0,
-            ffmpeg.AVSEEK_FLAG_BACKWARD), "seek video to start");
+        ThrowIfError(
+            ffmpeg.av_seek_frame(m_formatContext, m_streamIndex, 0, ffmpeg.AVSEEK_FLAG_BACKWARD),
+            "seek video to start"
+        );
         ffmpeg.avcodec_flush_buffers(m_codecContext);
         ffmpeg.av_packet_unref(m_packet);
         ffmpeg.av_frame_unref(m_decodedFrame);
@@ -426,23 +488,28 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
             }
             if (m_convertedFrame != null)
             {
-                fixed (AVFrame** p = &m_convertedFrame) ffmpeg.av_frame_free(p);
+                fixed (AVFrame** p = &m_convertedFrame)
+                    ffmpeg.av_frame_free(p);
             }
             if (m_decodedFrame != null)
             {
-                fixed (AVFrame** p = &m_decodedFrame) ffmpeg.av_frame_free(p);
+                fixed (AVFrame** p = &m_decodedFrame)
+                    ffmpeg.av_frame_free(p);
             }
             if (m_packet != null)
             {
-                fixed (AVPacket** p = &m_packet) ffmpeg.av_packet_free(p);
+                fixed (AVPacket** p = &m_packet)
+                    ffmpeg.av_packet_free(p);
             }
             if (m_codecContext != null)
             {
-                fixed (AVCodecContext** p = &m_codecContext) ffmpeg.avcodec_free_context(p);
+                fixed (AVCodecContext** p = &m_codecContext)
+                    ffmpeg.avcodec_free_context(p);
             }
             if (m_formatContext != null)
             {
-                fixed (AVFormatContext** p = &m_formatContext) ffmpeg.avformat_close_input(p);
+                fixed (AVFormatContext** p = &m_formatContext)
+                    ffmpeg.avformat_close_input(p);
             }
 
             m_videoDataRgba = null;
@@ -467,7 +534,8 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
     private double GetNominalFrameDurationSeconds()
     {
         AVStream* stream = m_formatContext->streams[m_streamIndex];
-        AVRational rate = stream->avg_frame_rate.num != 0 ? stream->avg_frame_rate : stream->r_frame_rate;
+        AVRational rate =
+            stream->avg_frame_rate.num != 0 ? stream->avg_frame_rate : stream->r_frame_rate;
         if (rate.num != 0 && rate.den != 0)
             return rate.den / (double)rate.num;
         if (m_codecContext->framerate.num != 0 && m_codecContext->framerate.den != 0)
@@ -482,7 +550,8 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
             timestamp = frame->pts;
         if (timestamp == ffmpeg.AV_NOPTS_VALUE)
             return m_fallbackFrameIndex++ * m_nominalFrameDurationSeconds;
-        double seconds = timestamp * ffmpeg.av_q2d(m_formatContext->streams[m_streamIndex]->time_base);
+        double seconds =
+            timestamp * ffmpeg.av_q2d(m_formatContext->streams[m_streamIndex]->time_base);
         if (double.IsNaN(m_timestampOriginSeconds))
             m_timestampOriginSeconds = seconds;
         return Math.Max(0.0, seconds - m_timestampOriginSeconds);
@@ -490,24 +559,32 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
 
     private static void ThrowIfError(int errorCode, string operation)
     {
-        if (errorCode >= 0) return;
+        if (errorCode >= 0)
+            return;
         byte* buffer = stackalloc byte[1024];
         ffmpeg.av_strerror(errorCode, buffer, 1024);
         throw new InvalidOperationException(
-            $"FFmpeg failed to {operation}: {Marshal.PtrToStringAnsi((IntPtr)buffer)} ({errorCode}).");
+            $"FFmpeg failed to {operation}: {Marshal.PtrToStringAnsi((IntPtr)buffer)} ({errorCode})."
+        );
     }
 
     private static void EnsureFfmpegInitialized()
     {
-        if (s_ffmpegInitialized) return;
+        if (s_ffmpegInitialized)
+            return;
         lock (FfmpegInitLock)
         {
-            if (s_ffmpegInitialized) return;
+            if (s_ffmpegInitialized)
+                return;
             ffmpeg.RootPath = string.Empty;
             PinFfmpegLibraryVersions();
-            Type bindingsType = typeof(ffmpeg).Assembly.GetType("FFmpeg.AutoGen.DynamicallyLoadedBindings");
-            MethodInfo initializeMethod = bindingsType?.GetMethod("Initialize",
-                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            Type bindingsType = typeof(ffmpeg).Assembly.GetType(
+                "FFmpeg.AutoGen.DynamicallyLoadedBindings"
+            );
+            MethodInfo initializeMethod = bindingsType?.GetMethod(
+                "Initialize",
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+            );
             initializeMethod?.Invoke(null, null);
             _ = ffmpeg.avformat_version();
             s_ffmpegInitialized = true;
@@ -519,11 +596,11 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
         // FFmpeg.AutoGen 8.1.0 requires the FFmpeg 8.1 ABI bundled by Pulsar.
         // FFmpeg 7 has a different AVCodecContext layout after `framerate`.
         // Omit unused libraries to avoid loading a second dependency set.
-        ffmpeg.LibraryVersionMap["avcodec"]    = 62;
-        ffmpeg.LibraryVersionMap["avformat"]   = 62;
-        ffmpeg.LibraryVersionMap["avutil"]     = 60;
+        ffmpeg.LibraryVersionMap["avcodec"] = 62;
+        ffmpeg.LibraryVersionMap["avformat"] = 62;
+        ffmpeg.LibraryVersionMap["avutil"] = 60;
         ffmpeg.LibraryVersionMap["swresample"] = 6;
-        ffmpeg.LibraryVersionMap["swscale"]    = 9;
+        ffmpeg.LibraryVersionMap["swscale"] = 9;
     }
 
     private void LoadAudio(string fileName)
@@ -531,28 +608,53 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
         AVFormatContext* formatContext = null;
         try
         {
-            ThrowIfError(ffmpeg.avformat_open_input(&formatContext, fileName, null, null),
-                $"open audio '{fileName}'");
-            ThrowIfError(ffmpeg.avformat_find_stream_info(formatContext, null),
-                $"read audio stream info for '{fileName}'");
+            ThrowIfError(
+                ffmpeg.avformat_open_input(&formatContext, fileName, null, null),
+                $"open audio '{fileName}'"
+            );
+            ThrowIfError(
+                ffmpeg.avformat_find_stream_info(formatContext, null),
+                $"read audio stream info for '{fileName}'"
+            );
             AVCodec* codec = null;
-            int streamIndex = ffmpeg.av_find_best_stream(formatContext, AVMediaType.AVMEDIA_TYPE_AUDIO,
-                -1, -1, &codec, 0);
+            int streamIndex = ffmpeg.av_find_best_stream(
+                formatContext,
+                AVMediaType.AVMEDIA_TYPE_AUDIO,
+                -1,
+                -1,
+                &codec,
+                0
+            );
             if (streamIndex < 0)
                 return;
 
             AVCodecContext* codecContext = ffmpeg.avcodec_alloc_context3(codec);
             if (codecContext == null)
-                throw new InvalidOperationException($"FFmpeg failed to allocate an audio decoder for '{fileName}'.");
+                throw new InvalidOperationException(
+                    $"FFmpeg failed to allocate an audio decoder for '{fileName}'."
+                );
             try
             {
-                ThrowIfError(ffmpeg.avcodec_parameters_to_context(codecContext,
-                    formatContext->streams[streamIndex]->codecpar),
-                    $"copy audio codec parameters for '{fileName}'");
-                ThrowIfError(ffmpeg.avcodec_open2(codecContext, codec, null),
-                    $"open audio decoder for '{fileName}'");
-                m_audioData = DecodeAudioStream(fileName, formatContext, streamIndex, codecContext,
-                    out var spec, out var bytesPerSecond, out var blockAlign);
+                ThrowIfError(
+                    ffmpeg.avcodec_parameters_to_context(
+                        codecContext,
+                        formatContext->streams[streamIndex]->codecpar
+                    ),
+                    $"copy audio codec parameters for '{fileName}'"
+                );
+                ThrowIfError(
+                    ffmpeg.avcodec_open2(codecContext, codec, null),
+                    $"open audio decoder for '{fileName}'"
+                );
+                m_audioData = DecodeAudioStream(
+                    fileName,
+                    formatContext,
+                    streamIndex,
+                    codecContext,
+                    out var spec,
+                    out var bytesPerSecond,
+                    out var blockAlign
+                );
                 m_audioBytesPerSecond = bytesPerSecond;
                 m_audioBlockAlign = blockAlign;
                 CreateAudioOutput(spec);
@@ -564,7 +666,9 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
         }
         catch (Exception ex)
         {
-            MyLog.Default.WriteLineAndConsole($"[LinuxCompat] VideoPlayer audio load failed: {ex.Message}");
+            MyLog.Default.WriteLineAndConsole(
+                $"[LinuxCompat] VideoPlayer audio load failed: {ex.Message}"
+            );
             m_audioData = null;
             DestroyAudio();
         }
@@ -575,17 +679,28 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
         }
     }
 
-    private byte[] DecodeAudioStream(string fileName, AVFormatContext* formatContext, int streamIndex,
-        AVCodecContext* codecContext, out MySdlAudioInterop.SdlAudioSpec audioSpec, out int bytesPerSecond, out int blockAlign)
+    private byte[] DecodeAudioStream(
+        string fileName,
+        AVFormatContext* formatContext,
+        int streamIndex,
+        AVCodecContext* codecContext,
+        out MySdlAudioInterop.SdlAudioSpec audioSpec,
+        out int bytesPerSecond,
+        out int blockAlign
+    )
     {
         using var output = new MemoryStream();
         AVPacket* packet = ffmpeg.av_packet_alloc();
         AVFrame* frame = ffmpeg.av_frame_alloc();
         if (packet == null || frame == null)
         {
-            if (packet != null) ffmpeg.av_packet_free(&packet);
-            if (frame != null) ffmpeg.av_frame_free(&frame);
-            throw new InvalidOperationException($"FFmpeg failed to allocate audio decode buffers for '{fileName}'.");
+            if (packet != null)
+                ffmpeg.av_packet_free(&packet);
+            if (frame != null)
+                ffmpeg.av_frame_free(&frame);
+            throw new InvalidOperationException(
+                $"FFmpeg failed to allocate audio decode buffers for '{fileName}'."
+            );
         }
         SwrContext* resampler = null;
         AVChannelLayout outputLayout = default;
@@ -601,27 +716,56 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
             while (true)
             {
                 int readResult = ffmpeg.av_read_frame(formatContext, packet);
-                if (readResult < 0) break;
+                if (readResult < 0)
+                    break;
                 try
                 {
-                    if (packet->stream_index != streamIndex) continue;
-                    ThrowIfError(ffmpeg.avcodec_send_packet(codecContext, packet),
-                        $"send audio packet for '{fileName}'");
-                    ReceiveAudioFrames(fileName, codecContext, frame, ref resampler,
-                        ref outputLayout, ref outputLayoutInitialized,
-                        ref inputResamplerLayout, ref inputResamplerLayoutInitialized,
-                        ref inputResamplerFormat, ref inputResamplerRate,
-                        ref sampleRate, ref channels, output);
+                    if (packet->stream_index != streamIndex)
+                        continue;
+                    ThrowIfError(
+                        ffmpeg.avcodec_send_packet(codecContext, packet),
+                        $"send audio packet for '{fileName}'"
+                    );
+                    ReceiveAudioFrames(
+                        fileName,
+                        codecContext,
+                        frame,
+                        ref resampler,
+                        ref outputLayout,
+                        ref outputLayoutInitialized,
+                        ref inputResamplerLayout,
+                        ref inputResamplerLayoutInitialized,
+                        ref inputResamplerFormat,
+                        ref inputResamplerRate,
+                        ref sampleRate,
+                        ref channels,
+                        output
+                    );
                 }
-                finally { ffmpeg.av_packet_unref(packet); }
+                finally
+                {
+                    ffmpeg.av_packet_unref(packet);
+                }
             }
-            ThrowIfError(ffmpeg.avcodec_send_packet(codecContext, null),
-                $"flush audio decoder for '{fileName}'");
-            ReceiveAudioFrames(fileName, codecContext, frame, ref resampler,
-                ref outputLayout, ref outputLayoutInitialized,
-                ref inputResamplerLayout, ref inputResamplerLayoutInitialized,
-                ref inputResamplerFormat, ref inputResamplerRate,
-                ref sampleRate, ref channels, output);
+            ThrowIfError(
+                ffmpeg.avcodec_send_packet(codecContext, null),
+                $"flush audio decoder for '{fileName}'"
+            );
+            ReceiveAudioFrames(
+                fileName,
+                codecContext,
+                frame,
+                ref resampler,
+                ref outputLayout,
+                ref outputLayoutInitialized,
+                ref inputResamplerLayout,
+                ref inputResamplerLayoutInitialized,
+                ref inputResamplerFormat,
+                ref inputResamplerRate,
+                ref sampleRate,
+                ref channels,
+                output
+            );
         }
         finally
         {
@@ -635,7 +779,9 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
             ffmpeg.av_packet_free(&packet);
         }
         if (sampleRate <= 0 || channels <= 0 || output.Length == 0)
-            throw new InvalidOperationException($"FFmpeg decoded no audio PCM data from '{fileName}'.");
+            throw new InvalidOperationException(
+                $"FFmpeg decoded no audio PCM data from '{fileName}'."
+            );
 
         bytesPerSecond = sampleRate * channels * 2;
         blockAlign = channels * 2;
@@ -643,17 +789,26 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
         {
             Format = MySdlAudioInterop.SDL_AUDIO_S16LE,
             Channels = channels,
-            Frequency = sampleRate
+            Frequency = sampleRate,
         };
         return output.ToArray();
     }
 
-    private void ReceiveAudioFrames(string fileName, AVCodecContext* codecContext, AVFrame* frame,
+    private void ReceiveAudioFrames(
+        string fileName,
+        AVCodecContext* codecContext,
+        AVFrame* frame,
         ref SwrContext* resampler,
-        ref AVChannelLayout outputLayout, ref bool outputLayoutInitialized,
-        ref AVChannelLayout inputResamplerLayout, ref bool inputResamplerLayoutInitialized,
-        ref AVSampleFormat inputResamplerFormat, ref int inputResamplerRate,
-        ref int sampleRate, ref int channels, MemoryStream output)
+        ref AVChannelLayout outputLayout,
+        ref bool outputLayoutInitialized,
+        ref AVChannelLayout inputResamplerLayout,
+        ref bool inputResamplerLayoutInitialized,
+        ref AVSampleFormat inputResamplerFormat,
+        ref int inputResamplerRate,
+        ref int sampleRate,
+        ref int channels,
+        MemoryStream output
+    )
     {
         while (true)
         {
@@ -661,38 +816,60 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
             if (receiveResult == Eagain || receiveResult == ffmpeg.AVERROR_EOF)
                 return;
             ThrowIfError(receiveResult, $"receive audio frame for '{fileName}'");
-            ConvertAudioFrame(fileName, codecContext, frame, ref resampler,
-                ref outputLayout, ref outputLayoutInitialized,
-                ref inputResamplerLayout, ref inputResamplerLayoutInitialized,
-                ref inputResamplerFormat, ref inputResamplerRate,
-                ref sampleRate, ref channels, output);
+            ConvertAudioFrame(
+                fileName,
+                codecContext,
+                frame,
+                ref resampler,
+                ref outputLayout,
+                ref outputLayoutInitialized,
+                ref inputResamplerLayout,
+                ref inputResamplerLayoutInitialized,
+                ref inputResamplerFormat,
+                ref inputResamplerRate,
+                ref sampleRate,
+                ref channels,
+                output
+            );
             ffmpeg.av_frame_unref(frame);
         }
     }
 
-    private void ConvertAudioFrame(string fileName, AVCodecContext* codecContext, AVFrame* inputFrame,
+    private void ConvertAudioFrame(
+        string fileName,
+        AVCodecContext* codecContext,
+        AVFrame* inputFrame,
         ref SwrContext* resampler,
-        ref AVChannelLayout outputLayout, ref bool outputLayoutInitialized,
-        ref AVChannelLayout inputResamplerLayout, ref bool inputResamplerLayoutInitialized,
-        ref AVSampleFormat inputResamplerFormat, ref int inputResamplerRate,
-        ref int sampleRate, ref int channels, MemoryStream output)
+        ref AVChannelLayout outputLayout,
+        ref bool outputLayoutInitialized,
+        ref AVChannelLayout inputResamplerLayout,
+        ref bool inputResamplerLayoutInitialized,
+        ref AVSampleFormat inputResamplerFormat,
+        ref int inputResamplerRate,
+        ref int sampleRate,
+        ref int channels,
+        MemoryStream output
+    )
     {
-        AVChannelLayout inputLayout = inputFrame->ch_layout.nb_channels > 0
-            ? inputFrame->ch_layout
-            : codecContext->ch_layout;
+        AVChannelLayout inputLayout =
+            inputFrame->ch_layout.nb_channels > 0 ? inputFrame->ch_layout : codecContext->ch_layout;
         bool inputLayoutInitialized = false;
         if (inputLayout.nb_channels <= 0)
         {
-            ffmpeg.av_channel_layout_default(&inputLayout,
-                codecContext->ch_layout.nb_channels > 0 ? codecContext->ch_layout.nb_channels : 2);
+            ffmpeg.av_channel_layout_default(
+                &inputLayout,
+                codecContext->ch_layout.nb_channels > 0 ? codecContext->ch_layout.nb_channels : 2
+            );
             inputLayoutInitialized = true;
         }
         try
         {
             AVSampleFormat inputFormat = (AVSampleFormat)inputFrame->format;
-            int inputRate = inputFrame->sample_rate > 0 ? inputFrame->sample_rate : codecContext->sample_rate;
+            int inputRate =
+                inputFrame->sample_rate > 0 ? inputFrame->sample_rate : codecContext->sample_rate;
             AVChannelLayout currentInputResamplerLayout = inputResamplerLayout;
-            bool shouldRecreateResampler = resampler == null
+            bool shouldRecreateResampler =
+                resampler == null
                 || inputResamplerFormat != inputFormat
                 || inputResamplerRate != inputRate
                 || !AudioLayoutsEqual(&currentInputResamplerLayout, &inputLayout);
@@ -716,14 +893,18 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
                     channels = inputLayout.nb_channels;
                     sampleRate = inputRate;
                     AVChannelLayout copiedOutputLayout = default;
-                    ThrowIfError(ffmpeg.av_channel_layout_copy(&copiedOutputLayout, &inputLayout),
-                        $"copy output channel layout for '{fileName}'");
+                    ThrowIfError(
+                        ffmpeg.av_channel_layout_copy(&copiedOutputLayout, &inputLayout),
+                        $"copy output channel layout for '{fileName}'"
+                    );
                     outputLayout = copiedOutputLayout;
                     outputLayoutInitialized = true;
                 }
                 AVChannelLayout copiedInputLayout = default;
-                ThrowIfError(ffmpeg.av_channel_layout_copy(&copiedInputLayout, &inputLayout),
-                    $"copy input channel layout for '{fileName}'");
+                ThrowIfError(
+                    ffmpeg.av_channel_layout_copy(&copiedInputLayout, &inputLayout),
+                    $"copy input channel layout for '{fileName}'"
+                );
                 inputResamplerLayout = copiedInputLayout;
                 inputResamplerLayoutInitialized = true;
                 inputResamplerFormat = inputFormat;
@@ -732,29 +913,63 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
                 AVChannelLayout targetInputLayout = inputResamplerLayout;
                 SwrContext* configuredResampler = resampler;
                 ThrowIfError(
-                    ffmpeg.swr_alloc_set_opts2(&configuredResampler,
-                        &targetOutputLayout, AVSampleFormat.AV_SAMPLE_FMT_S16, sampleRate,
-                        &targetInputLayout, inputFormat, inputRate, 0, null),
-                    $"configure audio resampler for '{fileName}'");
+                    ffmpeg.swr_alloc_set_opts2(
+                        &configuredResampler,
+                        &targetOutputLayout,
+                        AVSampleFormat.AV_SAMPLE_FMT_S16,
+                        sampleRate,
+                        &targetInputLayout,
+                        inputFormat,
+                        inputRate,
+                        0,
+                        null
+                    ),
+                    $"configure audio resampler for '{fileName}'"
+                );
                 resampler = configuredResampler;
-                ThrowIfError(ffmpeg.swr_init(resampler), $"initialize audio resampler for '{fileName}'");
+                ThrowIfError(
+                    ffmpeg.swr_init(resampler),
+                    $"initialize audio resampler for '{fileName}'"
+                );
             }
             byte** outputData = null;
             int outputLineSize = 0;
             try
             {
                 long delay = ffmpeg.swr_get_delay(resampler, inputRate);
-                int outputSamples = (int)ffmpeg.av_rescale_rnd(delay + inputFrame->nb_samples,
-                    sampleRate, inputRate, AVRounding.AV_ROUND_UP);
+                int outputSamples = (int)
+                    ffmpeg.av_rescale_rnd(
+                        delay + inputFrame->nb_samples,
+                        sampleRate,
+                        inputRate,
+                        AVRounding.AV_ROUND_UP
+                    );
                 ThrowIfError(
-                    ffmpeg.av_samples_alloc_array_and_samples(&outputData, &outputLineSize,
-                        channels, outputSamples, AVSampleFormat.AV_SAMPLE_FMT_S16, 0),
-                    $"allocate output audio samples for '{fileName}'");
-                int convertedSamples = ffmpeg.swr_convert(resampler, outputData, outputSamples,
-                    inputFrame->extended_data, inputFrame->nb_samples);
+                    ffmpeg.av_samples_alloc_array_and_samples(
+                        &outputData,
+                        &outputLineSize,
+                        channels,
+                        outputSamples,
+                        AVSampleFormat.AV_SAMPLE_FMT_S16,
+                        0
+                    ),
+                    $"allocate output audio samples for '{fileName}'"
+                );
+                int convertedSamples = ffmpeg.swr_convert(
+                    resampler,
+                    outputData,
+                    outputSamples,
+                    inputFrame->extended_data,
+                    inputFrame->nb_samples
+                );
                 ThrowIfError(convertedSamples, $"convert audio frame for '{fileName}'");
-                int bufferSize = ffmpeg.av_samples_get_buffer_size(&outputLineSize, channels,
-                    convertedSamples, AVSampleFormat.AV_SAMPLE_FMT_S16, 1);
+                int bufferSize = ffmpeg.av_samples_get_buffer_size(
+                    &outputLineSize,
+                    channels,
+                    convertedSamples,
+                    AVSampleFormat.AV_SAMPLE_FMT_S16,
+                    1
+                );
                 ThrowIfError(bufferSize, $"measure output audio buffer for '{fileName}'");
                 byte[] managedBuffer = new byte[bufferSize];
                 Marshal.Copy((IntPtr)outputData[0], managedBuffer, 0, bufferSize);
@@ -778,8 +993,10 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
 
     private static bool AudioLayoutsEqual(AVChannelLayout* left, AVChannelLayout* right)
     {
-        if (left == null || right == null) return false;
-        if (left->nb_channels <= 0 || right->nb_channels <= 0) return false;
+        if (left == null || right == null)
+            return false;
+        if (left->nb_channels <= 0 || right->nb_channels <= 0)
+            return false;
         return ffmpeg.av_channel_layout_compare(left, right) == 0;
     }
 
@@ -792,26 +1009,37 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
         {
             Format = MySdlAudioInterop.SDL_AUDIO_F32LE,
             Channels = Math.Max(sourceSpec.Channels, 2),
-            Frequency = Math.Max(sourceSpec.Frequency, 48000)
+            Frequency = Math.Max(sourceSpec.Frequency, 48000),
         };
         if (!SdlAudio.InitSubSystem(SdlAudio.SDL_INIT_AUDIO))
-            throw new InvalidOperationException($"SDL3 audio initialization failed: {SdlAudio.GetErrorString()}");
-        uint deviceId = SdlAudio.OpenAudioDevice(MySdlAudioInterop.SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, ref requested);
+            throw new InvalidOperationException(
+                $"SDL3 audio initialization failed: {SdlAudio.GetErrorString()}"
+            );
+        uint deviceId = SdlAudio.OpenAudioDevice(
+            MySdlAudioInterop.SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+            ref requested
+        );
         if (deviceId == 0)
-            throw new InvalidOperationException($"SDL3 failed to open a video audio device: {SdlAudio.GetErrorString()}");
+            throw new InvalidOperationException(
+                $"SDL3 failed to open a video audio device: {SdlAudio.GetErrorString()}"
+            );
         if (!SdlAudio.GetAudioDeviceFormat(deviceId, out var outputSpec, out _))
             outputSpec = requested;
         IntPtr stream = SdlAudio.CreateAudioStream(ref sourceSpec, ref outputSpec);
         if (stream == IntPtr.Zero)
         {
             SdlAudio.CloseAudioDevice(deviceId);
-            throw new InvalidOperationException($"SDL3 failed to create a video audio stream: {SdlAudio.GetErrorString()}");
+            throw new InvalidOperationException(
+                $"SDL3 failed to create a video audio stream: {SdlAudio.GetErrorString()}"
+            );
         }
         if (!SdlAudio.BindAudioStream(deviceId, stream))
         {
             SdlAudio.DestroyAudioStream(stream);
             SdlAudio.CloseAudioDevice(deviceId);
-            throw new InvalidOperationException($"SDL3 failed to bind a video audio stream: {SdlAudio.GetErrorString()}");
+            throw new InvalidOperationException(
+                $"SDL3 failed to bind a video audio stream: {SdlAudio.GetErrorString()}"
+            );
         }
         SdlAudio.SetAudioStreamGain(stream, m_volume);
         m_audioDeviceId = deviceId;
@@ -821,7 +1049,12 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
     // All callers hold m_syncRoot.
     private void QueueAudioFromCurrentPosition()
     {
-        if (m_audioStream == IntPtr.Zero || m_audioData == null || m_audioData.Length == 0 || m_audioQueued)
+        if (
+            m_audioStream == IntPtr.Zero
+            || m_audioData == null
+            || m_audioData.Length == 0
+            || m_audioQueued
+        )
             return;
         ClearQueuedAudio();
         int offset = 0;
@@ -836,12 +1069,18 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
         if (offset > 0)
         {
             int remaining = m_audioData.Length - offset;
-            if (remaining <= 0) return;
+            if (remaining <= 0)
+                return;
             audioSlice = new byte[remaining];
             System.Buffer.BlockCopy(m_audioData, offset, audioSlice, 0, remaining);
         }
-        if (audioSlice.Length > 0 && !SdlAudio.PutAudioStreamData(m_audioStream, audioSlice, audioSlice.Length))
-            throw new InvalidOperationException($"SDL3 failed to queue video audio: {SdlAudio.GetErrorString()}");
+        if (
+            audioSlice.Length > 0
+            && !SdlAudio.PutAudioStreamData(m_audioStream, audioSlice, audioSlice.Length)
+        )
+            throw new InvalidOperationException(
+                $"SDL3 failed to queue video audio: {SdlAudio.GetErrorString()}"
+            );
         SdlAudio.SetAudioStreamGain(m_audioStream, m_volume);
         m_audioQueued = true;
     }

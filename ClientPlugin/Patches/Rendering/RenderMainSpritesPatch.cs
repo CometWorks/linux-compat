@@ -20,14 +20,17 @@ static class RenderMainSpritesPatch
         var sceneResolution = MyRender11.ViewportResolution;
         if (sceneResolution.X > 0 && sceneResolution.Y > 0)
         {
-            var scaledViewport = MyRender11.ScaleMainViewport(new MyViewport(sceneResolution.X, sceneResolution.Y));
+            var scaledViewport = MyRender11.ScaleMainViewport(
+                new MyViewport(sceneResolution.X, sceneResolution.Y)
+            );
             var scaleX = res.X / (float)sceneResolution.X;
             var scaleY = res.Y / (float)sceneResolution.Y;
             viewportBound = new MyViewport(
                 scaledViewport.OffsetX * scaleX,
                 scaledViewport.OffsetY * scaleY,
                 scaledViewport.Width * scaleX,
-                scaledViewport.Height * scaleY);
+                scaledViewport.Height * scaleY
+            );
         }
 
         var size = new Vector2(res.X, res.Y);

@@ -11,24 +11,34 @@ namespace ClientPlugin.Patches.UIDisplay;
 [HarmonyPatchCategory("Finish")]
 static class DotNetCompatAppendFrameworkDescriptionPatch
 {
-    private const string TypeName = "ClientPlugin.Patches.Miscellaneous.MyGuiScreenMainMenuBasePatch";
+    private const string TypeName =
+        "ClientPlugin.Patches.Miscellaneous.MyGuiScreenMainMenuBasePatch";
     private const string MethodName = "AppendFrameworkDescription";
 
     static MethodBase TargetMethod()
     {
-        var type = AppDomain.CurrentDomain.GetAssemblies()
+        var type = AppDomain
+            .CurrentDomain.GetAssemblies()
             .Select(a =>
             {
-                try { return a.GetType(TypeName, throwOnError: false); }
-                catch { return null; }
+                try
+                {
+                    return a.GetType(TypeName, throwOnError: false);
+                }
+                catch
+                {
+                    return null;
+                }
             })
             .FirstOrDefault(t => t != null);
 
-        return type?.GetMethod(MethodName,
+        return type?.GetMethod(
+            MethodName,
             BindingFlags.Public | BindingFlags.Static,
             binder: null,
             types: new[] { typeof(string) },
-            modifiers: null);
+            modifiers: null
+        );
     }
 
     static bool Prepare() => TargetMethod() != null;

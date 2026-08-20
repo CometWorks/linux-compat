@@ -22,10 +22,21 @@ static class CreateWindowPatch
         __instance.DrawThread = Thread.CurrentThread;
 
         // Resolve geometry before the first map to avoid a visible jump.
-        ResolveInitialGeometry(out int initialW, out int initialH, out int? initialX, out int? initialY);
+        ResolveInitialGeometry(
+            out int initialW,
+            out int initialH,
+            out int? initialX,
+            out int? initialY
+        );
 
         // SDL window creation is synchronous and confined to its owner thread.
-        var sdlWindow = SdlGameWindow.Create("Space Engineers", initialW, initialH, initialX, initialY);
+        var sdlWindow = SdlGameWindow.Create(
+            "Space Engineers",
+            initialW,
+            initialH,
+            initialX,
+            initialY
+        );
         SdlInput2Provider.Instance = sdlWindow;
 
         var windows = (MyWindowsWindows)MyVRage.Platform.Windows;
@@ -69,8 +80,17 @@ static class CreateWindowPatch
         var config = MySandboxGame.Config;
         if (config.SyncRendering)
         {
-            var viewport = new MyViewport(0f, 0f, config.ScreenWidth.Value, config.ScreenHeight.Value);
-            __instance.RenderThread_SizeChanged((int)viewport.Width, (int)viewport.Height, viewport);
+            var viewport = new MyViewport(
+                0f,
+                0f,
+                config.ScreenWidth.Value,
+                config.ScreenHeight.Value
+            );
+            __instance.RenderThread_SizeChanged(
+                (int)viewport.Width,
+                (int)viewport.Height,
+                viewport
+            );
         }
 
         Console.WriteLine("[LinuxCompat] SDL3 window initialized via InitializeRenderThread");
@@ -87,7 +107,12 @@ static class CreateWindowPatch
     }
 
     // Prefer saved window geometry, then configured size, then 1280x720.
-    private static void ResolveInitialGeometry(out int width, out int height, out int? x, out int? y)
+    private static void ResolveInitialGeometry(
+        out int width,
+        out int height,
+        out int? x,
+        out int? y
+    )
     {
         width = 1280;
         height = 720;
@@ -99,12 +124,17 @@ static class CreateWindowPatch
         {
             int? sw = config.ScreenWidth;
             int? sh = config.ScreenHeight;
-            if (sw.HasValue && sw.Value > 0) width = sw.Value;
-            if (sh.HasValue && sh.Value > 0) height = sh.Value;
+            if (sw.HasValue && sw.Value > 0)
+                width = sw.Value;
+            if (sh.HasValue && sh.Value > 0)
+                height = sh.Value;
         }
 
-        if (PluginWindowConfig.TryGetWindowedSize(out int savedW, out int savedH)
-            && savedW > 0 && savedH > 0)
+        if (
+            PluginWindowConfig.TryGetWindowedSize(out int savedW, out int savedH)
+            && savedW > 0
+            && savedH > 0
+        )
         {
             width = savedW;
             height = savedH;
@@ -118,11 +148,16 @@ static class CreateWindowPatch
         }
 
         // Clamp against the primary display before the window has an assigned display.
-        if (TryGetPrimaryDisplayBounds(out int dx, out int dy, out int dw, out int dh)
-            && dw >= 640 && dh >= 480)
+        if (
+            TryGetPrimaryDisplayBounds(out int dx, out int dy, out int dw, out int dh)
+            && dw >= 640
+            && dh >= 480
+        )
         {
-            if (width > dw) width = dw;
-            if (height > dh) height = dh;
+            if (width > dw)
+                width = dw;
+            if (height > dh)
+                height = dh;
             if (!havePos)
             {
                 x = dx + (dw - width) / 2;
@@ -130,10 +165,14 @@ static class CreateWindowPatch
             }
             else
             {
-                if (x!.Value < dx) x = dx;
-                if (y!.Value < dy) y = dy;
-                if (x!.Value + width > dx + dw) x = dx + dw - width;
-                if (y!.Value + height > dy + dh) y = dy + dh - height;
+                if (x!.Value < dx)
+                    x = dx;
+                if (y!.Value < dy)
+                    y = dy;
+                if (x!.Value + width > dx + dw)
+                    x = dx + dw - width;
+                if (y!.Value + height > dy + dh)
+                    y = dy + dh - height;
             }
         }
     }
@@ -142,11 +181,21 @@ static class CreateWindowPatch
     private static extern uint SDL_GetPrimaryDisplay();
 
     [System.Runtime.InteropServices.DllImport("libSDL3.so", EntryPoint = "SDL_GetDisplayBounds")]
-    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.I1)]
+    [return: System.Runtime.InteropServices.MarshalAs(
+        System.Runtime.InteropServices.UnmanagedType.I1
+    )]
     private static extern bool SDL_GetDisplayBounds(uint displayId, out SdlRectNative rect);
 
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    private struct SdlRectNative { public int X, Y, W, H; }
+    [System.Runtime.InteropServices.StructLayout(
+        System.Runtime.InteropServices.LayoutKind.Sequential
+    )]
+    private struct SdlRectNative
+    {
+        public int X,
+            Y,
+            W,
+            H;
+    }
 
     // SDL video queries share X11 state and must run on the SDL thread.
     private static bool TryGetPrimaryDisplayBounds(out int x, out int y, out int w, out int h)

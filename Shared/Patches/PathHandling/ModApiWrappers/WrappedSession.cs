@@ -25,7 +25,7 @@ internal sealed class WrappedSession : IMySession
     }
 
     public string CurrentPath => PathHelpers.ToWindowsPath(_inner.CurrentPath);
-    public string ThumbPath   => PathHelpers.ToWindowsPath(_inner.ThumbPath);
+    public string ThumbPath => PathHelpers.ToWindowsPath(_inner.ThumbPath);
 
     // The interface still requires these obsolete members.
 #pragma warning disable CS0618
@@ -84,18 +84,66 @@ internal sealed class WrappedSession : IMySession
     public int GameplayFrameCounter => _inner.GameplayFrameCounter;
     public int TotalBotLimit => _inner.TotalBotLimit;
 
-    public string Description { get => _inner.Description; set => _inner.Description = value; }
-    public double CameraTargetDistance { get => _inner.CameraTargetDistance; set => _inner.CameraTargetDistance = value; }
-    public DateTime GameDateTime { get => _inner.GameDateTime; set => _inner.GameDateTime = value; }
-    public bool IsCameraAwaitingEntity { get => _inner.IsCameraAwaitingEntity; set => _inner.IsCameraAwaitingEntity = value; }
-    public List<MyObjectBuilder_Checkpoint.ModItem> Mods { get => _inner.Mods; set => _inner.Mods = value; }
-    public bool MultiplayerAlive { get => _inner.MultiplayerAlive; set => _inner.MultiplayerAlive = value; }
-    public bool MultiplayerDirect { get => _inner.MultiplayerDirect; set => _inner.MultiplayerDirect = value; }
-    public double MultiplayerLastMsg { get => _inner.MultiplayerLastMsg; set => _inner.MultiplayerLastMsg = value; }
-    public string Name { get => _inner.Name; set => _inner.Name = value; }
-    public float NegativeIntegrityTotal { get => _inner.NegativeIntegrityTotal; set => _inner.NegativeIntegrityTotal = value; }
-    public string Password { get => _inner.Password; set => _inner.Password = value; }
-    public float PositiveIntegrityTotal { get => _inner.PositiveIntegrityTotal; set => _inner.PositiveIntegrityTotal = value; }
+    public string Description
+    {
+        get => _inner.Description;
+        set => _inner.Description = value;
+    }
+    public double CameraTargetDistance
+    {
+        get => _inner.CameraTargetDistance;
+        set => _inner.CameraTargetDistance = value;
+    }
+    public DateTime GameDateTime
+    {
+        get => _inner.GameDateTime;
+        set => _inner.GameDateTime = value;
+    }
+    public bool IsCameraAwaitingEntity
+    {
+        get => _inner.IsCameraAwaitingEntity;
+        set => _inner.IsCameraAwaitingEntity = value;
+    }
+    public List<MyObjectBuilder_Checkpoint.ModItem> Mods
+    {
+        get => _inner.Mods;
+        set => _inner.Mods = value;
+    }
+    public bool MultiplayerAlive
+    {
+        get => _inner.MultiplayerAlive;
+        set => _inner.MultiplayerAlive = value;
+    }
+    public bool MultiplayerDirect
+    {
+        get => _inner.MultiplayerDirect;
+        set => _inner.MultiplayerDirect = value;
+    }
+    public double MultiplayerLastMsg
+    {
+        get => _inner.MultiplayerLastMsg;
+        set => _inner.MultiplayerLastMsg = value;
+    }
+    public string Name
+    {
+        get => _inner.Name;
+        set => _inner.Name = value;
+    }
+    public float NegativeIntegrityTotal
+    {
+        get => _inner.NegativeIntegrityTotal;
+        set => _inner.NegativeIntegrityTotal = value;
+    }
+    public string Password
+    {
+        get => _inner.Password;
+        set => _inner.Password = value;
+    }
+    public float PositiveIntegrityTotal
+    {
+        get => _inner.PositiveIntegrityTotal;
+        set => _inner.PositiveIntegrityTotal = value;
+    }
 
     public event Action OnSessionReady
     {
@@ -110,51 +158,84 @@ internal sealed class WrappedSession : IMySession
     }
 
     public void BeforeStartComponents() => _inner.BeforeStartComponents();
+
     public void Draw() => _inner.Draw();
+
     public void GameOver() => _inner.GameOver();
+
     public void GameOver(MyStringId? customMessage) => _inner.GameOver(customMessage);
-    public MyObjectBuilder_Checkpoint GetCheckpoint(string saveName) => _inner.GetCheckpoint(saveName);
+
+    public MyObjectBuilder_Checkpoint GetCheckpoint(string saveName) =>
+        _inner.GetCheckpoint(saveName);
+
     public MyObjectBuilder_Sector GetSector() => _inner.GetSector();
+
     public Dictionary<string, byte[]> GetVoxelMapsArray() => _inner.GetVoxelMapsArray();
+
     public MyObjectBuilder_World GetWorld() => _inner.GetWorld();
+
     public bool IsPausable() => _inner.IsPausable();
 
-    public void RegisterComponent(MySessionComponentBase component, MyUpdateOrder updateOrder, int priority)
-        => _inner.RegisterComponent(component, updateOrder, priority);
+    public void RegisterComponent(
+        MySessionComponentBase component,
+        MyUpdateOrder updateOrder,
+        int priority
+    ) => _inner.RegisterComponent(component, updateOrder, priority);
 
-    public MySessionComponentBase GetComponentByInterfaceType<T>() => _inner.GetComponentByInterfaceType<T>();
-    public bool TryGetComponentByInterfaceType<T>(out T sessionComponent) => _inner.TryGetComponentByInterfaceType(out sessionComponent);
+    public MySessionComponentBase GetComponentByInterfaceType<T>() =>
+        _inner.GetComponentByInterfaceType<T>();
+
+    public bool TryGetComponentByInterfaceType<T>(out T sessionComponent) =>
+        _inner.TryGetComponentByInterfaceType(out sessionComponent);
 
     public bool Save(string customSaveName = null) => _inner.Save(customSaveName);
 
-    public void SetCameraController(MyCameraControllerEnum cameraControllerEnum,
-        IMyEntity cameraEntity = null, Vector3D? position = null)
-        => _inner.SetCameraController(cameraControllerEnum, cameraEntity, position);
+    public void SetCameraController(
+        MyCameraControllerEnum cameraControllerEnum,
+        IMyEntity cameraEntity = null,
+        Vector3D? position = null
+    ) => _inner.SetCameraController(cameraControllerEnum, cameraEntity, position);
 
     public void SetAsNotReady() => _inner.SetAsNotReady();
+
     public void Unload() => _inner.Unload();
+
     public void UnloadDataComponents() => _inner.UnloadDataComponents();
+
     public void UnloadMultiplayer() => _inner.UnloadMultiplayer();
-    public void UnregisterComponent(MySessionComponentBase component) => _inner.UnregisterComponent(component);
+
+    public void UnregisterComponent(MySessionComponentBase component) =>
+        _inner.UnregisterComponent(component);
+
     public void Update(MyTimeSpan time) => _inner.Update(time);
+
     public void UpdateComponents() => _inner.UpdateComponents();
 
     public MyPromoteLevel GetUserPromoteLevel(ulong steamId) => _inner.GetUserPromoteLevel(steamId);
+
     public bool IsUserAdmin(ulong steamId) => _inner.IsUserAdmin(steamId);
+
     public bool IsUserPromoted(ulong steamId) => _inner.IsUserPromoted(steamId);
 
-    public void SetComponentUpdateOrder(MySessionComponentBase component, MyUpdateOrder order)
-        => _inner.SetComponentUpdateOrder(component, order);
+    public void SetComponentUpdateOrder(MySessionComponentBase component, MyUpdateOrder order) =>
+        _inner.SetComponentUpdateOrder(component, order);
 
-    public bool TryGetAdminSettings(ulong steamId, out MyAdminSettingsEnum adminSettings)
-        => _inner.TryGetAdminSettings(steamId, out adminSettings);
+    public bool TryGetAdminSettings(ulong steamId, out MyAdminSettingsEnum adminSettings) =>
+        _inner.TryGetAdminSettings(steamId, out adminSettings);
 
     public bool IsUserInvulnerable(ulong steamId) => _inner.IsUserInvulnerable(steamId);
+
     public bool IsUserShowAllPlayers(ulong steamId) => _inner.IsUserShowAllPlayers(steamId);
+
     public bool IsUserUseAllTerminals(ulong steamId) => _inner.IsUserUseAllTerminals(steamId);
+
     public bool IsUserUntargetable(ulong steamId) => _inner.IsUserUntargetable(steamId);
-    public bool IsUserKeepOriginalOwnershipOnPaste(ulong steamId) => _inner.IsUserKeepOriginalOwnershipOnPaste(steamId);
+
+    public bool IsUserKeepOriginalOwnershipOnPaste(ulong steamId) =>
+        _inner.IsUserKeepOriginalOwnershipOnPaste(steamId);
+
     public bool IsUserIgnoreSafeZones(ulong steamId) => _inner.IsUserIgnoreSafeZones(steamId);
+
     public bool IsUserIgnorePCULimit(ulong steamId) => _inner.IsUserIgnorePCULimit(steamId);
 
 #pragma warning restore CS0618

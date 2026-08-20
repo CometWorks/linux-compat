@@ -19,7 +19,8 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
     private const string EnvironmentFqn = "global::System.Environment";
     private const string StringBuilderFqn = "global::System.Text.StringBuilder";
     private const string TextWriterFqn = "global::System.IO.TextWriter";
-    private const string WindowsTextWriterWriteLineFqn = "global::ClientPlugin.Rewriter.WindowsTextWriter.WriteLine";
+    private const string WindowsTextWriterWriteLineFqn =
+        "global::ClientPlugin.Rewriter.WindowsTextWriter.WriteLine";
     private const string StopwatchFqn = "global::System.Diagnostics.Stopwatch";
     private const string WindowsStopwatchFqn = "global::ClientPlugin.Rewriter.WindowsStopwatch";
     private const string XmlWriterSettingsFqn = "global::System.Xml.XmlWriterSettings";
@@ -38,7 +39,8 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         // Bind the original node because synthesized nodes are detached from the syntax tree.
         if (IsSystemIoPathTypeReference(node.Expression))
         {
-            var newType = SyntaxFactory.ParseName(ReplacementFqn)
+            var newType = SyntaxFactory
+                .ParseName(ReplacementFqn)
                 .WithLeadingTrivia(rewritten.Expression.GetLeadingTrivia())
                 .WithTrailingTrivia(rewritten.Expression.GetTrailingTrivia());
             return rewritten.WithExpression(newType);
@@ -46,9 +48,11 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
 
         if (IsEnvironmentNewLine(node))
         {
-            return SyntaxFactory.LiteralExpression(
+            return SyntaxFactory
+                .LiteralExpression(
                     SyntaxKind.StringLiteralExpression,
-                    SyntaxFactory.Literal("\r\n"))
+                    SyntaxFactory.Literal("\r\n")
+                )
                 .WithLeadingTrivia(rewritten.GetLeadingTrivia())
                 .WithTrailingTrivia(rewritten.GetTrailingTrivia());
         }
@@ -57,7 +61,8 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         // Replace the whole chain because its Name slot requires SimpleNameSyntax.
         if (IsNamedTypeReference(node, StopwatchFqn))
         {
-            return SyntaxFactory.ParseName(WindowsStopwatchFqn)
+            return SyntaxFactory
+                .ParseName(WindowsStopwatchFqn)
                 .WithLeadingTrivia(rewritten.GetLeadingTrivia())
                 .WithTrailingTrivia(rewritten.GetTrailingTrivia());
         }
@@ -74,7 +79,8 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         var containing = prop.ContainingType;
         if (containing == null)
             return false;
-        return containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == EnvironmentFqn;
+        return containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+            == EnvironmentFqn;
     }
 
     public override SyntaxNode VisitInvocationExpression(InvocationExpressionSyntax node)
@@ -89,11 +95,15 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
             var receiver = TryGetGetPathReceiver(rewritten);
             if (receiver != null)
             {
-                return SyntaxFactory.InvocationExpression(
+                return SyntaxFactory
+                    .InvocationExpression(
                         SyntaxFactory.ParseExpression(FromGameFqn),
                         SyntaxFactory.ArgumentList(
                             SyntaxFactory.SingletonSeparatedList(
-                                SyntaxFactory.Argument(receiver.WithoutTrivia()))))
+                                SyntaxFactory.Argument(receiver.WithoutTrivia())
+                            )
+                        )
+                    )
                     .WithLeadingTrivia(rewritten.GetLeadingTrivia())
                     .WithTrailingTrivia(rewritten.GetTrailingTrivia());
             }
@@ -119,7 +129,8 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         if (containing == null)
             return false;
         // Match the declaring type so mod-defined methods remain unchanged.
-        return containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == StringBuilderFqn;
+        return containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+            == StringBuilderFqn;
     }
 
     private SyntaxNode RewriteStringBuilderAppendLine(InvocationExpressionSyntax rewritten)
@@ -134,17 +145,21 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         var crlfArg = SyntaxFactory.Argument(
             SyntaxFactory.LiteralExpression(
                 SyntaxKind.StringLiteralExpression,
-                SyntaxFactory.Literal("\r\n")));
+                SyntaxFactory.Literal("\r\n")
+            )
+        );
 
         if (args.Count == 0)
         {
-            return SyntaxFactory.InvocationExpression(
+            return SyntaxFactory
+                .InvocationExpression(
                     SyntaxFactory.MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
                         receiver,
-                        SyntaxFactory.IdentifierName("Append")),
-                    SyntaxFactory.ArgumentList(
-                        SyntaxFactory.SingletonSeparatedList(crlfArg)))
+                        SyntaxFactory.IdentifierName("Append")
+                    ),
+                    SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(crlfArg))
+                )
                 .WithLeadingTrivia(rewritten.GetLeadingTrivia())
                 .WithTrailingTrivia(rewritten.GetTrailingTrivia());
         }
@@ -156,17 +171,20 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
                 SyntaxFactory.MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
                     receiver,
-                    SyntaxFactory.IdentifierName("Append")),
-                SyntaxFactory.ArgumentList(
-                    SyntaxFactory.SingletonSeparatedList(args[0])));
+                    SyntaxFactory.IdentifierName("Append")
+                ),
+                SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(args[0]))
+            );
 
-            return SyntaxFactory.InvocationExpression(
+            return SyntaxFactory
+                .InvocationExpression(
                     SyntaxFactory.MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
                         inner,
-                        SyntaxFactory.IdentifierName("Append")),
-                    SyntaxFactory.ArgumentList(
-                        SyntaxFactory.SingletonSeparatedList(crlfArg)))
+                        SyntaxFactory.IdentifierName("Append")
+                    ),
+                    SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(crlfArg))
+                )
                 .WithLeadingTrivia(rewritten.GetLeadingTrivia())
                 .WithTrailingTrivia(rewritten.GetTrailingTrivia());
         }
@@ -184,7 +202,8 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         if (containing == null)
             return false;
         // Preserve subclass overrides; inherited TextWriter methods bind to the base declaration.
-        return containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == TextWriterFqn;
+        return containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+            == TextWriterFqn;
     }
 
     private SyntaxNode RewriteTextWriterWriteLine(InvocationExpressionSyntax rewritten)
@@ -196,12 +215,16 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
 
         // Roslyn binds the matching WindowsTextWriter overload during mod compilation.
         var newArgs = SyntaxFactory.SeparatedList(
-            new[] { SyntaxFactory.Argument(receiver.WithoutTrivia()) }
-                .Concat(rewritten.ArgumentList.Arguments));
+            new[] { SyntaxFactory.Argument(receiver.WithoutTrivia()) }.Concat(
+                rewritten.ArgumentList.Arguments
+            )
+        );
 
-        return SyntaxFactory.InvocationExpression(
+        return SyntaxFactory
+            .InvocationExpression(
                 SyntaxFactory.ParseExpression(WindowsTextWriterWriteLineFqn),
-                SyntaxFactory.ArgumentList(newArgs))
+                SyntaxFactory.ArgumentList(newArgs)
+            )
             .WithLeadingTrivia(rewritten.GetLeadingTrivia())
             .WithTrailingTrivia(rewritten.GetTrailingTrivia());
     }
@@ -249,24 +272,33 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
     /// Roslyn member-binding tokens remain in their required context.
     /// Chained calls are left unchanged because peeling changes their receiver type.
     /// </summary>
-    public override SyntaxNode VisitConditionalAccessExpression(ConditionalAccessExpressionSyntax node)
+    public override SyntaxNode VisitConditionalAccessExpression(
+        ConditionalAccessExpressionSyntax node
+    )
     {
-        var rewritten = (ConditionalAccessExpressionSyntax)base.VisitConditionalAccessExpression(node);
+        var rewritten = (ConditionalAccessExpressionSyntax)
+            base.VisitConditionalAccessExpression(node);
 
-        if (node.WhenNotNull is InvocationExpressionSyntax tailInvocation
+        if (
+            node.WhenNotNull is InvocationExpressionSyntax tailInvocation
             && IsModItemGetPath(tailInvocation)
             && tailInvocation.Expression is MemberAccessExpressionSyntax
             && rewritten.WhenNotNull is InvocationExpressionSyntax rewrittenTail
-            && rewrittenTail.Expression is MemberAccessExpressionSyntax rewrittenAccess)
+            && rewrittenTail.Expression is MemberAccessExpressionSyntax rewrittenAccess
+        )
         {
             // Keep nested substitutions from the rewritten receiver.
             var peeled = rewritten.WithWhenNotNull(rewrittenAccess.Expression);
 
-            return SyntaxFactory.InvocationExpression(
+            return SyntaxFactory
+                .InvocationExpression(
                     SyntaxFactory.ParseExpression(FromGameFqn),
                     SyntaxFactory.ArgumentList(
                         SyntaxFactory.SingletonSeparatedList(
-                            SyntaxFactory.Argument(peeled.WithoutTrivia()))))
+                            SyntaxFactory.Argument(peeled.WithoutTrivia())
+                        )
+                    )
+                )
                 .WithLeadingTrivia(rewritten.GetLeadingTrivia())
                 .WithTrailingTrivia(rewritten.GetTrailingTrivia());
         }
@@ -290,28 +322,32 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
             SyntaxFactory.IdentifierName("NewLineChars"),
             SyntaxFactory.LiteralExpression(
                 SyntaxKind.StringLiteralExpression,
-                SyntaxFactory.Literal("\r\n")));
+                SyntaxFactory.Literal("\r\n")
+            )
+        );
 
         var existingInit = rewritten.Initializer;
         if (existingInit == null)
         {
             var newInit = SyntaxFactory.InitializerExpression(
                 SyntaxKind.ObjectInitializerExpression,
-                SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(crlfAssignment));
+                SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(crlfAssignment)
+            );
             return rewritten.WithInitializer(newInit);
         }
 
         // Preserve explicit NewLineChars initializers.
         foreach (var expr in existingInit.Expressions)
         {
-            if (expr is AssignmentExpressionSyntax asn &&
-                asn.Left is IdentifierNameSyntax id &&
-                id.Identifier.ValueText == "NewLineChars")
+            if (
+                expr is AssignmentExpressionSyntax asn
+                && asn.Left is IdentifierNameSyntax id
+                && id.Identifier.ValueText == "NewLineChars"
+            )
                 return rewritten;
         }
 
-        var augmented = existingInit.WithExpressions(
-            existingInit.Expressions.Add(crlfAssignment));
+        var augmented = existingInit.WithExpressions(existingInit.Expressions.Add(crlfAssignment));
         return rewritten.WithInitializer(augmented);
     }
 
@@ -321,7 +357,8 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         // SemanticModel contains only original syntax-tree nodes.
         if (IsSystemIoPathTypeReference(node.Type))
         {
-            var newType = SyntaxFactory.ParseTypeName(ReplacementFqn)
+            var newType = SyntaxFactory
+                .ParseTypeName(ReplacementFqn)
                 .WithLeadingTrivia(rewritten.Type.GetLeadingTrivia())
                 .WithTrailingTrivia(rewritten.Type.GetTrailingTrivia());
             return rewritten.WithType(newType);
@@ -340,7 +377,8 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         var symbol = _semanticModel.GetSymbolInfo(expression).Symbol;
         if (symbol is not INamedTypeSymbol named)
             return false;
-        return named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == fullyQualifiedName;
+        return named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+            == fullyQualifiedName;
     }
 
     // Replace whole qualified names because Roslyn child slots require SimpleNameSyntax.

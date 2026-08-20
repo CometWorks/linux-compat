@@ -19,11 +19,20 @@ static class ShaderCompilerPatch
     static MethodBase TargetMethod()
     {
         var type = typeof(MyShaderCompiler);
-        foreach (var method in type.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public))
+        foreach (
+            var method in type.GetMethods(
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public
+            )
+        )
         {
-            if (method.Name != "Compile") continue;
+            if (method.Name != "Compile")
+                continue;
             var parameters = method.GetParameters();
-            if (parameters.Length == 11 && parameters[0].ParameterType == typeof(string) && parameters[6].IsOut)
+            if (
+                parameters.Length == 11
+                && parameters[0].ParameterType == typeof(string)
+                && parameters[6].IsOut
+            )
                 return method;
         }
         throw new Exception("[LinuxCompat] Cannot find MyShaderCompiler.Compile overload");
@@ -41,7 +50,8 @@ static class ShaderCompilerPatch
         ref string compileLog,
         ref string hash,
         bool savePdb,
-        bool savePreprocessed)
+        bool savePreprocessed
+    )
     {
         filepath = PathUtils.Normalize(filepath);
 
@@ -59,7 +69,7 @@ static class ShaderCompilerPatch
             MyShaderProfile.ps_5_0 => "__pixel_shader",
             MyShaderProfile.gs_5_0 => "__geometry_shader",
             MyShaderProfile.cs_5_0 => "__compute_shader",
-            _ => throw new Exception()
+            _ => throw new Exception(),
         };
 
         string profileStr = profile switch
@@ -68,7 +78,7 @@ static class ShaderCompilerPatch
             MyShaderProfile.ps_5_0 => "ps_5_0",
             MyShaderProfile.gs_5_0 => "gs_5_0",
             MyShaderProfile.cs_5_0 => "cs_5_0",
-            _ => throw new Exception()
+            _ => throw new Exception(),
         };
 
         wasCached = false;
@@ -108,11 +118,19 @@ static class ShaderCompilerPatch
         {
             if (!wasCached)
             {
-                string msg = $"WARNING: Shader was not precompiled - {sourceDescriptor} @ profile {profile} with defines {macros.GetString()}({hash})";
+                string msg =
+                    $"WARNING: Shader was not precompiled - {sourceDescriptor} @ profile {profile} with defines {macros.GetString()}({hash})";
                 MyRender11.Log.WriteLine(msg);
             }
 
-            byte[] bytecode = D3DCompilerLinux.Compile(resolvedFilepath, macros, entryPoint, profileStr, optimize, out compileLog);
+            byte[] bytecode = D3DCompilerLinux.Compile(
+                resolvedFilepath,
+                macros,
+                entryPoint,
+                profileStr,
+                optimize,
+                out compileLog
+            );
             if (bytecode != null)
                 MyShaderCache.Store(preprocessedSource, profile, bytecode, hash);
 

@@ -30,7 +30,12 @@ internal static class SdlAudio
         return ptr == IntPtr.Zero ? "unknown error" : Marshal.PtrToStringAnsi(ptr);
     }
 
-    internal static bool LoadWav(string path, ref MySdlAudioInterop.SdlAudioSpec spec, out IntPtr audioBuffer, out uint audioLength)
+    internal static bool LoadWav(
+        string path,
+        ref MySdlAudioInterop.SdlAudioSpec spec,
+        out IntPtr audioBuffer,
+        out uint audioLength
+    )
     {
         return SDL_LoadWAV(path, ref spec, out audioBuffer, out audioLength);
     }
@@ -55,12 +60,19 @@ internal static class SdlAudio
         return SDL_PauseAudioDevice(devid);
     }
 
-    internal static bool GetAudioDeviceFormat(uint devid, out MySdlAudioInterop.SdlAudioSpec spec, out int sampleFrames)
+    internal static bool GetAudioDeviceFormat(
+        uint devid,
+        out MySdlAudioInterop.SdlAudioSpec spec,
+        out int sampleFrames
+    )
     {
         return SDL_GetAudioDeviceFormat(devid, out spec, out sampleFrames);
     }
 
-    internal static IntPtr CreateAudioStream(ref MySdlAudioInterop.SdlAudioSpec src, ref MySdlAudioInterop.SdlAudioSpec dst)
+    internal static IntPtr CreateAudioStream(
+        ref MySdlAudioInterop.SdlAudioSpec src,
+        ref MySdlAudioInterop.SdlAudioSpec dst
+    )
     {
         return SDL_CreateAudioStream(ref src, ref dst);
     }
@@ -116,13 +128,21 @@ internal static class SdlAudio
 
     [DllImport(Lib, EntryPoint = "SDL_LoadWAV", CharSet = CharSet.Ansi)]
     [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_LoadWAV(string path, ref MySdlAudioInterop.SdlAudioSpec spec, out IntPtr audioBuffer, out uint audioLength);
+    private static extern bool SDL_LoadWAV(
+        string path,
+        ref MySdlAudioInterop.SdlAudioSpec spec,
+        out IntPtr audioBuffer,
+        out uint audioLength
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_free")]
     private static extern void SDL_free(IntPtr memory);
 
     [DllImport(Lib, EntryPoint = "SDL_OpenAudioDevice")]
-    private static extern uint SDL_OpenAudioDevice(uint devid, ref MySdlAudioInterop.SdlAudioSpec spec);
+    private static extern uint SDL_OpenAudioDevice(
+        uint devid,
+        ref MySdlAudioInterop.SdlAudioSpec spec
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_CloseAudioDevice")]
     private static extern void SDL_CloseAudioDevice(uint devid);
@@ -133,10 +153,17 @@ internal static class SdlAudio
 
     [DllImport(Lib, EntryPoint = "SDL_GetAudioDeviceFormat")]
     [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_GetAudioDeviceFormat(uint devid, out MySdlAudioInterop.SdlAudioSpec spec, out int sampleFrames);
+    private static extern bool SDL_GetAudioDeviceFormat(
+        uint devid,
+        out MySdlAudioInterop.SdlAudioSpec spec,
+        out int sampleFrames
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_CreateAudioStream")]
-    private static extern IntPtr SDL_CreateAudioStream(ref MySdlAudioInterop.SdlAudioSpec src, ref MySdlAudioInterop.SdlAudioSpec dst);
+    private static extern IntPtr SDL_CreateAudioStream(
+        ref MySdlAudioInterop.SdlAudioSpec src,
+        ref MySdlAudioInterop.SdlAudioSpec dst
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_DestroyAudioStream")]
     private static extern void SDL_DestroyAudioStream(IntPtr stream);

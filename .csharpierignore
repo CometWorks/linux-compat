@@ -1,0 +1,9 @@
+# Format C# source files only.
+# Ignore everything...
+*
+# ...but keep descending into directories and re-include *.cs at any depth.
+!*/
+!*.cs
+# Build output stays ignored.
+bin/
+obj/

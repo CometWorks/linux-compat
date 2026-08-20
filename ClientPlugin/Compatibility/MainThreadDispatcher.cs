@@ -24,10 +24,19 @@ internal static class MainThreadDispatcher
     {
         while (s_queue.TryDequeue(out var action))
         {
-            try { action(); }
+            try
+            {
+                action();
+            }
             catch (Exception ex)
             {
-                try { MyLog.Default?.WriteLineAndConsole($"[LinuxCompat] MainThreadDispatcher action threw: {ex}"); } catch { }
+                try
+                {
+                    MyLog.Default?.WriteLineAndConsole(
+                        $"[LinuxCompat] MainThreadDispatcher action threw: {ex}"
+                    );
+                }
+                catch { }
             }
         }
     }

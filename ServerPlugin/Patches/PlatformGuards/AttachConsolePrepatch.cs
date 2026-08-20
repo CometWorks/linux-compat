@@ -16,14 +16,18 @@ public static class AttachConsolePrepatch
         var type = asmDef.MainModule.GetType("VRage.Dedicated.DedicatedServer");
         if (type == null)
         {
-            Console.WriteLine("[LinuxCompatServer] AttachConsolePrepatch: VRage.Dedicated.DedicatedServer not found");
+            Console.WriteLine(
+                "[LinuxCompatServer] AttachConsolePrepatch: VRage.Dedicated.DedicatedServer not found"
+            );
             return;
         }
 
         var runMain = type.Methods.FirstOrDefault(m => m.Name == "RunMain" && m.IsStatic);
         if (runMain?.Body == null)
         {
-            Console.WriteLine("[LinuxCompatServer] AttachConsolePrepatch: RunMain method not found");
+            Console.WriteLine(
+                "[LinuxCompatServer] AttachConsolePrepatch: RunMain method not found"
+            );
             return;
         }
 
@@ -34,10 +38,14 @@ public static class AttachConsolePrepatch
         for (var i = 0; i < instructions.Count; i++)
         {
             var instr = instructions[i];
-            if (instr.OpCode != OpCodes.Call) continue;
-            if (instr.Operand is not MethodReference mr) continue;
-            if (mr.Name != "AttachConsole") continue;
-            if (mr.DeclaringType?.FullName != "VRage.Dedicated.DedicatedServer") continue;
+            if (instr.OpCode != OpCodes.Call)
+                continue;
+            if (instr.Operand is not MethodReference mr)
+                continue;
+            if (mr.Name != "AttachConsole")
+                continue;
+            if (mr.DeclaringType?.FullName != "VRage.Dedicated.DedicatedServer")
+                continue;
 
             // Preserve instruction identity because branches may target it.
             var ldc1 = il.Create(OpCodes.Ldc_I4_1);
@@ -49,8 +57,12 @@ public static class AttachConsolePrepatch
         }
 
         if (rewritten > 0)
-            Console.WriteLine($"[LinuxCompatServer] AttachConsolePrepatch: neutralized {rewritten} AttachConsole call(s) in DedicatedServer.RunMain");
+            Console.WriteLine(
+                $"[LinuxCompatServer] AttachConsolePrepatch: neutralized {rewritten} AttachConsole call(s) in DedicatedServer.RunMain"
+            );
         else
-            Console.WriteLine("[LinuxCompatServer] AttachConsolePrepatch: no AttachConsole call found in DedicatedServer.RunMain (already patched or upstream changed?)");
+            Console.WriteLine(
+                "[LinuxCompatServer] AttachConsolePrepatch: no AttachConsole call found in DedicatedServer.RunMain (already patched or upstream changed?)"
+            );
     }
 }

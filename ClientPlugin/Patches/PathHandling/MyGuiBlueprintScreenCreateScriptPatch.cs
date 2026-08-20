@@ -17,20 +17,28 @@ static class MyGuiBlueprintScreenCreateScriptPatch
 {
     // ReSharper disable once UnusedMember.Local
     [HarmonyTranspiler]
-    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase patchedMethod)
+    static IEnumerable<CodeInstruction> Transpiler(
+        IEnumerable<CodeInstruction> instructions,
+        MethodBase patchedMethod
+    )
     {
         var il = instructions.ToList();
         il.RecordOriginalCode(patchedMethod);
 
-        var thumbnailField = AccessTools.Field(typeof(MyBlueprintUtils), nameof(MyBlueprintUtils.STEAM_THUMBNAIL_NAME));
+        var thumbnailField = AccessTools.Field(
+            typeof(MyBlueprintUtils),
+            nameof(MyBlueprintUtils.STEAM_THUMBNAIL_NAME)
+        );
         var normalize = AccessTools.Method(typeof(PathHelpers), nameof(PathHelpers.Normalize));
 
         // Walk backward so insertion does not shift pending indexes.
         for (var i = il.Count - 1; i >= 0; i--)
         {
             var instr = il[i];
-            if (instr.opcode != OpCodes.Ldsfld) continue;
-            if (instr.operand is not FieldInfo fi || fi != thumbnailField) continue;
+            if (instr.opcode != OpCodes.Ldsfld)
+                continue;
+            if (instr.operand is not FieldInfo fi || fi != thumbnailField)
+                continue;
 
             il.Insert(i + 1, new CodeInstruction(OpCodes.Call, normalize));
         }

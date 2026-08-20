@@ -22,12 +22,16 @@ static class DxvkNativeResolverInitializePatch
 {
     static bool Prepare()
     {
-        return AccessTools.Method("SpaceEngineers.PlatformInitialization.MyDxvkNativeResolver:Initialize") != null;
+        return AccessTools.Method(
+                "SpaceEngineers.PlatformInitialization.MyDxvkNativeResolver:Initialize"
+            ) != null;
     }
 
     static MethodBase TargetMethod()
     {
-        return AccessTools.Method("SpaceEngineers.PlatformInitialization.MyDxvkNativeResolver:Initialize");
+        return AccessTools.Method(
+            "SpaceEngineers.PlatformInitialization.MyDxvkNativeResolver:Initialize"
+        );
     }
 
     static bool Prefix()
@@ -35,7 +39,9 @@ static class DxvkNativeResolverInitializePatch
         if (RenderingConfig.AllowRendering)
             return true;
 
-        Console.WriteLine("[LinuxCompat] rendering disabled (PULSAR_NO_RENDER); skipping DXVK native resolver initialization");
+        Console.WriteLine(
+            "[LinuxCompat] rendering disabled (PULSAR_NO_RENDER); skipping DXVK native resolver initialization"
+        );
         return false;
     }
 }
@@ -46,7 +52,10 @@ static class MyProgramInitializeRenderPatch
 {
     private const int HeadlessWidth = 640;
     private const int HeadlessHeight = 480;
-    internal static readonly IVRageWindow Window = new HeadlessWindow(HeadlessWidth, HeadlessHeight);
+    internal static readonly IVRageWindow Window = new HeadlessWindow(
+        HeadlessWidth,
+        HeadlessHeight
+    );
 
     static bool Prepare()
     {
@@ -55,20 +64,35 @@ static class MyProgramInitializeRenderPatch
 
     static MethodBase TargetMethod()
     {
-        return GetSpaceEngineersProgramType()?.GetMethod(
-            "InitializeRender",
-            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+        return GetSpaceEngineersProgramType()
+            ?.GetMethod(
+                "InitializeRender",
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public
+            );
     }
 
     private static Type GetSpaceEngineersProgramType()
     {
-        var assembly = AppDomain.CurrentDomain.GetAssemblies()
-            .FirstOrDefault(asm => string.Equals(asm.GetName().Name, "SpaceEngineers", StringComparison.OrdinalIgnoreCase));
+        var assembly = AppDomain
+            .CurrentDomain.GetAssemblies()
+            .FirstOrDefault(asm =>
+                string.Equals(
+                    asm.GetName().Name,
+                    "SpaceEngineers",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            );
 
         if (assembly == null)
         {
-            try { assembly = Assembly.Load("SpaceEngineers"); }
-            catch { return null; }
+            try
+            {
+                assembly = Assembly.Load("SpaceEngineers");
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         return assembly.GetType("SpaceEngineers.MyProgram");
@@ -79,13 +103,19 @@ static class MyProgramInitializeRenderPatch
         if (RenderingConfig.AllowRendering)
             return true;
 
-        Console.WriteLine("[LinuxCompat] rendering disabled (PULSAR_NO_RENDER); using MyNullRender");
+        Console.WriteLine(
+            "[LinuxCompat] rendering disabled (PULSAR_NO_RENDER); using MyNullRender"
+        );
         MyFakes.USE_NULL_AUDIO_DRIVER = true;
         MyFakes.USE_NULL_INPUT_DRIVER = true;
         InstallHeadlessWindow(null);
         _ = new MyEngine();
         MyRenderProxy.Initialize(new MyNullRender());
-        MySandboxGame.UpdateScreenSize(HeadlessWidth, HeadlessHeight, new MyViewport(0, 0, HeadlessWidth, HeadlessHeight));
+        MySandboxGame.UpdateScreenSize(
+            HeadlessWidth,
+            HeadlessHeight,
+            new MyViewport(0, 0, HeadlessWidth, HeadlessHeight)
+        );
         return false;
     }
 
@@ -109,7 +139,9 @@ static class SpaceEngineersGameInitializeRenderPatch
         if (RenderingConfig.AllowRendering)
             return true;
 
-        Console.WriteLine("[LinuxCompat] rendering disabled (PULSAR_NO_RENDER); skipping game render component initialization");
+        Console.WriteLine(
+            "[LinuxCompat] rendering disabled (PULSAR_NO_RENDER); skipping game render component initialization"
+        );
         MyProgramInitializeRenderPatch.InstallHeadlessWindow(__instance);
         return false;
     }
@@ -139,18 +171,36 @@ sealed class HeadlessWindow : IVRageWindow
     public Vector2I ClientSize => _size;
     public Vector2I ClientSizePixels => _size;
 
-    public event Action OnExit { add { } remove { } }
-    public event Action OnManualWindowCloseRequest { add { } remove { } }
+    public event Action OnExit
+    {
+        add { }
+        remove { }
+    }
+    public event Action OnManualWindowCloseRequest
+    {
+        add { }
+        remove { }
+    }
 
     public void CloseManually() { }
+
     public void DoEvents() { }
+
     public void Exit() { }
+
     public bool UpdateRenderThread() => false;
+
     public void UpdateMainThread() { }
+
     public void SetCursor(Stream stream) { }
+
     public void AddMessageHandler(uint wm, ActionRef<MyMessage> action) { }
+
     public void RemoveMessageHandler(uint wm, ActionRef<MyMessage> action) { }
+
     public void SetClientSize(int width, int height) { }
+
     public void ShowAndFocus() { }
+
     public void Hide() { }
 }

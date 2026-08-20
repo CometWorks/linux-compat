@@ -24,13 +24,47 @@ internal sealed class WrappedUtilities : IMyUtilities
     // Canonical .NET Framework ordering for Windows-invalid filename characters.
     private static readonly char[] WindowsInvalidFileNameChars =
     {
-        '"', '<', '>', '|', '\0',
-        (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7,
-        (char)8, (char)9, (char)10, (char)11, (char)12, (char)13, (char)14,
-        (char)15, (char)16, (char)17, (char)18, (char)19, (char)20, (char)21,
-        (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28,
-        (char)29, (char)30, (char)31,
-        ':', '*', '?', '\\', '/',
+        '"',
+        '<',
+        '>',
+        '|',
+        '\0',
+        (char)1,
+        (char)2,
+        (char)3,
+        (char)4,
+        (char)5,
+        (char)6,
+        (char)7,
+        (char)8,
+        (char)9,
+        (char)10,
+        (char)11,
+        (char)12,
+        (char)13,
+        (char)14,
+        (char)15,
+        (char)16,
+        (char)17,
+        (char)18,
+        (char)19,
+        (char)20,
+        (char)21,
+        (char)22,
+        (char)23,
+        (char)24,
+        (char)25,
+        (char)26,
+        (char)27,
+        (char)28,
+        (char)29,
+        (char)30,
+        (char)31,
+        ':',
+        '*',
+        '?',
+        '\\',
+        '/',
     };
 
     private readonly IMyUtilities _inner;
@@ -77,7 +111,10 @@ internal sealed class WrappedUtilities : IMyUtilities
         {
             var protectedDir = Path.Combine(modPath, "Data", "Scripts");
             if (fullPath.StartsWith(protectedDir))
-                throw new FileNotFoundException("Access to protected location '" + protectedDir + "' not allowed.", fullPath);
+                throw new FileNotFoundException(
+                    "Access to protected location '" + protectedDir + "' not allowed.",
+                    fullPath
+                );
 
             var resolved = CaseInsensitivePathResolver.Resolve(file, modPath);
             var stream = MyFileSystem.OpenRead(resolved);
@@ -132,86 +169,154 @@ internal sealed class WrappedUtilities : IMyUtilities
         return resolved.StartsWith(MyFileSystem.ContentPath) && File.Exists(resolved);
     }
 
-    public BinaryReader ReadBinaryFileInModLocation(string file, MyObjectBuilder_Checkpoint.ModItem modItem)
-        => _inner.ReadBinaryFileInModLocation(PathHelpers.Normalize(file), modItem);
+    public BinaryReader ReadBinaryFileInModLocation(
+        string file,
+        MyObjectBuilder_Checkpoint.ModItem modItem
+    ) => _inner.ReadBinaryFileInModLocation(PathHelpers.Normalize(file), modItem);
 
-    public BinaryReader ReadBinaryFileInGameContent(string file)
-        => _inner.ReadBinaryFileInGameContent(PathHelpers.Normalize(file));
+    public BinaryReader ReadBinaryFileInGameContent(string file) =>
+        _inner.ReadBinaryFileInGameContent(PathHelpers.Normalize(file));
 
     // Linux permits filename characters that Windows storage APIs reject.
     // Validate before delegation and preserve engine exceptions for valid names.
 
-    public bool FileExistsInLocalStorage(string file, Type callingType)
-        => InvokeStorage("FileExistsInLocalStorage", file, callingType,
-            (f, t) => _inner.FileExistsInLocalStorage(f, t));
+    public bool FileExistsInLocalStorage(string file, Type callingType) =>
+        InvokeStorage(
+            "FileExistsInLocalStorage",
+            file,
+            callingType,
+            (f, t) => _inner.FileExistsInLocalStorage(f, t)
+        );
 
-    public bool FileExistsInWorldStorage(string file, Type callingType)
-        => InvokeStorage("FileExistsInWorldStorage", file, callingType,
-            (f, t) => _inner.FileExistsInWorldStorage(f, t));
+    public bool FileExistsInWorldStorage(string file, Type callingType) =>
+        InvokeStorage(
+            "FileExistsInWorldStorage",
+            file,
+            callingType,
+            (f, t) => _inner.FileExistsInWorldStorage(f, t)
+        );
 
-    public bool FileExistsInGlobalStorage(string file)
-        => InvokeStorageNoType("FileExistsInGlobalStorage", file,
-            f => _inner.FileExistsInGlobalStorage(f));
+    public bool FileExistsInGlobalStorage(string file) =>
+        InvokeStorageNoType(
+            "FileExistsInGlobalStorage",
+            file,
+            f => _inner.FileExistsInGlobalStorage(f)
+        );
 
-    public void DeleteFileInLocalStorage(string file, Type callingType)
-        => InvokeStorageVoid("DeleteFileInLocalStorage", file, callingType,
-            (f, t) => _inner.DeleteFileInLocalStorage(f, t));
+    public void DeleteFileInLocalStorage(string file, Type callingType) =>
+        InvokeStorageVoid(
+            "DeleteFileInLocalStorage",
+            file,
+            callingType,
+            (f, t) => _inner.DeleteFileInLocalStorage(f, t)
+        );
 
-    public void DeleteFileInWorldStorage(string file, Type callingType)
-        => InvokeStorageVoid("DeleteFileInWorldStorage", file, callingType,
-            (f, t) => _inner.DeleteFileInWorldStorage(f, t));
+    public void DeleteFileInWorldStorage(string file, Type callingType) =>
+        InvokeStorageVoid(
+            "DeleteFileInWorldStorage",
+            file,
+            callingType,
+            (f, t) => _inner.DeleteFileInWorldStorage(f, t)
+        );
 
-    public void DeleteFileInGlobalStorage(string file)
-        => InvokeStorageVoidNoType("DeleteFileInGlobalStorage", file,
-            f => _inner.DeleteFileInGlobalStorage(f));
+    public void DeleteFileInGlobalStorage(string file) =>
+        InvokeStorageVoidNoType(
+            "DeleteFileInGlobalStorage",
+            file,
+            f => _inner.DeleteFileInGlobalStorage(f)
+        );
 
-    public TextReader ReadFileInLocalStorage(string file, Type callingType)
-        => InvokeStorage("ReadFileInLocalStorage", file, callingType,
-            (f, t) => _inner.ReadFileInLocalStorage(f, t));
+    public TextReader ReadFileInLocalStorage(string file, Type callingType) =>
+        InvokeStorage(
+            "ReadFileInLocalStorage",
+            file,
+            callingType,
+            (f, t) => _inner.ReadFileInLocalStorage(f, t)
+        );
 
-    public TextReader ReadFileInWorldStorage(string file, Type callingType)
-        => InvokeStorage("ReadFileInWorldStorage", file, callingType,
-            (f, t) => _inner.ReadFileInWorldStorage(f, t));
+    public TextReader ReadFileInWorldStorage(string file, Type callingType) =>
+        InvokeStorage(
+            "ReadFileInWorldStorage",
+            file,
+            callingType,
+            (f, t) => _inner.ReadFileInWorldStorage(f, t)
+        );
 
-    public TextReader ReadFileInGlobalStorage(string file)
-        => InvokeStorageNoType("ReadFileInGlobalStorage", file,
-            f => _inner.ReadFileInGlobalStorage(f));
+    public TextReader ReadFileInGlobalStorage(string file) =>
+        InvokeStorageNoType(
+            "ReadFileInGlobalStorage",
+            file,
+            f => _inner.ReadFileInGlobalStorage(f)
+        );
 
-    public TextWriter WriteFileInLocalStorage(string file, Type callingType)
-        => InvokeStorage("WriteFileInLocalStorage", file, callingType,
-            (f, t) => _inner.WriteFileInLocalStorage(f, t));
+    public TextWriter WriteFileInLocalStorage(string file, Type callingType) =>
+        InvokeStorage(
+            "WriteFileInLocalStorage",
+            file,
+            callingType,
+            (f, t) => _inner.WriteFileInLocalStorage(f, t)
+        );
 
-    public TextWriter WriteFileInWorldStorage(string file, Type callingType)
-        => InvokeStorage("WriteFileInWorldStorage", file, callingType,
-            (f, t) => _inner.WriteFileInWorldStorage(f, t));
+    public TextWriter WriteFileInWorldStorage(string file, Type callingType) =>
+        InvokeStorage(
+            "WriteFileInWorldStorage",
+            file,
+            callingType,
+            (f, t) => _inner.WriteFileInWorldStorage(f, t)
+        );
 
-    public TextWriter WriteFileInGlobalStorage(string file)
-        => InvokeStorageNoType("WriteFileInGlobalStorage", file,
-            f => _inner.WriteFileInGlobalStorage(f));
+    public TextWriter WriteFileInGlobalStorage(string file) =>
+        InvokeStorageNoType(
+            "WriteFileInGlobalStorage",
+            file,
+            f => _inner.WriteFileInGlobalStorage(f)
+        );
 
-    public BinaryReader ReadBinaryFileInLocalStorage(string file, Type callingType)
-        => InvokeStorage("ReadBinaryFileInLocalStorage", file, callingType,
-            (f, t) => _inner.ReadBinaryFileInLocalStorage(f, t));
+    public BinaryReader ReadBinaryFileInLocalStorage(string file, Type callingType) =>
+        InvokeStorage(
+            "ReadBinaryFileInLocalStorage",
+            file,
+            callingType,
+            (f, t) => _inner.ReadBinaryFileInLocalStorage(f, t)
+        );
 
-    public BinaryReader ReadBinaryFileInWorldStorage(string file, Type callingType)
-        => InvokeStorage("ReadBinaryFileInWorldStorage", file, callingType,
-            (f, t) => _inner.ReadBinaryFileInWorldStorage(f, t));
+    public BinaryReader ReadBinaryFileInWorldStorage(string file, Type callingType) =>
+        InvokeStorage(
+            "ReadBinaryFileInWorldStorage",
+            file,
+            callingType,
+            (f, t) => _inner.ReadBinaryFileInWorldStorage(f, t)
+        );
 
-    public BinaryReader ReadBinaryFileInGlobalStorage(string file)
-        => InvokeStorageNoType("ReadBinaryFileInGlobalStorage", file,
-            f => _inner.ReadBinaryFileInGlobalStorage(f));
+    public BinaryReader ReadBinaryFileInGlobalStorage(string file) =>
+        InvokeStorageNoType(
+            "ReadBinaryFileInGlobalStorage",
+            file,
+            f => _inner.ReadBinaryFileInGlobalStorage(f)
+        );
 
-    public BinaryWriter WriteBinaryFileInLocalStorage(string file, Type callingType)
-        => InvokeStorage("WriteBinaryFileInLocalStorage", file, callingType,
-            (f, t) => _inner.WriteBinaryFileInLocalStorage(f, t));
+    public BinaryWriter WriteBinaryFileInLocalStorage(string file, Type callingType) =>
+        InvokeStorage(
+            "WriteBinaryFileInLocalStorage",
+            file,
+            callingType,
+            (f, t) => _inner.WriteBinaryFileInLocalStorage(f, t)
+        );
 
-    public BinaryWriter WriteBinaryFileInWorldStorage(string file, Type callingType)
-        => InvokeStorage("WriteBinaryFileInWorldStorage", file, callingType,
-            (f, t) => _inner.WriteBinaryFileInWorldStorage(f, t));
+    public BinaryWriter WriteBinaryFileInWorldStorage(string file, Type callingType) =>
+        InvokeStorage(
+            "WriteBinaryFileInWorldStorage",
+            file,
+            callingType,
+            (f, t) => _inner.WriteBinaryFileInWorldStorage(f, t)
+        );
 
-    public BinaryWriter WriteBinaryFileInGlobalStorage(string file)
-        => InvokeStorageNoType("WriteBinaryFileInGlobalStorage", file,
-            f => _inner.WriteBinaryFileInGlobalStorage(f));
+    public BinaryWriter WriteBinaryFileInGlobalStorage(string file) =>
+        InvokeStorageNoType(
+            "WriteBinaryFileInGlobalStorage",
+            file,
+            f => _inner.WriteBinaryFileInGlobalStorage(f)
+        );
 
     public event MessageEnteredDel MessageEntered
     {
@@ -233,13 +338,21 @@ internal sealed class WrappedUtilities : IMyUtilities
 
     public string GetTypeName(Type type) => _inner.GetTypeName(type);
 
-    public void ShowNotification(string message, int disappearTimeMs = 2000, string font = "White")
-        => _inner.ShowNotification(message, disappearTimeMs, font);
+    public void ShowNotification(
+        string message,
+        int disappearTimeMs = 2000,
+        string font = "White"
+    ) => _inner.ShowNotification(message, disappearTimeMs, font);
 
-    public IMyHudNotification CreateNotification(string message, int disappearTimeMs = 2000, string font = "White")
-        => _inner.CreateNotification(message, disappearTimeMs, font);
+    public IMyHudNotification CreateNotification(
+        string message,
+        int disappearTimeMs = 2000,
+        string font = "White"
+    ) => _inner.CreateNotification(message, disappearTimeMs, font);
 
-    public void ShowMessage(string sender, string messageText) => _inner.ShowMessage(sender, messageText);
+    public void ShowMessage(string sender, string messageText) =>
+        _inner.ShowMessage(sender, messageText);
+
     public void SendMessage(string messageText) => _inner.SendMessage(messageText);
 
     /// <summary>
@@ -264,62 +377,119 @@ internal sealed class WrappedUtilities : IMyUtilities
     }
 
     public T SerializeFromXML<T>(string buffer) => _inner.SerializeFromXML<T>(buffer);
+
     public byte[] SerializeToBinary<T>(T obj) => _inner.SerializeToBinary(obj);
+
     public T SerializeFromBinary<T>(byte[] data) => _inner.SerializeFromBinary<T>(data);
 
-    public void InvokeOnGameThread(Action action, string invokerName = "ModAPI", int StartAt = -1, int RepeatTimes = 0)
-        => _inner.InvokeOnGameThread(action, invokerName, StartAt, RepeatTimes);
+    public void InvokeOnGameThread(
+        Action action,
+        string invokerName = "ModAPI",
+        int StartAt = -1,
+        int RepeatTimes = 0
+    ) => _inner.InvokeOnGameThread(action, invokerName, StartAt, RepeatTimes);
 
-    public void ShowMissionScreen(string screenTitle = null, string currentObjectivePrefix = null,
-        string currentObjective = null, string screenDescription = null,
-        Action<ResultEnum> callback = null, string okButtonCaption = null)
-        => _inner.ShowMissionScreen(screenTitle, currentObjectivePrefix, currentObjective,
-            screenDescription, callback, okButtonCaption);
+    public void ShowMissionScreen(
+        string screenTitle = null,
+        string currentObjectivePrefix = null,
+        string currentObjective = null,
+        string screenDescription = null,
+        Action<ResultEnum> callback = null,
+        string okButtonCaption = null
+    ) =>
+        _inner.ShowMissionScreen(
+            screenTitle,
+            currentObjectivePrefix,
+            currentObjective,
+            screenDescription,
+            callback,
+            okButtonCaption
+        );
 
     public IMyHudObjectiveLine GetObjectiveLine() => _inner.GetObjectiveLine();
 
     public void SetVariable<T>(string name, T value) => _inner.SetVariable(name, value);
+
     public bool GetVariable<T>(string name, out T value) => _inner.GetVariable(name, out value);
+
     public bool RemoveVariable(string name) => _inner.RemoveVariable(name);
 
-    public void RegisterMessageHandler(long id, Action<object> messageHandler)
-        => _inner.RegisterMessageHandler(id, messageHandler);
+    public void RegisterMessageHandler(long id, Action<object> messageHandler) =>
+        _inner.RegisterMessageHandler(id, messageHandler);
 
-    public void UnregisterMessageHandler(long id, Action<object> messageHandler)
-        => _inner.UnregisterMessageHandler(id, messageHandler);
+    public void UnregisterMessageHandler(long id, Action<object> messageHandler) =>
+        _inner.UnregisterMessageHandler(id, messageHandler);
 
     public void SendModMessage(long id, object payload) => _inner.SendModMessage(id, payload);
 
-    private TResult InvokeStorage<TResult>(string method, string file, Type callingType,
-        Func<string, Type, TResult> call)
+    private TResult InvokeStorage<TResult>(
+        string method,
+        string file,
+        Type callingType,
+        Func<string, Type, TResult> call
+    )
     {
         ValidateFilenameOrThrow(file);
-        try { return call(file, callingType); }
-        catch (Exception ex) { LogIfThrew(method, file, callingType, ex); throw; }
+        try
+        {
+            return call(file, callingType);
+        }
+        catch (Exception ex)
+        {
+            LogIfThrew(method, file, callingType, ex);
+            throw;
+        }
     }
 
-    private void InvokeStorageVoid(string method, string file, Type callingType,
-        Action<string, Type> call)
+    private void InvokeStorageVoid(
+        string method,
+        string file,
+        Type callingType,
+        Action<string, Type> call
+    )
     {
         ValidateFilenameOrThrow(file);
-        try { call(file, callingType); }
-        catch (Exception ex) { LogIfThrew(method, file, callingType, ex); throw; }
+        try
+        {
+            call(file, callingType);
+        }
+        catch (Exception ex)
+        {
+            LogIfThrew(method, file, callingType, ex);
+            throw;
+        }
     }
 
-    private TResult InvokeStorageNoType<TResult>(string method, string file,
-        Func<string, TResult> call)
+    private TResult InvokeStorageNoType<TResult>(
+        string method,
+        string file,
+        Func<string, TResult> call
+    )
     {
         ValidateFilenameOrThrow(file);
-        try { return call(file); }
-        catch (Exception ex) { LogIfThrew(method, file, null, ex); throw; }
+        try
+        {
+            return call(file);
+        }
+        catch (Exception ex)
+        {
+            LogIfThrew(method, file, null, ex);
+            throw;
+        }
     }
 
-    private void InvokeStorageVoidNoType(string method, string file,
-        Action<string> call)
+    private void InvokeStorageVoidNoType(string method, string file, Action<string> call)
     {
         ValidateFilenameOrThrow(file);
-        try { call(file); }
-        catch (Exception ex) { LogIfThrew(method, file, null, ex); throw; }
+        try
+        {
+            call(file);
+        }
+        catch (Exception ex)
+        {
+            LogIfThrew(method, file, null, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -338,9 +508,10 @@ internal sealed class WrappedUtilities : IMyUtilities
         try
         {
             MyLog.Default?.WriteLine(
-                $"{Tag} {method} threw {ex.GetType().FullName} after scrub: " +
-                $"{ex.Message} (file='{file ?? "<null>"}', " +
-                $"callingType='{callingType?.FullName ?? "<null>"}')");
+                $"{Tag} {method} threw {ex.GetType().FullName} after scrub: "
+                    + $"{ex.Message} (file='{file ?? "<null>"}', "
+                    + $"callingType='{callingType?.FullName ?? "<null>"}')"
+            );
         }
         catch
         {

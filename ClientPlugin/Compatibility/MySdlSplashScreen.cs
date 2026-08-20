@@ -107,34 +107,53 @@ internal sealed class MySdlSplashScreen : IDisposable
 
             Console.WriteLine($"[LinuxCompat] Splash image loaded: {width}x{height}");
 
-            IntPtr surface = CreateSurfaceFrom(width, height, SdlPixelFormatRgba32, m_pixelDataHandle.AddrOfPinnedObject(), width * 4);
+            IntPtr surface = CreateSurfaceFrom(
+                width,
+                height,
+                SdlPixelFormatRgba32,
+                m_pixelDataHandle.AddrOfPinnedObject(),
+                width * 4
+            );
             if (surface == IntPtr.Zero)
             {
-                Console.WriteLine($"[LinuxCompat] SDL_CreateSurfaceFrom failed: {GetErrorString()}");
+                Console.WriteLine(
+                    $"[LinuxCompat] SDL_CreateSurfaceFrom failed: {GetErrorString()}"
+                );
                 return;
             }
             Console.WriteLine($"[LinuxCompat] Splash SDL surface created: 0x{surface.ToInt64():X}");
 
             try
             {
-                m_windowHandle = CreateWindow("Space Engineers", width, height, SdlWindowBorderless | SdlWindowAlwaysOnTop | SdlWindowHidden);
+                m_windowHandle = CreateWindow(
+                    "Space Engineers",
+                    width,
+                    height,
+                    SdlWindowBorderless | SdlWindowAlwaysOnTop | SdlWindowHidden
+                );
                 if (m_windowHandle == IntPtr.Zero)
                 {
                     Console.WriteLine($"[LinuxCompat] SDL_CreateWindow failed: {GetErrorString()}");
                     return;
                 }
-                Console.WriteLine($"[LinuxCompat] Splash window created: 0x{m_windowHandle.ToInt64():X}");
+                Console.WriteLine(
+                    $"[LinuxCompat] Splash window created: 0x{m_windowHandle.ToInt64():X}"
+                );
 
                 SetWindowAlwaysOnTop(m_windowHandle, true);
                 SdlIconHelper.Apply(m_windowHandle, gameIcon);
                 SetWindowPosition(m_windowHandle, SdlWindowPosCentered, SdlWindowPosCentered);
                 IntPtr windowSurface = GetWindowSurface(m_windowHandle);
-                Console.WriteLine($"[LinuxCompat] Splash window surface: 0x{windowSurface.ToInt64():X}");
+                Console.WriteLine(
+                    $"[LinuxCompat] Splash window surface: 0x{windowSurface.ToInt64():X}"
+                );
                 bool shown = ShowWindow(m_windowHandle);
                 Console.WriteLine($"[LinuxCompat] SDL_ShowWindow returned {shown}");
                 if (windowSurface == IntPtr.Zero)
                 {
-                    Console.WriteLine($"[LinuxCompat] SDL_GetWindowSurface failed: {GetErrorString()}");
+                    Console.WriteLine(
+                        $"[LinuxCompat] SDL_GetWindowSurface failed: {GetErrorString()}"
+                    );
                     return;
                 }
 
@@ -150,7 +169,9 @@ internal sealed class MySdlSplashScreen : IDisposable
                 Console.WriteLine($"[LinuxCompat] SDL_UpdateWindowSurface returned {updated}");
                 if (!updated)
                 {
-                    Console.WriteLine($"[LinuxCompat] SDL_UpdateWindowSurface failed: {GetErrorString()}");
+                    Console.WriteLine(
+                        $"[LinuxCompat] SDL_UpdateWindowSurface failed: {GetErrorString()}"
+                    );
                     return;
                 }
 
@@ -212,19 +233,33 @@ internal sealed class MySdlSplashScreen : IDisposable
     private static extern bool ShowWindow(IntPtr window);
 
     [DllImport(Lib, EntryPoint = "SDL_SetWindowAlwaysOnTop")]
-    private static extern bool SetWindowAlwaysOnTop(IntPtr window, [MarshalAs(UnmanagedType.I1)] bool onTop);
+    private static extern bool SetWindowAlwaysOnTop(
+        IntPtr window,
+        [MarshalAs(UnmanagedType.I1)] bool onTop
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_SetWindowPosition")]
     private static extern bool SetWindowPosition(IntPtr window, int x, int y);
 
     [DllImport(Lib, EntryPoint = "SDL_CreateSurfaceFrom")]
-    private static extern IntPtr CreateSurfaceFrom(int width, int height, uint format, IntPtr pixels, int pitch);
+    private static extern IntPtr CreateSurfaceFrom(
+        int width,
+        int height,
+        uint format,
+        IntPtr pixels,
+        int pitch
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_GetWindowSurface")]
     private static extern IntPtr GetWindowSurface(IntPtr window);
 
     [DllImport(Lib, EntryPoint = "SDL_BlitSurface")]
-    private static extern bool BlitSurface(IntPtr source, IntPtr sourceRect, IntPtr destination, IntPtr destinationRect);
+    private static extern bool BlitSurface(
+        IntPtr source,
+        IntPtr sourceRect,
+        IntPtr destination,
+        IntPtr destinationRect
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_UpdateWindowSurface")]
     private static extern bool UpdateWindowSurface(IntPtr window);

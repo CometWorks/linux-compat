@@ -72,11 +72,20 @@ internal static class SdlRenderThread
         if (!s_started.Wait(START_TIMEOUT_MS))
         {
             Console.Error.WriteLine(
-                $"[LinuxCompat] SdlRenderThread.Start: SDL_Init did not complete within {START_TIMEOUT_MS / 1000} s. " +
-                "The render thread is wedged; killing the process to surface the failure.");
-            try { Console.Error.Flush(); } catch { }
+                $"[LinuxCompat] SdlRenderThread.Start: SDL_Init did not complete within {START_TIMEOUT_MS / 1000} s. "
+                    + "The render thread is wedged; killing the process to surface the failure."
+            );
+            try
+            {
+                Console.Error.Flush();
+            }
+            catch { }
             // Runtime shutdown can block when a thread is stuck in native code.
-            try { Process.GetCurrentProcess().Kill(); } catch { }
+            try
+            {
+                Process.GetCurrentProcess().Kill();
+            }
+            catch { }
             // Fallback if Process.Kill returns.
             Environment.FailFast("SdlRenderThread SDL_Init timeout");
         }
@@ -110,8 +119,14 @@ internal static class SdlRenderThread
 
         if (IsCurrent)
         {
-            try { action(); }
-            catch (Exception ex) { LogException("Dispatch (inline)", ex); }
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                LogException("Dispatch (inline)", ex);
+            }
             return;
         }
 
@@ -141,15 +156,26 @@ internal static class SdlRenderThread
 
         Dispatch(() =>
         {
-            try { action(); }
-            catch (Exception ex) { captured = ex; }
-            finally { done.Set(); }
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                captured = ex;
+            }
+            finally
+            {
+                done.Set();
+            }
         });
 
         done.Wait();
         if (captured != null)
             throw new InvalidOperationException(
-                "SdlRenderThread.Invoke target threw an exception", captured);
+                "SdlRenderThread.Invoke target threw an exception",
+                captured
+            );
     }
 
     /// <summary>
@@ -158,7 +184,10 @@ internal static class SdlRenderThread
     internal static T Invoke<T>(Func<T> func)
     {
         T result = default;
-        Invoke(() => { result = func(); });
+        Invoke(() =>
+        {
+            result = func();
+        });
         return result;
     }
 
@@ -176,7 +205,9 @@ internal static class SdlRenderThread
         s_initOk = SDL_Init(SDL_INIT_VIDEO);
         if (!s_initOk)
         {
-            Console.WriteLine($"[LinuxCompat] SdlRenderThread SDL_Init(VIDEO) failed: {GetErrorString()}");
+            Console.WriteLine(
+                $"[LinuxCompat] SdlRenderThread SDL_Init(VIDEO) failed: {GetErrorString()}"
+            );
         }
         else
         {
@@ -195,25 +226,55 @@ internal static class SdlRenderThread
             {
                 while (SDL_PollEvent(out var ev))
                 {
-                    try { SdlJoystick.HandleEvent(ev.Type); }
-                    catch (Exception ex) { LogException("joystick event", ex); }
+                    try
+                    {
+                        SdlJoystick.HandleEvent(ev.Type);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogException("joystick event", ex);
+                    }
 
                     var handler = EventHandler;
                     if (handler != null)
                     {
-                        try { handler(ref ev); }
-                        catch (Exception ex) { LogException("event handler", ex); }
+                        try
+                        {
+                            handler(ref ev);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogException("event handler", ex);
+                        }
                     }
                 }
 
-                try { MouseSnapshotCallback?.Invoke(); }
-                catch (Exception ex) { LogException("mouse snapshot", ex); }
+                try
+                {
+                    MouseSnapshotCallback?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    LogException("mouse snapshot", ex);
+                }
 
-                try { SdlJoystick.UpdateSnapshot(); }
-                catch (Exception ex) { LogException("joystick snapshot", ex); }
+                try
+                {
+                    SdlJoystick.UpdateSnapshot();
+                }
+                catch (Exception ex)
+                {
+                    LogException("joystick snapshot", ex);
+                }
 
-                try { SdlClipboard.PumpRenderThread(); }
-                catch (Exception ex) { LogException("clipboard pump", ex); }
+                try
+                {
+                    SdlClipboard.PumpRenderThread();
+                }
+                catch (Exception ex)
+                {
+                    LogException("clipboard pump", ex);
+                }
             }
 
             // Dispatch pulses wake the timed event-poll wait immediately.
@@ -245,8 +306,14 @@ internal static class SdlRenderThread
 
         for (int i = 0; i < batch.Length; i++)
         {
-            try { batch[i](); }
-            catch (Exception ex) { LogException("queued action", ex); }
+            try
+            {
+                batch[i]();
+            }
+            catch (Exception ex)
+            {
+                LogException("queued action", ex);
+            }
         }
     }
 
@@ -261,8 +328,7 @@ internal static class SdlRenderThread
     {
         try
         {
-            MyLog.Default?.WriteLineAndConsole(
-                $"[LinuxCompat] SdlRenderThread {where}: {ex}");
+            MyLog.Default?.WriteLineAndConsole($"[LinuxCompat] SdlRenderThread {where}: {ex}");
         }
         catch { }
     }
@@ -283,11 +349,20 @@ internal static class SdlRenderThread
     [StructLayout(LayoutKind.Explicit, Size = 128)]
     internal struct SdlEvent
     {
-        [FieldOffset(0)] internal uint Type;
-        [FieldOffset(0)] internal SdlWindowEvent Window;
-        [FieldOffset(0)] internal SdlKeyboardEvent Keyboard;
-        [FieldOffset(0)] internal SdlTextInputEvent Text;
-        [FieldOffset(0)] internal SdlMouseWheelEvent Wheel;
+        [FieldOffset(0)]
+        internal uint Type;
+
+        [FieldOffset(0)]
+        internal SdlWindowEvent Window;
+
+        [FieldOffset(0)]
+        internal SdlKeyboardEvent Keyboard;
+
+        [FieldOffset(0)]
+        internal SdlTextInputEvent Text;
+
+        [FieldOffset(0)]
+        internal SdlMouseWheelEvent Wheel;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -313,8 +388,12 @@ internal static class SdlRenderThread
         internal uint Key;
         internal ushort Mod;
         internal ushort Raw;
-        [MarshalAs(UnmanagedType.I1)] internal bool Down;
-        [MarshalAs(UnmanagedType.I1)] internal bool Repeat;
+
+        [MarshalAs(UnmanagedType.I1)]
+        internal bool Down;
+
+        [MarshalAs(UnmanagedType.I1)]
+        internal bool Repeat;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -361,7 +440,12 @@ internal static class SdlRenderThread
 
     [DllImport(Lib, EntryPoint = "SDL_SetEnvironmentVariable", CharSet = CharSet.Ansi)]
     [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_SetEnvironmentVariable(IntPtr environment, string name, string value, [MarshalAs(UnmanagedType.I1)] bool overwrite);
+    private static extern bool SDL_SetEnvironmentVariable(
+        IntPtr environment,
+        string name,
+        string value,
+        [MarshalAs(UnmanagedType.I1)] bool overwrite
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_PollEvent")]
     [return: MarshalAs(UnmanagedType.I1)]

@@ -48,11 +48,14 @@ internal static class DisplayResolutionDropdownHelper
         if (combo.TryGetItemByKey(key) != null)
             return key;
 
-        var aspectEnum = MyVideoSettingsManager.GetClosestAspectRatio((float)current.X / (float)current.Y);
+        var aspectEnum = MyVideoSettingsManager.GetClosestAspectRatio(
+            (float)current.X / (float)current.Y
+        );
         var aspect = MyVideoSettingsManager.GetAspectRatio(aspectEnum);
         combo.AddItem(key, new StringBuilder($"{current.X} x {current.Y} - {aspect.TextShort}"));
         MyLog.Default.WriteLine(
-            $"DisplayResolutionDropdown: added live backbuffer entry {current.X}x{current.Y} (key={key:X16}) to resolution combo");
+            $"DisplayResolutionDropdown: added live backbuffer entry {current.X}x{current.Y} (key={key:X16}) to resolution combo"
+        );
         return key;
     }
 }
@@ -84,6 +87,7 @@ static class MyGuiScreenOptionsDisplayWriteSettingsToControlsPatch
             return;
         combo.SelectItemByKey(key);
         MyLog.Default.WriteLine(
-            $"DisplayResolutionDropdown: selected live backbuffer entry (key={key:X16})");
+            $"DisplayResolutionDropdown: selected live backbuffer entry (key={key:X16})"
+        );
     }
 }

@@ -26,30 +26,50 @@ static class MyTextureAtlasCtorRegressionPatch
         {
             string contentPath;
             string contentPathError = null;
-            try { contentPath = MyFileSystem.ContentPath; }
-            catch (Exception ex) { contentPath = null; contentPathError = ex.GetType().Name + ": " + ex.Message; }
+            try
+            {
+                contentPath = MyFileSystem.ContentPath;
+            }
+            catch (Exception ex)
+            {
+                contentPath = null;
+                contentPathError = ex.GetType().Name + ": " + ex.Message;
+            }
 
-            string combined = contentPath != null ? Path.Combine(contentPath, atlasFile ?? "") : null;
+            string combined =
+                contentPath != null ? Path.Combine(contentPath, atlasFile ?? "") : null;
             string normalized = combined != null ? combined.Replace('\\', '/') : null;
-            string resolved = (normalized != null && Path.IsPathRooted(normalized))
-                ? PathCache.ResolveAbsolute(normalized) : normalized;
+            string resolved =
+                (normalized != null && Path.IsPathRooted(normalized))
+                    ? PathCache.ResolveAbsolute(normalized)
+                    : normalized;
 
-            bool existsRaw       = combined   != null && File.Exists(combined);
+            bool existsRaw = combined != null && File.Exists(combined);
             bool existsNormalized = normalized != null && File.Exists(normalized);
-            bool existsResolved  = resolved   != null && File.Exists(resolved);
+            bool existsResolved = resolved != null && File.Exists(resolved);
 
             MyLog.Default.WriteLine(
-                "[LinuxCompat] MyTextureAtlas..ctor regression check: " +
-                "textureDir=" + (textureDir ?? "<null>") +
-                ", atlasFile=" + (atlasFile ?? "<null>") +
-                ", ContentPath=" + (contentPath ?? "<null>") +
-                (contentPathError != null ? " (getter threw: " + contentPathError + ")" : "") +
-                ", combined=" + (combined ?? "<null>") +
-                ", normalized=" + (normalized ?? "<null>") +
-                ", resolved=" + (resolved ?? "<null>") +
-                ", existsRaw=" + existsRaw +
-                ", existsNormalized=" + existsNormalized +
-                ", existsResolved=" + existsResolved);
+                "[LinuxCompat] MyTextureAtlas..ctor regression check: "
+                    + "textureDir="
+                    + (textureDir ?? "<null>")
+                    + ", atlasFile="
+                    + (atlasFile ?? "<null>")
+                    + ", ContentPath="
+                    + (contentPath ?? "<null>")
+                    + (contentPathError != null ? " (getter threw: " + contentPathError + ")" : "")
+                    + ", combined="
+                    + (combined ?? "<null>")
+                    + ", normalized="
+                    + (normalized ?? "<null>")
+                    + ", resolved="
+                    + (resolved ?? "<null>")
+                    + ", existsRaw="
+                    + existsRaw
+                    + ", existsNormalized="
+                    + existsNormalized
+                    + ", existsResolved="
+                    + existsResolved
+            );
         }
         catch
         {
@@ -68,13 +88,19 @@ static class MyTextureAtlasParseAtlasDescriptionPatch
     // ReSharper disable once UnusedMember.Local
     [HarmonyTranspiler]
     [HarmonyPatch("ParseAtlasDescription")]
-    static IEnumerable<CodeInstruction> ParseAtlasDescriptionTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase patchedMethod)
+    static IEnumerable<CodeInstruction> ParseAtlasDescriptionTranspiler(
+        IEnumerable<CodeInstruction> instructions,
+        MethodBase patchedMethod
+    )
     {
         var il = instructions.ToList();
         il.RecordOriginalCode(patchedMethod);
 
         var target = typeof(Path).GetMethod(nameof(Path.GetFileName), new[] { typeof(string) });
-        var replacement = typeof(PathHelpers).GetMethod(nameof(PathHelpers.GetFileName), new[] { typeof(string) });
+        var replacement = typeof(PathHelpers).GetMethod(
+            nameof(PathHelpers.GetFileName),
+            new[] { typeof(string) }
+        );
 
         // Mutate the operand in place so any branch labels or exception
         // blocks attached to the call instruction stay anchored to it.

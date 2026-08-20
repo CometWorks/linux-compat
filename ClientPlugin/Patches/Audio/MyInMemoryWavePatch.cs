@@ -31,8 +31,11 @@ static class MyInMemoryWaveDisposePatch
 }
 
 // Finish-category ordering installs this before MyAudio.LoadData.
-[HarmonyPatch(typeof(MyInMemoryWave), MethodType.Constructor,
-    new[] { typeof(MySoundData), typeof(string), typeof(MyWaveBank), typeof(bool), typeof(bool) })]
+[HarmonyPatch(
+    typeof(MyInMemoryWave),
+    MethodType.Constructor,
+    new[] { typeof(MySoundData), typeof(string), typeof(MyWaveBank), typeof(bool), typeof(bool) }
+)]
 [HarmonyPatchCategory("Finish")]
 static class MyInMemoryWaveCtorPatch
 {
@@ -45,8 +48,14 @@ static class MyInMemoryWaveCtorPatch
 
     private static FieldInfo s_bufferField;
 
-    static bool Prefix(MyInMemoryWave __instance, MySoundData cue, string path,
-        MyWaveBank owner, bool streamed, bool cached)
+    static bool Prefix(
+        MyInMemoryWave __instance,
+        MySoundData cue,
+        string path,
+        MyWaveBank owner,
+        bool streamed,
+        bool cached
+    )
     {
         // Direct File.Exists requires Linux separators and on-disk casing.
         path = path.Replace('\\', '/');
@@ -57,16 +66,23 @@ static class MyInMemoryWaveCtorPatch
 
         if (s_audioBufferType == null)
         {
-            s_bufferField = AccessTools.Field(typeof(MyInMemoryWave), "m_buffer")
+            s_bufferField =
+                AccessTools.Field(typeof(MyInMemoryWave), "m_buffer")
                 ?? throw new InvalidOperationException("MyInMemoryWave.m_buffer not found");
             s_audioBufferType = s_bufferField.FieldType;
-            s_audioBytesField = s_audioBufferType.GetField("AudioBytes")
+            s_audioBytesField =
+                s_audioBufferType.GetField("AudioBytes")
                 ?? throw new InvalidOperationException("AudioBuffer.AudioBytes not found");
-            s_flagsField = s_audioBufferType.GetField("Flags")
+            s_flagsField =
+                s_audioBufferType.GetField("Flags")
                 ?? throw new InvalidOperationException("AudioBuffer.Flags not found");
-            s_dataField = s_audioBufferType.GetField("Data")
-                ?? throw new InvalidOperationException("AudioBuffer.Data not found (shim not active?)");
-            s_loopCountField = s_audioBufferType.GetField("LoopCount")
+            s_dataField =
+                s_audioBufferType.GetField("Data")
+                ?? throw new InvalidOperationException(
+                    "AudioBuffer.Data not found (shim not active?)"
+                );
+            s_loopCountField =
+                s_audioBufferType.GetField("LoopCount")
                 ?? throw new InvalidOperationException("AudioBuffer.LoopCount not found");
         }
 
@@ -98,7 +114,10 @@ static class MySourceVoiceSubmitBufferTranspiler
     // ReSharper disable once UnusedMember.Local
     [HarmonyTranspiler]
     [HarmonyPatch("SubmitSourceBuffer", new[] { typeof(MyInMemoryWave) })]
-    static IEnumerable<CodeInstruction> SubmitSourceBufferTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase patchedMethod)
+    static IEnumerable<CodeInstruction> SubmitSourceBufferTranspiler(
+        IEnumerable<CodeInstruction> instructions,
+        MethodBase patchedMethod
+    )
     {
         var il = instructions.ToList();
         il.RecordOriginalCode(patchedMethod);
@@ -111,8 +130,10 @@ static class MySourceVoiceSubmitBufferTranspiler
         for (var i = il.Count - 1; i >= 0 && getDecodedPackets != null; i--)
         {
             var instr = il[i];
-            if (instr.opcode != OpCodes.Callvirt) continue;
-            if (instr.operand is not MethodInfo mi || mi != getDecodedPackets) continue;
+            if (instr.opcode != OpCodes.Callvirt)
+                continue;
+            if (instr.operand is not MethodInfo mi || mi != getDecodedPackets)
+                continue;
 
             // Reuse the instruction so labels and exception blocks stay attached.
             instr.opcode = OpCodes.Pop;
