@@ -1,36 +1,7 @@
-// Skip the Win32-only STA worker thread that the textbox controls spin up
-// to read the clipboard. On .NET 9 Linux the very first line of
-// Sandbox.Graphics.GUI.MyGuiControlTextbox+MyGuiControlTextboxSelection.PasteText
-// does:
-//
-//     Thread thread = new Thread(PasteFromClipboard);
-//     thread.SetApartmentState(ApartmentState.STA);   // <-- throws here
-//
-// Thread.SetApartmentState(STA) is a Windows-only COM apartment configuration
-// and throws System.PlatformNotSupportedException("COM Interop is not
-// supported on this platform") on the Linux .NET runtime, blowing up
-// Ctrl+V in any text input.
-//
-// The STA apartment was historically required because the original
-// implementation called System.Windows.Forms.Clipboard, which uses OLE and
-// must run on an STA thread. Since we redirect MyWindowsSystem.Clipboard to
-// SDL3 (see MyWindowsSystemClipboardPatch / SdlClipboard), there is no
-// COM-affinity requirement anymore and the worker thread is pure overhead.
-//
-// We replace PasteText with a two-phase version:
-//   1. Prefix returns immediately (no blocking) and requests the OS
-//      clipboard contents via SdlClipboard.RequestText. The SDL call runs
-//      on the render thread.
-//   2. The continuation runs on the main game thread one frame later
-//      (drained by Plugin.Update → MainThreadDispatcher.Pump), at which
-//      point we read the textbox's current state and insert the text.
-//
-// Reading textbox state inside the continuation (rather than capturing it
-// at Prefix entry) keeps the paste correct even if any other code mutates
-// the textbox in the ~1 frame window between Ctrl+V and the callback.
+// Linux does not support the COM STA clipboard worker. Read through SDL, then
+// inspect and update textbox state on the next game-thread update.
 
 using System;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -40,22 +11,14 @@ using Sandbox.Graphics.GUI;
 
 namespace ClientPlugin.Patches.SystemAbstraction;
 
-[HarmonyPatch]
+[HarmonyPatch(typeof(MyGuiControlTextbox.MyGuiControlTextboxSelection),
+    nameof(MyGuiControlTextbox.MyGuiControlTextboxSelection.PasteText))]
 [HarmonyPatchCategory("Finish")]
 static class MyGuiControlTextboxPasteTextPatch
 {
-    private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-    static MethodBase TargetMethod()
-    {
-        var selectionType = typeof(MyGuiControlTextbox).GetNestedType("MyGuiControlTextboxSelection", Flags);
-        return selectionType?.GetMethod("PasteText", Flags);
-    }
-
-    static bool Prefix(object __instance, MyGuiControlTextbox sender)
+    static bool Prefix(MyGuiControlTextbox.MyGuiControlTextboxSelection __instance, MyGuiControlTextbox sender)
     {
         var selection = __instance;
-        var selectionType = __instance.GetType();
         var target = sender;
 
         SdlClipboard.RequestText(raw =>
@@ -67,10 +30,9 @@ static class MyGuiControlTextboxPasteTextPatch
 
             try
             {
-                // EraseText(target)
-                selectionType.GetMethod("EraseText", Flags)?.Invoke(selection, new object[] { target });
+                selection.EraseText(target);
 
-                StringBuilder textBuilder = AccessTools.FieldRefAccess<MyGuiControlTextbox, StringBuilder>("m_text").Invoke(target);
+                StringBuilder textBuilder = target.m_text;
                 string text = textBuilder.ToString();
                 int caret = target.CarriagePositionIndex;
                 if (caret < 0) caret = 0;
@@ -78,7 +40,7 @@ static class MyGuiControlTextboxPasteTextPatch
                 string before = text.Substring(0, caret);
                 string after = text.Substring(caret);
 
-                AccessTools.FieldRefAccess<string>(selectionType, "ClipboardText").Invoke(selection) = clipboardText;
+                selection.ClipboardText = clipboardText;
 
                 string sanitized = clipboardText.Replace("\n", "");
                 string toInsert;
@@ -95,14 +57,11 @@ static class MyGuiControlTextboxPasteTextPatch
                 target.SetText(new StringBuilder(before).Append(toInsert).Append(after));
                 target.CarriagePositionIndex = before.Length + toInsert.Length;
 
-                // Reset(target)
-                selectionType.GetMethod("Reset", Flags)?.Invoke(selection, new object[] { target });
+                selection.Reset(target);
             }
             catch (Exception)
             {
-                // Control may have been disposed between Ctrl+V and the
-                // callback (screen closed). Swallow silently — there's
-                // nothing meaningful to paste into.
+                // The control may be disposed before the callback.
             }
         });
 
@@ -111,8 +70,7 @@ static class MyGuiControlTextboxPasteTextPatch
 
     private static string SanitizeXmlOrEmpty(string clipboard)
     {
-        // Match stock PasteFromClipboard: drop entire clipboard if any
-        // character is not XML-safe.
+        // Match PasteFromClipboard by rejecting any XML-unsafe character.
         for (int i = 0; i < clipboard.Length; i++)
         {
             if (!XmlConvert.IsXmlChar(clipboard[i]))
@@ -122,22 +80,15 @@ static class MyGuiControlTextboxPasteTextPatch
     }
 }
 
-[HarmonyPatch]
+[HarmonyPatch(typeof(MyGuiControlMultilineText.MyGuiControlMultilineSelection),
+    nameof(MyGuiControlMultilineText.MyGuiControlMultilineSelection.PasteText))]
 [HarmonyPatchCategory("Finish")]
 static class MyGuiControlMultilineTextPasteTextPatch
 {
-    private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-    static MethodBase TargetMethod()
-    {
-        var selectionType = typeof(MyGuiControlMultilineText).GetNestedType("MyGuiControlMultilineSelection", Flags);
-        return selectionType?.GetMethod("PasteText", Flags);
-    }
-
-    static bool Prefix(object __instance, MyGuiControlMultilineText sender)
+    static bool Prefix(MyGuiControlMultilineText.MyGuiControlMultilineSelection __instance,
+        MyGuiControlMultilineText sender)
     {
         var selection = __instance;
-        var selectionType = __instance.GetType();
         var target = sender;
 
         SdlClipboard.RequestText(raw =>
@@ -149,9 +100,9 @@ static class MyGuiControlMultilineTextPasteTextPatch
 
             try
             {
-                selectionType.GetMethod("EraseText", Flags)?.Invoke(selection, new object[] { target });
+                selection.EraseText(target);
 
-                StringBuilder textBuilder = AccessTools.FieldRefAccess<MyGuiControlMultilineText, StringBuilder>("m_text").Invoke(target);
+                StringBuilder textBuilder = target.m_text;
                 string text = textBuilder.ToString();
                 int caret = target.CarriagePositionIndex;
                 if (caret < 0) caret = 0;
@@ -159,16 +110,16 @@ static class MyGuiControlMultilineTextPasteTextPatch
                 string before = text.Substring(0, caret);
                 string after = text.Substring(caret);
 
-                AccessTools.FieldRefAccess<string>(selectionType, "ClipboardText").Invoke(selection) = clipboardText;
+                selection.ClipboardText = clipboardText;
 
                 target.Text = new StringBuilder(before).Append(Regex.Replace(clipboardText, "\r\n", "\n")).Append(after);
                 target.CarriagePositionIndex = before.Length + clipboardText.Length;
 
-                selectionType.GetMethod("Reset", Flags)?.Invoke(selection, new object[] { target });
+                selection.Reset(target);
             }
             catch (Exception)
             {
-                // See note in MyGuiControlTextboxPasteTextPatch.
+                // The control may be disposed before the callback.
             }
         });
 

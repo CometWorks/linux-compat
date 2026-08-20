@@ -1,18 +1,12 @@
 using System;
-using HarmonyLib;
 using Sandbox;
-using Sandbox.Engine.Utils;
 
 namespace ClientPlugin.Compatibility;
 
-// Read/write custom keys in the game's SpaceEngineers.cfg. MyConfig's parameter
-// accessors are protected; we reach them via reflection so our windowed-size
-// and windowed-position values are serialized in the same XML file and saved
-// by the game's normal Save() path (on settings apply and on game exit).
+// Stores Linux window geometry in SpaceEngineers.cfg through protected MyConfig accessors.
 internal static class PluginWindowConfig
 {
-    // KEY_WINDOWED_WIDTH and KEY_WINDOWED_HEIGHT are the same keys used by SE to store
-    // game render resolution (they are equal in windowed mode).
+    // Windowed size shares the game's render-resolution keys.
     private const string KEY_WINDOWED_WIDTH = "ScreenWidth";
     private const string KEY_WINDOWED_HEIGHT = "ScreenHeight";
     private const string KEY_WINDOWED_X = "LinuxCompat_WindowedX";
@@ -56,10 +50,7 @@ internal static class PluginWindowConfig
         SetInt(KEY_WINDOWED_Y, y);
     }
 
-    // MySandboxGame.OnExit does NOT call Config.Save(), so in-memory config
-    // changes (including our SetWindowed*) only reach disk on specific flows
-    // like video-settings-apply. To guarantee window geometry survives a
-    // normal close, the plugin must trigger Save() itself.
+    // MySandboxGame.OnExit does not save configuration.
     public static void Save()
     {
         try
@@ -78,10 +69,7 @@ internal static class PluginWindowConfig
             return null;
         try
         {
-            var method = AccessTools.Method(typeof(MyConfigBase), "GetParameterValue", [typeof(string)]);
-            if (method == null)
-                return null;
-            var raw = method.Invoke(config, [key]) as string;
+            var raw = config.GetParameterValue(key);
             if (string.IsNullOrEmpty(raw))
                 return null;
             if (int.TryParse(raw, System.Globalization.NumberStyles.Integer,
@@ -102,9 +90,7 @@ internal static class PluginWindowConfig
             return;
         try
         {
-            var method = AccessTools.Method(typeof(MyConfigBase), "SetParameterValue",
-                [typeof(string), typeof(int)]);
-            method?.Invoke(config, [key, value]);
+            config.SetParameterValue(key, value);
         }
         catch (Exception)
         {

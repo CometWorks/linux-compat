@@ -6,27 +6,14 @@ using VRage.FileSystem;
 namespace ClientPlugin.Compatibility;
 
 /// <summary>
-/// Loads a Windows .ico file and applies its highest-quality entry as the
-/// SDL3 window icon. Used by both <see cref="MySdlSplashScreen"/> and
-/// <see cref="SdlGameWindow"/> so the splash and the main game window
-/// share a single ICO parser and SDL surface plumbing.
-///
-/// Direct port of the icon-handling code in the recompiled
-/// <c>VRage.Platform.Windows/Compatibility/MyGameWindow.cs</c>
-/// (commit <c>69729046</c> "Fix Window Icon"). On X11
-/// <c>SDL_SetWindowIcon</c> sets the <c>_NET_WM_ICON</c> property, which
-/// is what taskbars and launchers read for the taskbar icon — so the
-/// same call covers both the window decoration and the taskbar.
+/// Applies the largest supported 32-bit DIB from a Windows ICO file.
 /// </summary>
 internal static class SdlIconHelper
 {
     private const uint SdlPixelFormatBgra32 = 0x16862004u;
 
     /// <summary>
-    /// Loads <paramref name="gameIcon"/> (relative to the Bin64 folder)
-    /// and applies it to the SDL window. No-ops on null/empty path,
-    /// missing file, or any parse failure — failures are silent to match
-    /// the recompiled behavior.
+    /// Applies an icon relative to Bin64. Invalid or unsupported files are ignored.
     /// </summary>
     internal static void Apply(IntPtr windowHandle, string gameIcon)
     {

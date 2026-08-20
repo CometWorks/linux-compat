@@ -6,18 +6,7 @@ using VRage.FileSystem;
 
 namespace ClientPlugin.Patches.PathHandling;
 
-// Fixes a path-separator bug in MyGuiBlueprintScreen_Reworked.GetBlueprints
-// that hides every locally-saved blueprint from the dialog on Linux.
-//
-// The original method enumerates Blueprints/local subdirectories and probes
-// for "<dir>\\bp.sbc" (hardcoded backslash) — a literal filename on Linux,
-// where File.Exists returns false and the entry is silently dropped. The
-// blueprint name is also derived via text.Split('\\')[^1], which would yield
-// the entire path on Linux if execution ever got that far.
-//
-// Replace the method with a separator-correct equivalent: Path.Combine for
-// the bp.sbc probe and Path.GetFileName for the display name. Behaviour on
-// the reference Windows build is unchanged (Path.Combine uses '\\' there).
+// Use native path operations for local blueprint probes and display names.
 [HarmonyPatch(typeof(MyGuiBlueprintScreen_Reworked), "GetBlueprints")]
 [HarmonyPatchCategory("Finish")]
 static class MyGuiBlueprintScreenGetBlueprintsPatch

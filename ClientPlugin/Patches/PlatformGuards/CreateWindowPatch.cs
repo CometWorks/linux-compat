@@ -19,35 +19,23 @@ static class CreateWindowPatch
 {
     static bool Prefix(MySandboxGame __instance, ref IVRageWindow __result)
     {
-        AccessTools.PropertySetter(typeof(MySandboxGame), "DrawThread")
-            .Invoke(__instance, [Thread.CurrentThread]);
+        __instance.DrawThread = Thread.CurrentThread;
 
-        // Resolve the initial window geometry BEFORE creating the SDL window
-        // so it shows up at the right place on first map (rather than flashing
-        // at SDL's 1280x720 default and then snapping to the saved values
-        // during the first ApplyModeChange).
+        // Resolve geometry before the first map to avoid a visible jump.
         ResolveInitialGeometry(out int initialW, out int initialH, out int? initialX, out int? initialY);
 
-        // Construct the SdlGameWindow on SdlRenderThread — that thread owns
-        // every SDL3 call. The factory blocks until the window is created and
-        // rethrows any exception thrown on the render thread.
+        // SDL window creation is synchronous and confined to its owner thread.
         var sdlWindow = SdlGameWindow.Create("Space Engineers", initialW, initialH, initialX, initialY);
         SdlInput2Provider.Instance = sdlWindow;
 
-        var windows = MyVRage.Platform.Windows;
-        var windowsType = windows.GetType();
-
-        AccessTools.PropertySetter(windowsType, "Window")
-            ?.Invoke(windows, [sdlWindow]);
-
-        AccessTools.PropertySetter(windowsType, "WindowHandle")
-            ?.Invoke(windows, [sdlWindow.Handle]);
+        var windows = (MyWindowsWindows)MyVRage.Platform.Windows;
+        windows.Window = sdlWindow;
+        windows.WindowHandle = sdlWindow.Handle;
 
         var platform = MyVRage.Platform as MyVRagePlatform;
         if (platform != null)
         {
-            AccessTools.PropertySetter(typeof(MyVRagePlatform), "Input")
-                ?.Invoke(platform, [sdlWindow]);
+            platform.Input = sdlWindow;
 
             var ansel = platform.Ansel as MyAnsel;
             if (ansel != null)
@@ -56,21 +44,14 @@ static class CreateWindowPatch
 
         __result = sdlWindow;
 
-        // Mirror the original method's assignment of the private `form` field so that
-        // MySandboxGame.Update can call form.UpdateMainThread() each frame, which is
-        // required for pumping SDL events on the main thread (window focus, WM ping,
-        // resize, close). Without this the window appears frozen to the WM.
-        AccessTools.Field(typeof(MySandboxGame), "form")
-            ?.SetValue(__instance, sdlWindow);
-
-        var onExit = AccessTools.Method(typeof(MySandboxGame), "OnExit");
-        var onManualWindowCloseRequest = AccessTools.Method(typeof(MySandboxGame), "Window_OnManualWindowCloseRequest");
+        // MySandboxGame.Update reaches window housekeeping through `form`.
+        __instance.form = sdlWindow;
 
         sdlWindow.OnManualWindowCloseRequest += () =>
         {
             if (IsInGame())
             {
-                onManualWindowCloseRequest?.Invoke(__instance, null);
+                __instance.Window_OnManualWindowCloseRequest();
                 return;
             }
 
@@ -80,18 +61,16 @@ static class CreateWindowPatch
 
         sdlWindow.OnExit += () =>
         {
-            onExit?.Invoke(__instance, null);
+            __instance.OnExit();
         };
 
-        var updateMouseCapture = AccessTools.Method(typeof(MySandboxGame), "UpdateMouseCapture");
-        updateMouseCapture?.Invoke(__instance, null);
+        __instance.UpdateMouseCapture();
 
         var config = MySandboxGame.Config;
         if (config.SyncRendering)
         {
             var viewport = new MyViewport(0f, 0f, config.ScreenWidth.Value, config.ScreenHeight.Value);
-            var sizeChanged = AccessTools.Method(typeof(MySandboxGame), "RenderThread_SizeChanged");
-            sizeChanged?.Invoke(__instance, [(int)viewport.Width, (int)viewport.Height, viewport]);
+            __instance.RenderThread_SizeChanged((int)viewport.Width, (int)viewport.Height, viewport);
         }
 
         Console.WriteLine("[LinuxCompat] SDL3 window initialized via InitializeRenderThread");
@@ -107,15 +86,7 @@ static class CreateWindowPatch
             && !MyScreenManager.ExistsScreenOfType(typeof(MyGuiScreenLoading));
     }
 
-    // Compute the initial window geometry from (in priority order):
-    //  1. The persisted windowed state written by earlier runs
-    //     (LinuxCompat_Windowed{Width,Height,X,Y} in SpaceEngineers.cfg).
-    //  2. The game's configured ScreenWidth/ScreenHeight, centered on the
-    //     primary display.
-    //  3. A hard 1280x720 fallback if nothing else is known.
-    // Only used for Window mode initial show. Fullscreen/FullscreenWindow
-    // transitions are handled later by ApplyModeChange, which still uses the
-    // saved windowed state for subsequent returns to Window mode.
+    // Prefer saved window geometry, then configured size, then 1280x720.
     private static void ResolveInitialGeometry(out int width, out int height, out int? x, out int? y)
     {
         width = 1280;
@@ -146,10 +117,7 @@ static class CreateWindowPatch
             y = savedY;
         }
 
-        // Apply the same clamp-to-display sanity check ApplyWindowedMode
-        // does so the window can never start outside the screen. Using the
-        // primary display is fine for initial show — SDL_GetDisplayForWindow
-        // would return 0 before the window has been positioned.
+        // Clamp against the primary display before the window has an assigned display.
         if (TryGetPrimaryDisplayBounds(out int dx, out int dy, out int dw, out int dh)
             && dw >= 640 && dh >= 480)
         {
@@ -180,14 +148,7 @@ static class CreateWindowPatch
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     private struct SdlRectNative { public int X, Y, W, H; }
 
-    // Marshal the SDL_GetPrimaryDisplay / SDL_GetDisplayBounds pair onto
-    // the render thread. Calling SDL3 video functions from the main thread
-    // while the render thread is concurrently inside SDL_PollEvent / other
-    // video-subsystem calls races on the X11 connection state SDL holds
-    // internally and can wedge libX11's request mutex (manifests as a hard
-    // hang during early startup, before the SE log progresses past
-    // MyScreenManager). Every other SDL3 call in this plugin already
-    // funnels through SdlRenderThread; this one was the outlier.
+    // SDL video queries share X11 state and must run on the SDL thread.
     private static bool TryGetPrimaryDisplayBounds(out int x, out int y, out int w, out int h)
     {
         var result = TryGetPrimaryDisplayBoundsOnRenderThread();

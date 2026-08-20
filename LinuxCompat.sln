@@ -4,13 +4,13 @@ Project("{2D66D46C-2B96-4B5C-8FF0-B2CC9DE1F977}") = "ClientPlugin", "ClientPlugi
 EndProject
 Project("{2D66D46C-2B96-4B5C-8FF0-B2CC9DE1F977}") = "ServerPlugin", "ServerPlugin/ServerPlugin.csproj", "{41ECF1A3-170B-4164-A93F-D3E00AB80581}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Shared", "Shared/Shared.shproj", "{C029AD9F-C9A0-4D34-B3D0-6027BA4F4C3E}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{51D21C35-7ECF-493B-A2A0-A3C823D9F8D3}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		README.md = README.md
 		Directory.Build.props = Directory.Build.props
-		LinuxCompatClient.xml = LinuxCompatClient.xml
-		LinuxCompatServer.xml = LinuxCompatServer.xml
 	EndProjectSection
 EndProject
 Global

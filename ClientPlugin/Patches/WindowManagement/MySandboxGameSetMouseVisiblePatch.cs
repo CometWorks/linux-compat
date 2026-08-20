@@ -7,21 +7,13 @@ using VRage.Input;
 
 namespace ClientPlugin.Patches.WindowManagement;
 
-// When the game transitions the cursor from hidden -> visible (e.g. Escape out
-// of gameplay to the menu), re-center the cursor in the window.
-//
-// On Linux the cursor was sitting at the window edge where the user last moved
-// it while in relative mouse mode, so without centering the menu cursor
-// appears in a random location - often outside the clickable area. Centering
-// must happen AFTER ShowCursor=true because that disables SDL relative mouse
-// mode; warping while in relative mode is ignored by SDL.
+// Recenter after leaving SDL relative mode; SDL ignores warps while it is active.
 [HarmonyPatch(typeof(MySandboxGame), nameof(MySandboxGame.SetMouseVisible))]
 [HarmonyPatchCategory("Finish")]
 static class MySandboxGameSetMouseVisiblePatch
 {
     static void Postfix(MySandboxGame __instance, bool visible, bool __state)
     {
-        // __state captured in prefix: whether we should center the cursor
         if (!RenderingConfig.AllowRendering || !__state || MyExternalAppBase.IsEditorActive)
             return;
 

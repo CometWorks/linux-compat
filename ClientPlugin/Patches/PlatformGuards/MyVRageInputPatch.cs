@@ -33,13 +33,11 @@ static class MyVRageInputLoadContentPatch
     {
         var input2 = MyVRage.Platform.Input2;
 
-        AccessTools.PropertySetter(typeof(MyVRageInput), "IsDirectInputInitialized")
-            ?.Invoke(__instance, [input2 != null]);
+        __instance.IsDirectInputInitialized = input2 != null;
 
         if (input2 != null)
         {
-            AccessTools.Field(typeof(MyVRageInput), "m_keyboardState")
-                ?.SetValue(__instance, new MyGuiLocalizedKeyboardState(input2));
+            __instance.m_keyboardState = new MyGuiLocalizedKeyboardState(input2);
             Console.WriteLine("[LinuxCompat] Input2 initialized for keyboard state");
         }
 
@@ -55,8 +53,7 @@ static class MyVRageInputInitializeJoystickPatch
     {
         if (MyVRage.Platform.Input2 == null)
         {
-            AccessTools.Field(typeof(MyVRageInput), "m_joysticks")
-                ?.SetValue(__instance, new List<string>());
+            __instance.m_joysticks = new List<string>();
             return false;
         }
         return true;

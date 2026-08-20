@@ -9,19 +9,8 @@ using VRageMath;
 
 namespace ClientPlugin.Patches.WindowManagement;
 
-// Port of the recompiled MyDX9Gui cursor changes:
-//   * MouseCursorPosition keeps the scaled input path so UI hit testing follows
-//     Settings / Game / UI scale.
-//   * MouseCursorDrawPosition still uses GetRawMousePosition() so the software
-//     cursor sprite tracks the real pointer.
-//   * DrawMouseCursor uses real window-relative mouse coordinates in windowed
-//     mode (CaptureMouse = false, Window mode) so the software cursor
-//     disappears only once the real pointer has actually left the window, and forces
-//     waitTillLoaded so the texture is ready before it is drawn.
-//   * Draw() re-evaluates cursor visibility on Linux (CaptureMouse == false):
-//     when a GUI needs the pointer, force visible=true (releases SDL relative
-//     mouse mode so the cursor can leave the window); when no GUI needs it,
-//     force visible=false (re-engages relative mouse mode for camera control).
+// UI hit testing uses scaled coordinates; the software cursor uses raw window
+// coordinates and controls SDL relative mode through cursor visibility.
 
 [HarmonyPatch(typeof(MyDX9Gui), "get_MouseCursorPosition")]
 [HarmonyPatchCategory("Finish")]
@@ -46,9 +35,7 @@ static class MyDX9GuiDrawMouseCursorPatch
         Vector2 area = MyInput.Static.GetMouseAreaSize();
         bool shouldDrawCursor = true;
 
-        // In windowed mode without mouse capture, hide the software cursor only
-        // once the real pointer has actually left the window. The input layer
-        // supplies genuine window-relative coordinates even outside the client area.
+        // Hide the software cursor only after the pointer leaves the window.
         var config = MySandboxGame.Config;
         if (config != null && config.CaptureMouse == false && config.WindowMode == MyWindowModeEnum.Window)
         {
@@ -60,10 +47,7 @@ static class MyDX9GuiDrawMouseCursorPatch
 
         if (mouseCursorTexture != null && shouldDrawCursor)
         {
-            // Record the texture string the render-thread patch
-            // (CursorRenderRatePatch) uses to identify "the" cursor sprite
-            // among all queued DrawSprite messages. Set before enqueueing so
-            // a fast render thread can never see the message before the name.
+            // Publish the texture before enqueueing the cursor sprite.
             CursorRenderRateState.LastCursorTextureName = mouseCursorTexture;
 
             Vector2 normalizedSize = MyGuiManager.GetNormalizedSize(new Vector2(64f), 1f);
@@ -85,15 +69,7 @@ static class MyDX9GuiDrawMouseCursorPatch
     }
 }
 
-// On Linux IsHardwareCursorUsed() returns false, so the stock MyDX9Gui.Draw
-// code keeps calling SetMouseCursorVisibility(false) every frame even while a
-// GUI screen wants the pointer. That flips SDL into relative mouse mode for
-// the duration of the draw pass, which pins the cursor to the window center
-// (and ruins the software cursor that Draw then tries to render). The
-// recompiled game rewrites Draw() to force visible=true when CaptureMouse is
-// false and a GUI needs the cursor. We achieve the same effect by
-// intercepting SetMouseCursorVisibility before the original body runs, so the
-// relative-mouse-mode toggle never happens mid-frame.
+// A GUI that needs the software cursor must keep SDL relative mode disabled.
 [HarmonyPatch(typeof(MyDX9Gui), nameof(MyDX9Gui.SetMouseCursorVisibility))]
 [HarmonyPatchCategory("Finish")]
 static class MyDX9GuiSetMouseCursorVisibilityPatch
@@ -116,27 +92,8 @@ static class MyDX9GuiSetMouseCursorVisibilityPatch
     }
 }
 
-// Port of the gameplay-hide half of the recompiled commit a92039a0 "Fixed the
-// mouse capture". MyDX9Gui.Draw's cursor block:
-//
-//   if (screenWithFocus wants cursor || InputToNonFocusedScreens branch)
-//       SetMouseCursorVisibility(...)   // show branch
-//   else if (flag2 && screenWithFocus != null)
-//       SetMouseCursorVisibility(screenWithFocus.GetDrawMouseCursor()); // hw cursor branch
-//
-// where flag2 = MyVideoSettingsManager.IsHardwareCursorUsed() is always false
-// on Linux. That means neither branch runs during gameplay (no focused GUI
-// screen, or the focused screen does not want the cursor), and
-// SetMouseCursorVisibility(false) is never called. SdlGameWindow.UpdateMouseMode
-// therefore never enables SDL relative mouse mode, and the OS cursor is free
-// to wander off the window while the player controls a character or ship.
-//
-// The recompiled fix adds a new `else if (OperatingSystem.IsLinux())` branch
-// to Draw that forces SetMouseCursorVisibility(false) in the gameplay case.
-// We replicate it as a Harmony postfix: after Draw runs, if no GUI needs the
-// cursor, call SetMouseCursorVisibility(false). The Prefix above will still
-// flip the call back to visible=true whenever a GUI actually wants the cursor,
-// so the two patches compose safely.
+// Linux has no hardware-cursor branch to hide the pointer during gameplay.
+// Force hidden state when no GUI requests the software cursor.
 [HarmonyPatch(typeof(MyDX9Gui), nameof(MyDX9Gui.Draw))]
 [HarmonyPatchCategory("Finish")]
 static class MyDX9GuiDrawCapturePatch

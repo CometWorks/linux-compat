@@ -8,30 +8,8 @@ using VRage.Steam.Steamworks;
 
 namespace ClientPlugin.Patches.Steamworks;
 
-// DIAGNOSTIC ONLY (not a fix). Blueprint workshop upload hangs after
-// "New workshop item with id ... created successfully" — the
-// SubmitItemUpdateResult callback never fires and PublishItemBlocking
-// stays parked in WaitOne(). Steam's content_log shows zero upload
-// activity, so SubmitItemUpdate either returns k_uAPICallInvalid or
-// the request never reaches Steam.
-//
-// This patch logs the inputs and return values of every Steam UGC call
-// involved in the publish flow:
-//
-//   StartItemUpdate    -> UGCUpdateHandle_t (invalid = ulong.MaxValue)
-//   SetItemTitle       -> bool
-//   SetItemTags        -> bool
-//   SetItemVisibility  -> bool
-//   SetItemDescription -> bool
-//   SetItemContent     -> bool  (folder path)
-//   SetItemPreview     -> bool  (thumbnail path)
-//   SetItemMetadata    -> bool  (metadata length)
-//   SubmitItemUpdate   -> SteamAPICall_t (invalid = 0)
-//
-// One reproduction will pinpoint where the chain breaks. Output goes to
-// /tmp/linuxcompat_ugc.log so it is independent of the game log buffer.
-//
-// Remove once the underlying issue is fixed.
+// Diagnostic for workshop uploads that never receive SubmitItemUpdateResult.
+// Logs each UGC input and result to /tmp/linuxcompat_ugc.log.
 static class SteamUgcDiagnosticPatch
 {
     private const string LogPath = "/tmp/linuxcompat_ugc.log";
@@ -69,10 +47,7 @@ static class SteamUgcDiagnosticPatch
         }
     }
 
-    // The preloader rewrites the IL of MySteamUgcClient.SetItemTags so that
-    // the inner call site targets the 3-arg SteamUGC.SetItemTags overload
-    // (with bAllowAdminTags=false). After that rewrite Harmony can read the
-    // method body cleanly, so this Postfix is safe to install again.
+    // Preloader rewriting binds the three-argument SetItemTags overload before Harmony.
     [HarmonyPatch(typeof(MySteamUgcClient), nameof(MySteamUgcClient.SetItemTags))]
     [HarmonyPatchCategory("Finish")]
     static class SetItemTags_Patch
@@ -185,9 +160,7 @@ static class SteamUgcDiagnosticPatch
         }
     }
 
-    // High-level entry point: record the Folder/Thumbnail/Title/Tags as the
-    // publisher sees them, immediately before the chain of Set* calls. Useful
-    // in case CheckModFolder rewrote the path to /tmp.
+    // Capture publisher paths before the SetItem calls can rewrite them.
     [HarmonyPatch(typeof(MySteamWorkshopItemPublisher), "UpdatePublishedItem")]
     [HarmonyPatchCategory("Finish")]
     static class UpdatePublishedItem_Patch
@@ -196,16 +169,15 @@ static class SteamUgcDiagnosticPatch
         {
             try
             {
-                var t = typeof(MySteamWorkshopItemPublisher);
-                string folder = (string)AccessTools.Property(t, "Folder")?.GetValue(__instance);
-                string thumb = (string)AccessTools.Property(t, "Thumbnail")?.GetValue(__instance);
-                string title = (string)AccessTools.Property(t, "Title")?.GetValue(__instance);
-                ulong id = (ulong)(AccessTools.Property(t, "Id")?.GetValue(__instance) ?? 0UL);
+                string folder = __instance.Folder;
+                string thumb = __instance.Thumbnail;
+                string title = __instance.Title;
+                ulong id = __instance.Id;
                 Log($"UpdatePublishedItem ENTER id={id} title='{title}' folder='{folder}' thumb='{thumb}'");
             }
             catch (Exception ex)
             {
-                Log($"UpdatePublishedItem ENTER (reflection failed): {ex.Message}");
+                Log($"UpdatePublishedItem ENTER (diagnostics failed): {ex.Message}");
             }
         }
 

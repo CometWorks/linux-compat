@@ -1,11 +1,65 @@
 <Project>
     <PropertyGroup>
         <!-- Folder containing SpaceEngineers.exe -->
-        <Bin64>/home/viktor/.steam/steam/steamapps/common/SpaceEngineers/Bin64</Bin64>
+        <Bin64></Bin64>
 
+        <!-- Folder containing SpaceEngineersDedicated.exe -->
+        <DS64></DS64>
+
+        <!-- Plugin loader folders for automatic deployment -->
+        <Pulsar></Pulsar>
+        <Magnetar></Magnetar>
+
+        <!-- Steam release of https://github.com/CometWorks/linux-dependencies -->
+        <Steamworks></Steamworks>
+
+        <!-- SE1 release of https://github.com/CometWorks/linux-dependencies -->
+        <Dependencies></Dependencies>
+
+        <!-- Release of https://github.com/CometWorks/linux-native-wrappers -->
+        <Wrappers></Wrappers>
+        
         <!-- Plugin version -->
         <Version>10.0.0</Version>
         <AssemblyVersion>1.0.17.0</AssemblyVersion>
         <FileVersion>1.0.17.0</FileVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+        <SteamPath Condition="'$(SteamPath)' == ''">$(registry:HKEY_CURRENT_USER\SOFTWARE\Valve\Steam@SteamPath)</SteamPath>
+
+        <!-- Steam fills in InstallLocation for game apps (244850) only, it is left empty
+             for tool apps like the Dedicated Server (298740). -->
+        <SteamGameDir>$(registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 244850@InstallLocation)</SteamGameDir>
+        <SteamServerDir>$(registry:HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 298740@InstallLocation)</SteamServerDir>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(HOME)' != ''">
+        <SteamPath Condition="'$(SteamPath)' == '' and Exists('$(HOME)/.steam/steam/steamapps')">$(HOME)/.steam/steam</SteamPath>
+        <SteamPath Condition="'$(SteamPath)' == '' and Exists('$(HOME)/.local/share/Steam/steamapps')">$(HOME)/.local/share/Steam</SteamPath>
+        <SteamPath Condition="'$(SteamPath)' == '' and Exists('$(HOME)/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps')">$(HOME)/.var/app/com.valvesoftware.Steam/.local/share/Steam</SteamPath>
+    </PropertyGroup>
+
+    <!-- Locate the Steam library folder holding each app, so non-default libraries work too -->
+    <PropertyGroup>
+        <SteamLibVdf Condition="'$(SteamPath)' != ''">$(SteamPath)/steamapps/libraryfolders.vdf</SteamLibVdf>
+        <SteamLibVdfText Condition="'$(SteamLibVdf)' != '' and Exists('$(SteamLibVdf)')">$([System.IO.File]::ReadAllText('$(SteamLibVdf)'))</SteamLibVdfText>
+
+        <!-- Captures the "path" of the library block which lists the given app ID -->
+        <SteamLibRx>(?s)^.*?&quot;path&quot;\s+&quot;([^&quot;]*)&quot;(?:(?!&quot;path&quot;).)*?&quot;</SteamLibRx>
+        <SteamGameLibRx>$(SteamLibRx)244850&quot;.*$</SteamGameLibRx>
+        <SteamServerLibRx>$(SteamLibRx)298740&quot;.*$</SteamServerLibRx>
+
+        <SteamGameDir Condition="'$(SteamGameDir)' == '' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(SteamLibVdfText)', '$(SteamGameLibRx)'))">$([System.Text.RegularExpressions.Regex]::Replace('$(SteamLibVdfText)', '$(SteamGameLibRx)', '$1'))/steamapps/common/SpaceEngineers</SteamGameDir>
+        <SteamServerDir Condition="'$(SteamServerDir)' == '' and $([System.Text.RegularExpressions.Regex]::IsMatch('$(SteamLibVdfText)', '$(SteamServerLibRx)'))">$([System.Text.RegularExpressions.Regex]::Replace('$(SteamLibVdfText)', '$(SteamServerLibRx)', '$1'))/steamapps/common/SpaceEngineersDedicatedServer</SteamServerDir>
+
+        <Bin64 Condition="'$(Bin64)' == '' and '$(SteamGameDir)' != ''">$([System.IO.Path]::GetFullPath('$(SteamGameDir)/Bin64'))</Bin64>
+        <DS64 Condition="'$(DS64)' == '' and '$(SteamServerDir)' != ''">$([System.IO.Path]::GetFullPath('$(SteamServerDir)/DedicatedServer64'))</DS64>
+    </PropertyGroup>
+
+    <!-- Last resort: default Steam library layout (also covers SteamCMD installs) -->
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(HOME)' != ''">
+        <Bin64 Condition="'$(Bin64)' == ''">$(HOME)/.steam/steam/steamapps/common/SpaceEngineers/Bin64</Bin64>
+        <DS64 Condition="'$(DS64)' == ''">$(HOME)/.steam/steam/steamapps/common/SpaceEngineersDedicatedServer/DedicatedServer64</DS64>
     </PropertyGroup>
 </Project>

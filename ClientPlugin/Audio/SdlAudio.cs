@@ -5,26 +5,14 @@ using VRage.Audio;
 namespace ClientPlugin.Audio;
 
 /// <summary>
-/// Centralizes every SDL3 audio P/Invoke used by the plugin.
-///
-/// SDL3 audio functions are fully thread-safe — every function in
-/// <c>SDL_audio.h</c> documents "It is safe to call this function from
-/// any thread." Stream-level functions hold a per-stream mutex internally;
-/// device-level functions hold a per-device mutex. Callers may invoke
-/// these wrappers from any thread without marshalling.
-///
-/// Why a separate class instead of inline P/Invokes:
-///  - Concentrating every entry point here lets us audit the API surface
-///    in one place and keeps the <c>[return: MarshalAs(UnmanagedType.I1)]</c>
-///    fix (SDL3 <c>_Bool</c> is 1 byte, not 4) applied consistently.
+/// Thread-safe SDL3 audio bindings. SDL stream and device functions provide
+/// their own locking and may be called without render-thread marshalling.
 /// </summary>
 internal static class SdlAudio
 {
     private const string Lib = "libSDL3.so";
 
     internal const uint SDL_INIT_AUDIO = 0x10u;
-
-    // ----- Init / errors -----
 
     internal static bool InitSubSystem(uint flags)
     {
@@ -42,8 +30,6 @@ internal static class SdlAudio
         return ptr == IntPtr.Zero ? "unknown error" : Marshal.PtrToStringAnsi(ptr);
     }
 
-    // ----- WAV loading -----
-
     internal static bool LoadWav(string path, ref MySdlAudioInterop.SdlAudioSpec spec, out IntPtr audioBuffer, out uint audioLength)
     {
         return SDL_LoadWAV(path, ref spec, out audioBuffer, out audioLength);
@@ -53,8 +39,6 @@ internal static class SdlAudio
     {
         SDL_free(memory);
     }
-
-    // ----- Devices -----
 
     internal static uint OpenAudioDevice(uint devid, ref MySdlAudioInterop.SdlAudioSpec spec)
     {
@@ -75,8 +59,6 @@ internal static class SdlAudio
     {
         return SDL_GetAudioDeviceFormat(devid, out spec, out sampleFrames);
     }
-
-    // ----- Streams -----
 
     internal static IntPtr CreateAudioStream(ref MySdlAudioInterop.SdlAudioSpec src, ref MySdlAudioInterop.SdlAudioSpec dst)
     {
@@ -123,13 +105,7 @@ internal static class SdlAudio
         return SDL_SetAudioStreamFrequencyRatio(stream, ratio);
     }
 
-    // ===== Native imports =====
-    // SDL3 returns its bool as a 1-byte _Bool. Without an explicit
-    // [return: MarshalAs(UnmanagedType.I1)] the runtime defaults to a 4-byte
-    // BOOL marshal, which on Linux reads three bytes of garbage past the
-    // boolean and produces non-deterministic true/false. The original
-    // P/Invokes scattered through the codebase did not specify this, which
-    // was a latent bug — fixed once here.
+    // SDL3 _Bool is one byte; the CLR's default unmanaged BOOL is four bytes.
 
     [DllImport(Lib, EntryPoint = "SDL_InitSubSystem")]
     [return: MarshalAs(UnmanagedType.I1)]

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<PluginData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GitHubPlugin">
+
+    <Id>linux-compat</Id>
+    <RepoId>CometWorks/linux-compat</RepoId>
+
+    <FriendlyName>LinuxCompat</FriendlyName>
+    <Author>Viktor</Author>
+
+    <Tooltip>Linux support for Space Engineers</Tooltip>
+    <Description>Patches Space Engineers to run natively on Linux. The plugin loads automatically when needed.</Description>
+
+    <SourceDirectories>
+        <Directory>Shared</Directory>
+        <Directory>ServerPlugin</Directory>
+    </SourceDirectories>
+
+    <Runtimes>CoreCLR</Runtimes>
+    <Platforms>Linux</Platforms>
+    <Hidden>true</Hidden>
+    <Commit>TODO</Commit>
+
+</PluginData>

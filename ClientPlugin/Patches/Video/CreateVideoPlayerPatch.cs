@@ -8,12 +8,7 @@ using VRage.Utils;
 namespace ClientPlugin.Patches.Video;
 
 /// <summary>
-/// Replaces VRage.Platform.Windows.MyVRagePlatform.CreateVideoPlayer with a
-/// Linux-compatible implementation that decodes video/audio via FFmpeg and
-/// plays audio through SDL3. The stock implementation instantiates a
-/// DirectShow-based MyVideoPlayer, whose FilterGraph COM construction throws
-/// PlatformNotSupportedException on Linux — causing MyVideoFactory.Play to
-/// silently catch the exception and immediately dismiss the intro screen.
+/// Creates the FFmpeg and SDL video player instead of the unavailable DirectShow player.
 /// </summary>
 [HarmonyPatch(typeof(MyVRagePlatform), nameof(MyVRagePlatform.CreateVideoPlayer))]
 [HarmonyPatchCategory("Finish")]

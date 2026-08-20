@@ -12,16 +12,8 @@ using VRageMath;
 namespace ClientPlugin.Compatibility;
 
 /// <summary>
-/// SDL3-based splash screen. Replaces the stock WinForms
-/// <c>VRage.Platform.Windows.Forms.MySplashScreen</c> (which references
-/// <c>System.Windows.Forms</c> types that do not exist on Linux).
-///
-/// All SDL3 calls in this class run on <see cref="SdlRenderThread"/>:
-/// callers must use <see cref="Show"/> / <see cref="Hide"/> rather than
-/// constructing instances directly. SDL_Init / SDL_SetHint / X11 driver
-/// selection are done once when the render thread starts and are NOT
-/// repeated here, so this works whether or not a splash window is shown
-/// (i.e. with or without the <c>-sesplash</c> Pulsar flag).
+/// Linux SDL3 splash screen. <see cref="Show"/> and <see cref="Hide"/> marshal
+/// all window operations to <see cref="SdlRenderThread"/>.
 /// </summary>
 internal sealed class MySdlSplashScreen : IDisposable
 {
@@ -47,9 +39,7 @@ internal sealed class MySdlSplashScreen : IDisposable
     private bool m_disposed;
 
     /// <summary>
-    /// Show the splash window on the SDL render thread. Replaces any
-    /// previously visible splash. Synchronously waits for the splash to be
-    /// drawn so the caller can rely on it being visible immediately.
+    /// Replaces and synchronously displays the splash on the SDL thread.
     /// </summary>
     internal static void Show(string image, string gameIcon, Vector2 scale)
     {
@@ -61,7 +51,7 @@ internal sealed class MySdlSplashScreen : IDisposable
     }
 
     /// <summary>
-    /// Hide and dispose the current splash window on the render thread.
+    /// Hides and disposes the splash on the SDL thread.
     /// </summary>
     internal static void Hide()
     {
@@ -74,9 +64,7 @@ internal sealed class MySdlSplashScreen : IDisposable
 
     private MySdlSplashScreen(string image, string gameIcon, Vector2 scale)
     {
-        // GameInfo.SplashScreenImage is "..\Content\Textures\Logo\splashscreen.png"
-        // (Windows backslash separators). Normalize to Linux forward slashes so
-        // File.Exists/Image.Load work. Relative to the Bin64 folder (ExePath).
+        // Splash image paths are Windows-style and relative to Bin64.
         string normalizedImage = image?.Replace('\\', '/');
         string path = Path.Combine(MyFileSystem.ExePath, normalizedImage ?? string.Empty);
         if (!File.Exists(path))
