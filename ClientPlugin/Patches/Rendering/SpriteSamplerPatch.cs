@@ -30,7 +30,10 @@ static class SpriteSamplerCreatePatch
             MaximumLod = float.MaxValue,
         };
 
-        SpriteSamplerRenderPatch.Sampler = MyManagers.SamplerStates.CreateResource("LinuxSprite", ref description);
+        SpriteSamplerRenderPatch.Sampler = MyManagers.SamplerStates.CreateResource(
+            "LinuxSprite",
+            ref description
+        );
     }
 }
 
@@ -41,21 +44,34 @@ static class SpriteSamplerRenderPatch
     internal static ISamplerState Sampler;
 
     [HarmonyTranspiler]
-    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase patchedMethod)
+    static IEnumerable<CodeInstruction> Transpiler(
+        IEnumerable<CodeInstruction> instructions,
+        MethodBase patchedMethod
+    )
     {
         var il = instructions.ToList();
         il.RecordOriginalCode(patchedMethod);
 
-        var setSamplers = AccessTools.Method(typeof(MyCommonStage), nameof(MyCommonStage.SetSamplers));
+        var setSamplers = AccessTools.Method(
+            typeof(MyCommonStage),
+            nameof(MyCommonStage.SetSamplers)
+        );
         var indexes = il.FindAllIndex(instruction => instruction.Calls(setSamplers));
         if (indexes.Count != 1)
-            throw new CodeInstructionNotFound($"Expected one standard sampler bind in {patchedMethod.Name}, found {indexes.Count}");
+            throw new CodeInstructionNotFound(
+                $"Expected one standard sampler bind in {patchedMethod.Name}, found {indexes.Count}"
+            );
 
-        il.InsertRange(indexes[0] + 1,
-        [
-            new CodeInstruction(OpCodes.Ldarg_3),
-            new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(SpriteSamplerRenderPatch), nameof(BindSampler))),
-        ]);
+        il.InsertRange(
+            indexes[0] + 1,
+            [
+                new CodeInstruction(OpCodes.Ldarg_3),
+                new CodeInstruction(
+                    OpCodes.Call,
+                    AccessTools.Method(typeof(SpriteSamplerRenderPatch), nameof(BindSampler))
+                ),
+            ]
+        );
 
         il.RecordPatchedCode(patchedMethod);
         return il;

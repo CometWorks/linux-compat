@@ -15,14 +15,19 @@ namespace ClientPlugin.Patches.PathHandling;
 
 // Missing mod Data directories leave null definition lists that must be skipped.
 
-[HarmonyPatch(typeof(MyDefinitionManager), "LoadDefinitions",
-    new[] { typeof(List<MyModContext>), typeof(List<MyDefinitionManager.DefinitionSet>) })]
+[HarmonyPatch(
+    typeof(MyDefinitionManager),
+    "LoadDefinitions",
+    new[] { typeof(List<MyModContext>), typeof(List<MyDefinitionManager.DefinitionSet>) }
+)]
 [HarmonyPatchCategory("Finish")]
 static class MyDefinitionManagerLoadDefinitionsPatch
 {
-    static bool Prefix(MyDefinitionManager __instance,
+    static bool Prefix(
+        MyDefinitionManager __instance,
         List<MyModContext> contexts,
-        List<MyDefinitionManager.DefinitionSet> definitionSets)
+        List<MyDefinitionManager.DefinitionSet> definitionSets
+    )
     {
         var list = new List<List<Tuple<MyObjectBuilder_Definitions, string>>>();
         for (int i = 0; i < contexts.Count; i++)
@@ -42,7 +47,12 @@ static class MyDefinitionManagerLoadDefinitionsPatch
                 return false;
         }
 
-        Action<MyObjectBuilder_Definitions, MyModContext, MyDefinitionManager.DefinitionSet, bool>[] phases =
+        Action<
+            MyObjectBuilder_Definitions,
+            MyModContext,
+            MyDefinitionManager.DefinitionSet,
+            bool
+        >[] phases =
         {
             __instance.CompatPhase,
             __instance.LoadPhase1,
@@ -59,7 +69,9 @@ static class MyDefinitionManagerLoadDefinitionsPatch
                 __instance.m_currentLoadingSet = definitionSets[k];
                 if (list[k] == null)
                 {
-                    MyLog.Default.Warning($"Missing definition {k}; Look for a Linux path conversation issue.");
+                    MyLog.Default.Warning(
+                        $"Missing definition {k}; Look for a Linux path conversation issue."
+                    );
                     continue;
                 }
 
@@ -73,7 +85,12 @@ static class MyDefinitionManagerLoadDefinitionsPatch
                 }
                 catch (Exception innerException)
                 {
-                    MyDefinitionManager.FailModLoading(contexts[k], j, phases.Length, innerException);
+                    MyDefinitionManager.FailModLoading(
+                        contexts[k],
+                        j,
+                        phases.Length,
+                        innerException
+                    );
                     continue;
                 }
                 __instance.MergeDefinitions();
@@ -98,13 +115,22 @@ static class MyDefinitionManagerCreateTransparentMaterialsPatch
     // ReSharper disable once UnusedMember.Local
     [HarmonyTranspiler]
     [HarmonyPatch("CreateTransparentMaterials")]
-    static IEnumerable<CodeInstruction> CreateTransparentMaterialsTranspiler(IEnumerable<CodeInstruction> instructions, MethodBase patchedMethod)
+    static IEnumerable<CodeInstruction> CreateTransparentMaterialsTranspiler(
+        IEnumerable<CodeInstruction> instructions,
+        MethodBase patchedMethod
+    )
     {
         var il = instructions.ToList();
         il.RecordOriginalCode(patchedMethod);
 
-        var target = typeof(Path).GetMethod(nameof(Path.GetFileNameWithoutExtension), new[] { typeof(string) });
-        var replacement = typeof(PathHelpers).GetMethod(nameof(PathHelpers.GetFileNameWithoutExtension), new[] { typeof(string) });
+        var target = typeof(Path).GetMethod(
+            nameof(Path.GetFileNameWithoutExtension),
+            new[] { typeof(string) }
+        );
+        var replacement = typeof(PathHelpers).GetMethod(
+            nameof(PathHelpers.GetFileNameWithoutExtension),
+            new[] { typeof(string) }
+        );
 
         // Preserve branch labels and exception blocks attached to the call instruction.
         foreach (var instr in il)
@@ -122,7 +148,12 @@ static class MyDefinitionManagerCreateTransparentMaterialsPatch
 [HarmonyPatchCategory("Finish")]
 static class MyDefinitionManagerProcessContentFilePathPatch
 {
-    static bool Prefix(MyModContext context, ref string contentFile, object[] extensions, bool logNoExtensions)
+    static bool Prefix(
+        MyModContext context,
+        ref string contentFile,
+        object[] extensions,
+        bool logNoExtensions
+    )
     {
         if (string.IsNullOrEmpty(contentFile))
             return false;
@@ -133,13 +164,21 @@ static class MyDefinitionManagerProcessContentFilePathPatch
         if (extensions == null || extensions.Length == 0)
         {
             if (logNoExtensions)
-                MyDefinitionErrors.Add(context, "List of supported file extensions not found. (Internal error)", TErrorSeverity.Warning);
+                MyDefinitionErrors.Add(
+                    context,
+                    "List of supported file extensions not found. (Internal error)",
+                    TErrorSeverity.Warning
+                );
             return false;
         }
 
         if (string.IsNullOrEmpty(extension))
         {
-            MyDefinitionErrors.Add(context, "File does not have a proper extension: " + contentFile, TErrorSeverity.Warning);
+            MyDefinitionErrors.Add(
+                context,
+                "File does not have a proper extension: " + contentFile,
+                TErrorSeverity.Warning
+            );
             return false;
         }
 
@@ -154,18 +193,26 @@ static class MyDefinitionManagerProcessContentFilePathPatch
         }
         if (!extensionOk)
         {
-            MyDefinitionErrors.Add(context, "File extension of: " + contentFile + " is not supported.", TErrorSeverity.Warning);
+            MyDefinitionErrors.Add(
+                context,
+                "File extension of: " + contentFile + " is not supported.",
+                TErrorSeverity.Warning
+            );
             return false;
         }
 
         string resolved = CaseInsensitivePathResolver.Resolve(contentFile, context.ModPath);
         if (!MyDefinitionManager.m_directoryExistCache.TryGetValue(resolved, out var exists))
         {
-            exists = MyFileSystem.DirectoryExists(Path.GetDirectoryName(resolved))
-                  && System.Linq.Enumerable.Any(MyFileSystem.GetFiles(
+            exists =
+                MyFileSystem.DirectoryExists(Path.GetDirectoryName(resolved))
+                && System.Linq.Enumerable.Any(
+                    MyFileSystem.GetFiles(
                         Path.GetDirectoryName(resolved),
                         Path.GetFileName(resolved),
-                        MySearchOption.TopDirectoryOnly));
+                        MySearchOption.TopDirectoryOnly
+                    )
+                );
             MyDefinitionManager.m_directoryExistCache.Add(resolved, exists);
         }
 
@@ -173,16 +220,28 @@ static class MyDefinitionManagerProcessContentFilePathPatch
         {
             contentFile = resolved;
         }
-        else if (!MyFileSystem.FileExists(PathHelpers.ResolveContentFilePath(contentFile, MyFileSystem.ContentPath)))
+        else if (
+            !MyFileSystem.FileExists(
+                PathHelpers.ResolveContentFilePath(contentFile, MyFileSystem.ContentPath)
+            )
+        )
         {
             if (contentFile.EndsWith(".mwm"))
             {
-                MyDefinitionErrors.Add(context, "Resource not found, setting to error model. Resource path: " + resolved, TErrorSeverity.Error);
+                MyDefinitionErrors.Add(
+                    context,
+                    "Resource not found, setting to error model. Resource path: " + resolved,
+                    TErrorSeverity.Error
+                );
                 contentFile = "Models/Debug/Error.mwm";
             }
             else
             {
-                MyDefinitionErrors.Add(context, "Resource not found, setting to null. Resource path: " + resolved, TErrorSeverity.Error);
+                MyDefinitionErrors.Add(
+                    context,
+                    "Resource not found, setting to null. Resource path: " + resolved,
+                    TErrorSeverity.Error
+                );
                 contentFile = null;
             }
         }

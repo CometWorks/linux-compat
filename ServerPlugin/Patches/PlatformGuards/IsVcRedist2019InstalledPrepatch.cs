@@ -16,18 +16,23 @@ public static class IsVcRedist2019InstalledPrepatch
         var type = asmDef.MainModule.GetType("VRage.Dedicated.DedicatedServer");
         if (type == null)
         {
-            Console.WriteLine("[LinuxCompatServer] IsVcRedist2019InstalledPrepatch: VRage.Dedicated.DedicatedServer not found");
+            Console.WriteLine(
+                "[LinuxCompatServer] IsVcRedist2019InstalledPrepatch: VRage.Dedicated.DedicatedServer not found"
+            );
             return;
         }
 
         var method = type.Methods.FirstOrDefault(m =>
-            m.Name == "IsVcRedist2019Installed" &&
-            m.IsStatic &&
-            m.Parameters.Count == 0 &&
-            m.ReturnType.FullName == "System.Boolean");
+            m.Name == "IsVcRedist2019Installed"
+            && m.IsStatic
+            && m.Parameters.Count == 0
+            && m.ReturnType.FullName == "System.Boolean"
+        );
         if (method?.Body == null)
         {
-            Console.WriteLine("[LinuxCompatServer] IsVcRedist2019InstalledPrepatch: IsVcRedist2019Installed() not found");
+            Console.WriteLine(
+                "[LinuxCompatServer] IsVcRedist2019InstalledPrepatch: IsVcRedist2019Installed() not found"
+            );
             return;
         }
 
@@ -39,6 +44,8 @@ public static class IsVcRedist2019InstalledPrepatch
         il.Append(il.Create(OpCodes.Ldc_I4_1));
         il.Append(il.Create(OpCodes.Ret));
 
-        Console.WriteLine("[LinuxCompatServer] IsVcRedist2019InstalledPrepatch: forced IsVcRedist2019Installed() => true");
+        Console.WriteLine(
+            "[LinuxCompatServer] IsVcRedist2019InstalledPrepatch: forced IsVcRedist2019Installed() => true"
+        );
     }
 }

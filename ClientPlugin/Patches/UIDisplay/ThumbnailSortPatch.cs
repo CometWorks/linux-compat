@@ -32,9 +32,10 @@ static class MyGuiScreenLoadSandboxLoadImagePreviewPatch
         var levelImage = __instance.m_levelImage;
         var selectedRow = __instance.m_selectedRow;
 
-        var row = (selectedRow >= saveBrowser.Rows.Count || selectedRow < 0)
-            ? null
-            : saveBrowser.Rows[selectedRow];
+        var row =
+            (selectedRow >= saveBrowser.Rows.Count || selectedRow < 0)
+                ? null
+                : saveBrowser.Rows[selectedRow];
 
         if (row == null)
         {
@@ -72,12 +73,11 @@ static class MyGuiScreenLoadSandboxLoadImagePreviewPatch
                             levelImage.SetTexture(thumbImage);
                             return;
                         }
-                        catch
-                        {
-                        }
+                        catch { }
                     }
                     levelImage.SetTexture("Textures\\GUI\\Screens\\image_background.dds");
-                });
+                }
+            );
             return false;
         }
 
@@ -92,11 +92,16 @@ static class MyGuiScreenLoadSandboxLoadImagePreviewPatch
 
         if (Directory.Exists(name + MyGuiScreenLoadSandbox.CONST_BACKUP))
         {
-            string[] directories = Directory.GetDirectories(name + MyGuiScreenLoadSandbox.CONST_BACKUP);
+            string[] directories = Directory.GetDirectories(
+                name + MyGuiScreenLoadSandbox.CONST_BACKUP
+            );
             Array.Sort(directories, StringComparer.OrdinalIgnoreCase);
             if (directories.Any())
             {
-                string backupThumb = Path.Combine(directories.Last(), MyTextConstants.SESSION_THUMB_NAME_AND_EXTENSION);
+                string backupThumb = Path.Combine(
+                    directories.Last(),
+                    MyTextConstants.SESSION_THUMB_NAME_AND_EXTENSION
+                );
                 if (File.Exists(backupThumb) && new FileInfo(backupThumb).Length > 0)
                 {
                     levelImage.SetTexture(backupThumb);
@@ -141,11 +146,16 @@ static class MyGuiScreenMainMenuGetThumbnailPatch
 
         if (Directory.Exists(text + MyGuiScreenLoadSandbox.CONST_BACKUP))
         {
-            string[] directories = Directory.GetDirectories(text + MyGuiScreenLoadSandbox.CONST_BACKUP);
+            string[] directories = Directory.GetDirectories(
+                text + MyGuiScreenLoadSandbox.CONST_BACKUP
+            );
             Array.Sort(directories, StringComparer.OrdinalIgnoreCase);
             if (directories.Any())
             {
-                string backupThumb = Path.Combine(directories.Last(), MyTextConstants.SESSION_THUMB_NAME_AND_EXTENSION);
+                string backupThumb = Path.Combine(
+                    directories.Last(),
+                    MyTextConstants.SESSION_THUMB_NAME_AND_EXTENSION
+                );
                 if (File.Exists(backupThumb) && new FileInfo(backupThumb).Length > 0)
                 {
                     __result = backupThumb;
@@ -157,22 +167,26 @@ static class MyGuiScreenMainMenuGetThumbnailPatch
         if (MySandboxGame.Config.UseCloudToSaveGame)
         {
             byte[] array = MyGameService.LoadFromCloud(
-                MyCloudHelper.Combine(MyCloudHelper.LocalToCloudWorldPath(text + "/"),
-                    MyTextConstants.SESSION_THUMB_NAME_AND_EXTENSION));
+                MyCloudHelper.Combine(
+                    MyCloudHelper.LocalToCloudWorldPath(text + "/"),
+                    MyTextConstants.SESSION_THUMB_NAME_AND_EXTENSION
+                )
+            );
             if (array != null)
             {
                 try
                 {
-                    string cloudThumb = Path.Combine(text, MyTextConstants.SESSION_THUMB_NAME_AND_EXTENSION);
+                    string cloudThumb = Path.Combine(
+                        text,
+                        MyTextConstants.SESSION_THUMB_NAME_AND_EXTENSION
+                    );
                     Directory.CreateDirectory(text);
                     File.WriteAllBytes(cloudThumb, array);
                     MyRenderProxy.UnloadTexture(cloudThumb);
                     __result = cloudThumb;
                     return false;
                 }
-                catch
-                {
-                }
+                catch { }
             }
         }
 

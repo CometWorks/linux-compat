@@ -41,20 +41,26 @@ static class CreateAdaptersListPatch
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
             };
             using var process = Process.Start(startInfo);
-            if (process == null) return Vector2I.Zero;
+            if (process == null)
+                return Vector2I.Zero;
             var output = process.StandardOutput.ReadToEnd();
             process.WaitForExit();
-            if (process.ExitCode != 0) return Vector2I.Zero;
+            if (process.ExitCode != 0)
+                return Vector2I.Zero;
             var match = Regex.Match(output, @"current\s+(\d+)\s*x\s*(\d+)");
-            if (match.Success && int.TryParse(match.Groups[1].Value, out int w) && int.TryParse(match.Groups[2].Value, out int h) && w > 0 && h > 0)
+            if (
+                match.Success
+                && int.TryParse(match.Groups[1].Value, out int w)
+                && int.TryParse(match.Groups[2].Value, out int h)
+                && w > 0
+                && h > 0
+            )
                 return new Vector2I(w, h);
         }
-        catch
-        {
-        }
+        catch { }
         return Vector2I.Zero;
     }
 
@@ -70,20 +76,23 @@ static class CreateAdaptersListPatch
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
             };
             using var process = Process.Start(startInfo);
-            if (process == null) return gpus;
+            if (process == null)
+                return gpus;
             var output = process.StandardOutput.ReadToEnd();
             process.WaitForExit();
-            if (process.ExitCode != 0) return gpus;
+            if (process.ExitCode != 0)
+                return gpus;
             foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
                 var parts = line.Split(": ", 2, StringSplitOptions.None);
                 if (parts.Length == 2)
                 {
                     var text = Regex.Replace(parts[1].Trim(), "\\s+\\(rev [^)]+\\)$", "");
-                    var gpuName = Regex.Matches(text, "\\[([^\\]]+)\\]")
+                    var gpuName = Regex
+                        .Matches(text, "\\[([^\\]]+)\\]")
                         .Cast<Match>()
                         .Select(match => match.Groups[1].Value.Trim())
                         .MaxBy(bracketText => bracketText.Length);
@@ -91,13 +100,12 @@ static class CreateAdaptersListPatch
                 }
             }
         }
-        catch
-        {
-        }
+        catch { }
         return gpus;
     }
 
-    static readonly MyRefreshRatePriorityComparer m_refreshRatePriorityComparer = new MyRefreshRatePriorityComparer();
+    static readonly MyRefreshRatePriorityComparer m_refreshRatePriorityComparer =
+        new MyRefreshRatePriorityComparer();
 
     static int VendorPriority(VendorIds vendorId)
     {
@@ -125,7 +133,10 @@ static class CreateAdaptersListPatch
             if (output == null)
                 return null;
 
-            var modeList = output.GetDisplayModeList(Format.R8G8B8A8_UNorm_SRgb, DisplayModeEnumerationFlags.Interlaced);
+            var modeList = output.GetDisplayModeList(
+                Format.R8G8B8A8_UNorm_SRgb,
+                DisplayModeEnumerationFlags.Interlaced
+            );
             if (modeList == null || modeList.Length == 0)
                 return null;
 
@@ -150,7 +161,12 @@ static class CreateAdaptersListPatch
         }
     }
 
-    static void GetAdapterMemory(Factory factory, int adapterOrdinal, out ulong vram, out ulong svram)
+    static void GetAdapterMemory(
+        Factory factory,
+        int adapterOrdinal,
+        out ulong vram,
+        out ulong svram
+    )
     {
         vram = FallbackVideoMemory;
         svram = FallbackVideoMemory;
@@ -178,7 +194,8 @@ static class CreateAdaptersListPatch
         catch (Exception ex)
         {
             MyRender11.Log.WriteLine(
-                $"Failed to get VRAM budget: using fallback {FallbackVideoMemory}!\n{ex}");
+                $"Failed to get VRAM budget: using fallback {FallbackVideoMemory}!\n{ex}"
+            );
 
             vram = FallbackVideoMemory;
             svram = FallbackVideoMemory;
@@ -256,7 +273,10 @@ static class CreateAdaptersListPatch
             var vendorId = (VendorIds)0;
             if (name.IndexOf("NVIDIA", StringComparison.OrdinalIgnoreCase) >= 0)
                 vendorId = VendorIds.Nvidia;
-            else if (name.IndexOf("AMD", StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf("ATI", StringComparison.OrdinalIgnoreCase) >= 0)
+            else if (
+                name.IndexOf("AMD", StringComparison.OrdinalIgnoreCase) >= 0
+                || name.IndexOf("ATI", StringComparison.OrdinalIgnoreCase) >= 0
+            )
                 vendorId = VendorIds.Amd;
             else if (name.IndexOf("Intel", StringComparison.OrdinalIgnoreCase) >= 0)
                 vendorId = VendorIds.Intel;
@@ -309,7 +329,6 @@ static class CreateAdaptersListPatch
     }
 }
 
-
 [HarmonyPatch(typeof(MyPlatformRender), "GetAdapter")]
 [HarmonyPatchCategory("Finish")]
 static class GetAdapterPatch
@@ -346,8 +365,11 @@ static class FixSettingsPatch
         var adaptersList = MyPlatformRender.m_adapterInfoList;
 
         var currentAdapter = adaptersList[settings.AdapterOrdinal];
-        int refreshRate = settings.WindowMode != MyWindowModeEnum.FullscreenWindow ? settings.RefreshRate : 0;
-        bool validRes = currentAdapter.GetDisplayMode(settings.BackBufferWidth, settings.BackBufferHeight, refreshRate).HasValue;
+        int refreshRate =
+            settings.WindowMode != MyWindowModeEnum.FullscreenWindow ? settings.RefreshRate : 0;
+        bool validRes = currentAdapter
+            .GetDisplayMode(settings.BackBufferWidth, settings.BackBufferHeight, refreshRate)
+            .HasValue;
 
         if (settings.WindowMode != MyWindowModeEnum.Window && !validRes)
         {
@@ -368,8 +390,12 @@ static class GetDefaultDeviceSettingsPatch
     {
         var adaptersList = MyPlatformRender.m_adapterInfoList;
 
-        var displayMode = adaptersList[0].GetDisplayMode(
-            adaptersList[0].DesktopResolution.X, adaptersList[0].DesktopResolution.Y, 0);
+        var displayMode = adaptersList[0]
+            .GetDisplayMode(
+                adaptersList[0].DesktopResolution.X,
+                adaptersList[0].DesktopResolution.Y,
+                0
+            );
 
         __result = new MyRenderDeviceSettings
         {
@@ -377,14 +403,16 @@ static class GetDefaultDeviceSettingsPatch
             BackBufferWidth = adaptersList[0].DesktopResolution.X,
             BackBufferHeight = adaptersList[0].DesktopResolution.Y,
             WindowMode = MyWindowModeEnum.Window,
-            RefreshRate = (int)(displayMode.HasValue ? displayMode.Value.RefreshRateF * 1000f : 60000f),
+            RefreshRate = (int)(
+                displayMode.HasValue ? displayMode.Value.RefreshRateF * 1000f : 60000f
+            ),
             VSync = 0,
             DRSSettingsPresets = new MyDRSSettings[3]
             {
                 new MyDRSSettings(),
                 new MyDRSSettings(),
-                new MyDRSSettings()
-            }
+                new MyDRSSettings(),
+            },
         };
         return false;
     }
@@ -411,7 +439,7 @@ static class CreateSwapChainPatch
             Height = settings.BackBufferHeight,
             RefreshRate = new Rational(0, 0),
             Scaling = DisplayModeScaling.Unspecified,
-            ScanlineOrdering = DisplayModeScanlineOrder.Unspecified
+            ScanlineOrdering = DisplayModeScanlineOrder.Unspecified,
         };
 
         var swapChainDescription = new SwapChainDescription
@@ -423,12 +451,16 @@ static class CreateSwapChainPatch
             SampleDescription = new SharpDX.DXGI.SampleDescription(1, 0),
             OutputHandle = windowHandle,
             Usage = Usage.ShaderInput | Usage.RenderTargetOutput,
-            SwapEffect = SwapEffect.Sequential
+            SwapEffect = SwapEffect.Sequential,
         };
 
         MyPlatformRender.m_factory ??= new Factory1();
 
-        MyPlatformRender.m_swapchain = new SwapChain(MyPlatformRender.m_factory, deviceInstance, swapChainDescription);
+        MyPlatformRender.m_swapchain = new SwapChain(
+            MyPlatformRender.m_factory,
+            deviceInstance,
+            swapChainDescription
+        );
 
         return false;
     }

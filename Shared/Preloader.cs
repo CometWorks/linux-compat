@@ -2,18 +2,18 @@
 // ReSharper disable InconsistentNaming
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Collections.Generic;
 using ClientPlugin.Compatibility;
-#if !MAGNETAR
-using ClientPlugin.Compatibility.Rendering;
-#endif
 using HarmonyLib;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+#if !MAGNETAR
+using ClientPlugin.Compatibility.Rendering;
+#endif
 
 // Pulsar and Magnetar discover Preloader in the global namespace.
 
@@ -28,8 +28,11 @@ public static class Preloader
         AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
         {
             var name = new AssemblyName(args.Name).Name;
-            if (name == null) return null;
-            return name == "LinuxCompat" || name == "LinuxCompatServer" || name == selfName ? selfAssembly : null;
+            if (name == null)
+                return null;
+            return name == "LinuxCompat" || name == "LinuxCompatServer" || name == selfName
+                ? selfAssembly
+                : null;
         };
     }
 
@@ -64,7 +67,6 @@ public static class Preloader
         "VRage.Render11.dll",
         "VRage.Scripting.dll",
         "VRage.Steam.dll",
-
         "SharpDX.dll",
         "SharpDX.DXGI.dll",
         "SixLabors.ImageSharp.dll",
@@ -72,7 +74,9 @@ public static class Preloader
     ];
 
     // ReSharper disable once UnusedMember.Global
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    [System.Runtime.CompilerServices.MethodImpl(
+        System.Runtime.CompilerServices.MethodImplOptions.NoInlining
+    )]
     public static void Patch(AssemblyDefinition asmDef)
     {
         var asmName = asmDef.Name.Name;
@@ -107,7 +111,9 @@ public static class Preloader
 #if MAGNETAR
             case "VRage.Dedicated":
                 ServerPlugin.Patches.PlatformGuards.AttachConsolePrepatch.Prepatch(asmDef);
-                ServerPlugin.Patches.PlatformGuards.IsVcRedist2019InstalledPrepatch.Prepatch(asmDef);
+                ServerPlugin.Patches.PlatformGuards.IsVcRedist2019InstalledPrepatch.Prepatch(
+                    asmDef
+                );
                 break;
 #endif
         }
@@ -127,9 +133,13 @@ public static class Preloader
             }
         }
         if (renamed > 0)
-            Console.WriteLine($"[LinuxCompat] Preloader: rewrote {renamed} ModuleReference(s) Opus.dll -> libopus.so.0 in SpaceEngineers.Game");
+            Console.WriteLine(
+                $"[LinuxCompat] Preloader: rewrote {renamed} ModuleReference(s) Opus.dll -> libopus.so.0 in SpaceEngineers.Game"
+            );
         else
-            Console.WriteLine("[LinuxCompat] Preloader: no Opus.dll ModuleReference in SpaceEngineers.Game (already patched or upstream changed P/Invoke names?)");
+            Console.WriteLine(
+                "[LinuxCompat] Preloader: no Opus.dll ModuleReference in SpaceEngineers.Game (already patched or upstream changed P/Invoke names?)"
+            );
     }
 
     private static void PatchVRagePlatformWindows(AssemblyDefinition asmDef)
@@ -139,8 +149,11 @@ public static class Preloader
         RedirectAssemblyRef(asmDef, "SharpDX.XAudio2", "LinuxCompat");
 #endif
 
-        var myWindowsSystem = asmDef.MainModule.GetType("VRage.Platform.Windows.Sys.MyWindowsSystem");
-        if (myWindowsSystem == null) return;
+        var myWindowsSystem = asmDef.MainModule.GetType(
+            "VRage.Platform.Windows.Sys.MyWindowsSystem"
+        );
+        if (myWindowsSystem == null)
+            return;
 
         NopMethodBody(myWindowsSystem, "Init");
         ReplaceWithConstant(myWindowsSystem, "get_CPUCounter", 0f);
@@ -163,7 +176,9 @@ public static class Preloader
             ReplaceWithBoolReturn(myVRagePlatform, "CreateInput2", false);
         }
 
-        var myWindowsWindows = asmDef.MainModule.GetType("VRage.Platform.Windows.Forms.MyWindowsWindows");
+        var myWindowsWindows = asmDef.MainModule.GetType(
+            "VRage.Platform.Windows.Forms.MyWindowsWindows"
+        );
         if (myWindowsWindows != null)
         {
             ReplaceWithDefaultReturn(myWindowsWindows, "MessageBox");
@@ -176,7 +191,9 @@ public static class Preloader
         }
 
 #if !MAGNETAR
-        var myPlatformRender = asmDef.MainModule.GetType("VRage.Platform.Windows.Render.MyPlatformRender");
+        var myPlatformRender = asmDef.MainModule.GetType(
+            "VRage.Platform.Windows.Render.MyPlatformRender"
+        );
         if (myPlatformRender != null)
         {
             PatchCreateRenderDevice(myPlatformRender, asmDef.MainModule);
@@ -185,7 +202,9 @@ public static class Preloader
             PatchFixSettings(myPlatformRender);
         }
 
-        var myWindowsRender = asmDef.MainModule.GetType("VRage.Platform.Windows.Render.MyWindowsRender");
+        var myWindowsRender = asmDef.MainModule.GetType(
+            "VRage.Platform.Windows.Render.MyWindowsRender"
+        );
         if (myWindowsRender != null)
         {
             // The WinForms GameWindow is null on Linux; Harmony postfixes route mode changes to SDL.
@@ -200,10 +219,14 @@ public static class Preloader
     {
         var module = asmDef.MainModule;
         var resultDescriptor = module.GetType("SharpDX.ResultDescriptor");
-        if (resultDescriptor == null) return;
+        if (resultDescriptor == null)
+            return;
 
-        var method = resultDescriptor.Methods.FirstOrDefault(m => m.Name == "GetDescriptionFromResultCode");
-        if (method == null) return;
+        var method = resultDescriptor.Methods.FirstOrDefault(m =>
+            m.Name == "GetDescriptionFromResultCode"
+        );
+        if (method == null)
+            return;
 
         method.Body.Instructions.Clear();
         method.Body.ExceptionHandlers.Clear();
@@ -214,14 +237,18 @@ public static class Preloader
         il.Append(il.Create(OpCodes.Ldarga_S, method.Parameters[0]));
         il.Append(il.Create(OpCodes.Ldstr, "X8"));
         var int32ToString = module.ImportReference(
-            typeof(int).GetMethod("ToString", [typeof(string)]));
+            typeof(int).GetMethod("ToString", [typeof(string)])
+        );
         il.Append(il.Create(OpCodes.Call, int32ToString));
         var stringConcat = module.ImportReference(
-            typeof(string).GetMethod("Concat", [typeof(string), typeof(string)]));
+            typeof(string).GetMethod("Concat", [typeof(string), typeof(string)])
+        );
         il.Append(il.Create(OpCodes.Call, stringConcat));
         il.Append(il.Create(OpCodes.Ret));
 
-        Console.WriteLine("[LinuxCompat] Patched SharpDX.ResultDescriptor.GetDescriptionFromResultCode to avoid kernel32.dll");
+        Console.WriteLine(
+            "[LinuxCompat] Patched SharpDX.ResultDescriptor.GetDescriptionFromResultCode to avoid kernel32.dll"
+        );
     }
 
     private static void PatchVRageAudio(AssemblyDefinition asmDef)
@@ -232,13 +259,19 @@ public static class Preloader
 
     private static readonly Version LinuxCompatVersion = new Version(1, 0, 0, 0);
 
-    private static void RedirectAssemblyRef(AssemblyDefinition asmDef, string fromName, string toName)
+    private static void RedirectAssemblyRef(
+        AssemblyDefinition asmDef,
+        string fromName,
+        string toName
+    )
     {
         var module = asmDef.MainModule;
         var asmRef = module.AssemblyReferences.FirstOrDefault(r => r.Name == fromName);
         if (asmRef == null)
         {
-            Console.WriteLine($"[LinuxCompat] RedirectAssemblyRef: {asmDef.Name.Name} has no AssemblyRef '{fromName}' (skipping)");
+            Console.WriteLine(
+                $"[LinuxCompat] RedirectAssemblyRef: {asmDef.Name.Name} has no AssemblyRef '{fromName}' (skipping)"
+            );
             return;
         }
 
@@ -249,7 +282,9 @@ public static class Preloader
         asmRef.Culture = string.Empty;
         asmRef.HashAlgorithm = Mono.Cecil.AssemblyHashAlgorithm.None;
 
-        Console.WriteLine($"[LinuxCompat] Redirected AssemblyRef in {asmDef.Name.Name}: {fromName} -> {toName} {LinuxCompatVersion}");
+        Console.WriteLine(
+            $"[LinuxCompat] Redirected AssemblyRef in {asmDef.Name.Name}: {fromName} -> {toName} {LinuxCompatVersion}"
+        );
     }
 #endif
 
@@ -257,14 +292,17 @@ public static class Preloader
     {
         var module = asmDef.MainModule;
         var mySteamService = module.GetType("VRage.Steam.MySteamService");
-        if (mySteamService == null) return;
+        if (mySteamService == null)
+            return;
 
         var steamUserIdField = mySteamService.Fields.FirstOrDefault(f => f.Name == "SteamUserId");
-        if (steamUserIdField == null) return;
+        if (steamUserIdField == null)
+            return;
 
         foreach (var method in mySteamService.Methods)
         {
-            if (!method.HasBody) continue;
+            if (!method.HasBody)
+                continue;
 
             var il = method.Body.GetILProcessor();
             var instructions = method.Body.Instructions;
@@ -272,15 +310,29 @@ public static class Preloader
             for (int i = 0; i < instructions.Count; i++)
             {
                 var instr = instructions[i];
-                if (instr.OpCode == OpCodes.Call && instr.Operand is MethodReference methodRef &&
-                    methodRef.Name == "RequestCurrentStats" &&
-                    methodRef.DeclaringType.Name == "SteamUserStats")
+                if (
+                    instr.OpCode == OpCodes.Call
+                    && instr.Operand is MethodReference methodRef
+                    && methodRef.Name == "RequestCurrentStats"
+                    && methodRef.DeclaringType.Name == "SteamUserStats"
+                )
                 {
                     var steamUserStatsType = methodRef.DeclaringType;
                     var csteamIdType = steamUserIdField.FieldType;
-                    var steamApiCallType = module.ImportReference(new TypeReference(
-                        "Steamworks", "SteamAPICall_t", module, methodRef.DeclaringType.Scope, true));
-                    var requestUserStats = new MethodReference("RequestUserStats", steamApiCallType, steamUserStatsType);
+                    var steamApiCallType = module.ImportReference(
+                        new TypeReference(
+                            "Steamworks",
+                            "SteamAPICall_t",
+                            module,
+                            methodRef.DeclaringType.Scope,
+                            true
+                        )
+                    );
+                    var requestUserStats = new MethodReference(
+                        "RequestUserStats",
+                        steamApiCallType,
+                        steamUserStatsType
+                    );
                     requestUserStats.Parameters.Add(new ParameterDefinition(csteamIdType));
 
                     var loadThis = il.Create(OpCodes.Ldarg_0);
@@ -290,13 +342,17 @@ public static class Preloader
 
                     instr.Operand = requestUserStats;
 
-                    Console.WriteLine($"[LinuxCompat] Replaced RequestCurrentStats with RequestUserStats in {method.Name}");
+                    Console.WriteLine(
+                        $"[LinuxCompat] Replaced RequestCurrentStats with RequestUserStats in {method.Name}"
+                    );
                     i += 2;
                 }
             }
         }
 
-        var getAuthTicket = mySteamService.Methods.FirstOrDefault(m => m.Name == "GetAuthSessionTicket");
+        var getAuthTicket = mySteamService.Methods.FirstOrDefault(m =>
+            m.Name == "GetAuthSessionTicket"
+        );
         if (getAuthTicket?.HasBody == true)
         {
             PatchGetAuthSessionTicket(getAuthTicket, module);
@@ -306,30 +362,52 @@ public static class Preloader
         var mySteamUgcClient = module.GetType("VRage.Steam.Steamworks.MySteamUgcClient");
         if (mySteamUgcClient != null)
         {
-            AppendDefaultFalseToSteamUgcCall(mySteamUgcClient, "SetItemTags",
-                originalParamCount: 2, module);
-            AppendDefaultFalseToSteamUgcCall(mySteamUgcClient, "GetNumSubscribedItems",
-                originalParamCount: 0, module);
-            AppendDefaultFalseToSteamUgcCall(mySteamUgcClient, "GetSubscribedItems",
-                originalParamCount: 2, module);
+            AppendDefaultFalseToSteamUgcCall(
+                mySteamUgcClient,
+                "SetItemTags",
+                originalParamCount: 2,
+                module
+            );
+            AppendDefaultFalseToSteamUgcCall(
+                mySteamUgcClient,
+                "GetNumSubscribedItems",
+                originalParamCount: 0,
+                module
+            );
+            AppendDefaultFalseToSteamUgcCall(
+                mySteamUgcClient,
+                "GetSubscribedItems",
+                originalParamCount: 2,
+                module
+            );
         }
     }
 
     private static void AppendDefaultFalseToSteamUgcCall(
-        TypeDefinition containerType, string methodName, int originalParamCount, ModuleDefinition module)
+        TypeDefinition containerType,
+        string methodName,
+        int originalParamCount,
+        ModuleDefinition module
+    )
     {
         foreach (var method in containerType.Methods)
         {
-            if (!method.HasBody) continue;
+            if (!method.HasBody)
+                continue;
             var il = method.Body.GetILProcessor();
             var instructions = method.Body.Instructions.ToList();
             foreach (var instr in instructions)
             {
-                if (instr.OpCode != OpCodes.Call) continue;
-                if (instr.Operand is not MethodReference mr) continue;
-                if (mr.Name != methodName) continue;
-                if (mr.DeclaringType.Name != "SteamUGC") continue;
-                if (mr.Parameters.Count != originalParamCount) continue;
+                if (instr.OpCode != OpCodes.Call)
+                    continue;
+                if (instr.Operand is not MethodReference mr)
+                    continue;
+                if (mr.Name != methodName)
+                    continue;
+                if (mr.DeclaringType.Name != "SteamUGC")
+                    continue;
+                if (mr.Parameters.Count != originalParamCount)
+                    continue;
 
                 var newRef = new MethodReference(methodName, mr.ReturnType, mr.DeclaringType)
                 {
@@ -343,7 +421,9 @@ public static class Preloader
 
                 il.InsertBefore(instr, il.Create(OpCodes.Ldc_I4_0));
                 instr.Operand = newRef;
-                Console.WriteLine($"[LinuxCompat] Rewrote SteamUGC.{methodName}({originalParamCount}) -> ({originalParamCount + 1}, false) in {method.Name}");
+                Console.WriteLine(
+                    $"[LinuxCompat] Rewrote SteamUGC.{methodName}({originalParamCount}) -> ({originalParamCount + 1}, false) in {method.Name}"
+                );
             }
         }
     }
@@ -356,23 +436,40 @@ public static class Preloader
         for (int i = 0; i < instructions.Count; i++)
         {
             var instr = instructions[i];
-            if (instr.OpCode == OpCodes.Call && instr.Operand is MethodReference methodRef &&
-                methodRef.Name == "GetAuthSessionTicket" &&
-                methodRef.DeclaringType.Name == "SteamUser")
+            if (
+                instr.OpCode == OpCodes.Call
+                && instr.Operand is MethodReference methodRef
+                && methodRef.Name == "GetAuthSessionTicket"
+                && methodRef.DeclaringType.Name == "SteamUser"
+            )
             {
                 // Cecil must encode SteamNetworkingIdentity as a value type for the JIT.
                 var steamNetIdType = new TypeReference(
-                    "Steamworks", "SteamNetworkingIdentity", module, methodRef.DeclaringType.Scope)
+                    "Steamworks",
+                    "SteamNetworkingIdentity",
+                    module,
+                    methodRef.DeclaringType.Scope
+                )
                 {
-                    IsValueType = true
+                    IsValueType = true,
                 };
                 steamNetIdType = module.ImportReference(steamNetIdType);
 
-                var newMethodRef = new MethodReference("GetAuthSessionTicket", methodRef.ReturnType, methodRef.DeclaringType);
-                newMethodRef.Parameters.Add(new ParameterDefinition(new ArrayType(module.TypeSystem.Byte)));
+                var newMethodRef = new MethodReference(
+                    "GetAuthSessionTicket",
+                    methodRef.ReturnType,
+                    methodRef.DeclaringType
+                );
+                newMethodRef.Parameters.Add(
+                    new ParameterDefinition(new ArrayType(module.TypeSystem.Byte))
+                );
                 newMethodRef.Parameters.Add(new ParameterDefinition(module.TypeSystem.Int32));
-                newMethodRef.Parameters.Add(new ParameterDefinition(new ByReferenceType(module.TypeSystem.UInt32)));
-                newMethodRef.Parameters.Add(new ParameterDefinition(new ByReferenceType(steamNetIdType)));
+                newMethodRef.Parameters.Add(
+                    new ParameterDefinition(new ByReferenceType(module.TypeSystem.UInt32))
+                );
+                newMethodRef.Parameters.Add(
+                    new ParameterDefinition(new ByReferenceType(steamNetIdType))
+                );
 
                 var identityVar = new VariableDefinition(steamNetIdType);
                 method.Body.Variables.Add(identityVar);
@@ -387,7 +484,9 @@ public static class Preloader
 
                 instr.Operand = newMethodRef;
 
-                Console.WriteLine($"[LinuxCompat] Patched GetAuthSessionTicket with SteamNetworkingIdentity");
+                Console.WriteLine(
+                    $"[LinuxCompat] Patched GetAuthSessionTicket with SteamNetworkingIdentity"
+                );
                 break;
             }
         }
@@ -397,23 +496,35 @@ public static class Preloader
     private static void PatchCreateRenderDevice(TypeDefinition type, ModuleDefinition module)
     {
         var method = type.Methods.FirstOrDefault(m => m.Name == "CreateRenderDevice");
-        if (method?.HasBody != true) return;
+        if (method?.HasBody != true)
+            return;
 
         var instructions = method.Body.Instructions;
 
         for (int i = 0; i < instructions.Count; i++)
         {
             var instr = instructions[i];
-            if (instr.OpCode == OpCodes.Newobj && instr.Operand is MethodReference ctor &&
-                ctor.DeclaringType.Name == "Device" &&
-                ctor.Parameters.Count >= 3 &&
-                (ctor.Parameters[0].ParameterType.Name == "Adapter" || ctor.Parameters[0].ParameterType.Name == "Adapter1"))
+            if (
+                instr.OpCode == OpCodes.Newobj
+                && instr.Operand is MethodReference ctor
+                && ctor.DeclaringType.Name == "Device"
+                && ctor.Parameters.Count >= 3
+                && (
+                    ctor.Parameters[0].ParameterType.Name == "Adapter"
+                    || ctor.Parameters[0].ParameterType.Name == "Adapter1"
+                )
+            )
             {
                 for (int j = i - 1; j >= 0 && j >= i - 15; j--)
                 {
-                    if (instructions[j].OpCode == OpCodes.Ldloc || instructions[j].OpCode == OpCodes.Ldloc_S ||
-                        instructions[j].OpCode == OpCodes.Ldloc_0 || instructions[j].OpCode == OpCodes.Ldloc_1 ||
-                        instructions[j].OpCode == OpCodes.Ldloc_2 || instructions[j].OpCode == OpCodes.Ldloc_3)
+                    if (
+                        instructions[j].OpCode == OpCodes.Ldloc
+                        || instructions[j].OpCode == OpCodes.Ldloc_S
+                        || instructions[j].OpCode == OpCodes.Ldloc_0
+                        || instructions[j].OpCode == OpCodes.Ldloc_1
+                        || instructions[j].OpCode == OpCodes.Ldloc_2
+                        || instructions[j].OpCode == OpCodes.Ldloc_3
+                    )
                     {
                         VariableDefinition varDef = null;
                         if (instructions[j].Operand is VariableDefinition vd)
@@ -422,9 +533,11 @@ public static class Preloader
                             varDef = method.Body.Variables[vi];
                         else
                         {
-                            int idx = instructions[j].OpCode == OpCodes.Ldloc_0 ? 0 :
-                                      instructions[j].OpCode == OpCodes.Ldloc_1 ? 1 :
-                                      instructions[j].OpCode == OpCodes.Ldloc_2 ? 2 : 3;
+                            int idx =
+                                instructions[j].OpCode == OpCodes.Ldloc_0 ? 0
+                                : instructions[j].OpCode == OpCodes.Ldloc_1 ? 1
+                                : instructions[j].OpCode == OpCodes.Ldloc_2 ? 2
+                                : 3;
                             varDef = method.Body.Variables[idx];
                         }
 
@@ -433,16 +546,38 @@ public static class Preloader
                             SetInstr(instructions[j], OpCodes.Ldc_I4_1);
 
                             // DriverType shares FeatureLevel's SharpDX scope.
-                            var featureLevelScope = (ctor.Parameters[2].ParameterType is ArrayType at ? at.ElementType : ctor.Parameters[2].ParameterType).Scope;
-                            var driverTypeRef = module.ImportReference(new TypeReference("SharpDX.Direct3D", "DriverType", module, featureLevelScope, true));
-                            var newCtor = new MethodReference(".ctor", module.TypeSystem.Void, ctor.DeclaringType);
+                            var featureLevelScope = (
+                                ctor.Parameters[2].ParameterType is ArrayType at
+                                    ? at.ElementType
+                                    : ctor.Parameters[2].ParameterType
+                            ).Scope;
+                            var driverTypeRef = module.ImportReference(
+                                new TypeReference(
+                                    "SharpDX.Direct3D",
+                                    "DriverType",
+                                    module,
+                                    featureLevelScope,
+                                    true
+                                )
+                            );
+                            var newCtor = new MethodReference(
+                                ".ctor",
+                                module.TypeSystem.Void,
+                                ctor.DeclaringType
+                            );
                             newCtor.HasThis = true;
                             newCtor.Parameters.Add(new ParameterDefinition(driverTypeRef));
-                            newCtor.Parameters.Add(new ParameterDefinition(ctor.Parameters[1].ParameterType));
-                            newCtor.Parameters.Add(new ParameterDefinition(ctor.Parameters[2].ParameterType));
+                            newCtor.Parameters.Add(
+                                new ParameterDefinition(ctor.Parameters[1].ParameterType)
+                            );
+                            newCtor.Parameters.Add(
+                                new ParameterDefinition(ctor.Parameters[2].ParameterType)
+                            );
 
                             instr.Operand = newCtor;
-                            Console.WriteLine("[LinuxCompat] Patched CreateRenderDevice: Device(Adapter) -> Device(DriverType.Hardware)");
+                            Console.WriteLine(
+                                "[LinuxCompat] Patched CreateRenderDevice: Device(Adapter) -> Device(DriverType.Hardware)"
+                            );
                             break;
                         }
                     }
@@ -455,7 +590,8 @@ public static class Preloader
     private static void PatchCreateSwapChain(TypeDefinition type, ModuleDefinition module)
     {
         var method = type.Methods.FirstOrDefault(m => m.Name == "CreateSwapChain");
-        if (method?.HasBody != true) return;
+        if (method?.HasBody != true)
+            return;
 
         var instructions = method.Body.Instructions;
 
@@ -469,27 +605,40 @@ public static class Preloader
                     SetInstr(instructions[i - 1], OpCodes.Ldc_I4_0);
                     Console.WriteLine("[LinuxCompat] Patched CreateSwapChain: Flags = None");
                 }
-                if (fr.Name == "SwapEffect" && fr.DeclaringType.Name == "SwapChainDescription" && i > 0)
+                if (
+                    fr.Name == "SwapEffect"
+                    && fr.DeclaringType.Name == "SwapChainDescription"
+                    && i > 0
+                )
                 {
                     SetInstr(instructions[i - 1], OpCodes.Ldc_I4_1);
-                    Console.WriteLine("[LinuxCompat] Patched CreateSwapChain: SwapEffect = Sequential");
+                    Console.WriteLine(
+                        "[LinuxCompat] Patched CreateSwapChain: SwapEffect = Sequential"
+                    );
                 }
                 if (fr.Name == "Usage" && fr.DeclaringType.Name == "SwapChainDescription" && i > 0)
                 {
                     SetInstr(instructions[i - 1], OpCodes.Ldc_I4, 0x30);
-                    Console.WriteLine("[LinuxCompat] Patched CreateSwapChain: Usage = ShaderInput | RenderTargetOutput");
+                    Console.WriteLine(
+                        "[LinuxCompat] Patched CreateSwapChain: Usage = ShaderInput | RenderTargetOutput"
+                    );
                 }
             }
         }
 
         for (int i = 0; i < instructions.Count; i++)
         {
-            if (instructions[i].OpCode == OpCodes.Callvirt && instructions[i].Operand is MethodReference mr &&
-                mr.Name == "MakeWindowAssociation")
+            if (
+                instructions[i].OpCode == OpCodes.Callvirt
+                && instructions[i].Operand is MethodReference mr
+                && mr.Name == "MakeWindowAssociation"
+            )
             {
                 for (int j = i; j >= i - 3 && j >= 0; j--)
                     NopInstr(instructions[j]);
-                Console.WriteLine("[LinuxCompat] Patched CreateSwapChain: NOP'd MakeWindowAssociation");
+                Console.WriteLine(
+                    "[LinuxCompat] Patched CreateSwapChain: NOP'd MakeWindowAssociation"
+                );
                 break;
             }
         }
@@ -498,21 +647,27 @@ public static class Preloader
     private static void PatchApplySettings(TypeDefinition type)
     {
         var method = type.Methods.FirstOrDefault(m => m.Name == "ApplySettings");
-        if (method?.HasBody != true) return;
+        if (method?.HasBody != true)
+            return;
 
         var instructions = method.Body.Instructions;
 
         int settingsStoreIdx = -1;
         for (int i = 0; i < instructions.Count; i++)
         {
-            if (instructions[i].OpCode == OpCodes.Stsfld && instructions[i].Operand is FieldReference fr && fr.Name == "m_settings")
+            if (
+                instructions[i].OpCode == OpCodes.Stsfld
+                && instructions[i].Operand is FieldReference fr
+                && fr.Name == "m_settings"
+            )
             {
                 settingsStoreIdx = i;
                 break;
             }
         }
 
-        if (settingsStoreIdx < 0) return;
+        if (settingsStoreIdx < 0)
+            return;
 
         for (int i = settingsStoreIdx + 1; i < instructions.Count; i++)
         {
@@ -529,7 +684,8 @@ public static class Preloader
     private static void PatchFixSettings(TypeDefinition type)
     {
         var method = type.Methods.FirstOrDefault(m => m.Name == "FixSettings");
-        if (method?.HasBody != true) return;
+        if (method?.HasBody != true)
+            return;
 
         // Null-render adapters have no outputs but still accept these settings.
         var instructions = method.Body.Instructions;
@@ -537,32 +693,51 @@ public static class Preloader
 
         for (int i = 0; i < instructions.Count; i++)
         {
-            if (instructions[i].OpCode == OpCodes.Callvirt && instructions[i].Operand is MethodReference mr &&
-                mr.Name == "get_Outputs" && mr.DeclaringType.Name == "Adapter")
+            if (
+                instructions[i].OpCode == OpCodes.Callvirt
+                && instructions[i].Operand is MethodReference mr
+                && mr.Name == "get_Outputs"
+                && mr.DeclaringType.Name == "Adapter"
+            )
             {
                 for (int j = i + 1; j < instructions.Count && j < i + 5; j++)
                 {
                     if (instructions[j].OpCode == OpCodes.Ldlen)
                     {
                         int start = i - 1;
-                        while (start >= 0 && instructions[start].OpCode != OpCodes.Ldarg_1 &&
-                               instructions[start].OpCode != OpCodes.Ldarg_S &&
-                               !(instructions[start].OpCode == OpCodes.Ldloc || instructions[start].OpCode == OpCodes.Ldloc_S ||
-                                 instructions[start].OpCode == OpCodes.Ldloc_0 || instructions[start].OpCode == OpCodes.Ldloc_1))
+                        while (
+                            start >= 0
+                            && instructions[start].OpCode != OpCodes.Ldarg_1
+                            && instructions[start].OpCode != OpCodes.Ldarg_S
+                            && !(
+                                instructions[start].OpCode == OpCodes.Ldloc
+                                || instructions[start].OpCode == OpCodes.Ldloc_S
+                                || instructions[start].OpCode == OpCodes.Ldloc_0
+                                || instructions[start].OpCode == OpCodes.Ldloc_1
+                            )
+                        )
                         {
                             start--;
                         }
 
                         for (int k = j + 1; k < instructions.Count && k < j + 5; k++)
                         {
-                            if (instructions[k].OpCode == OpCodes.Brtrue || instructions[k].OpCode == OpCodes.Brtrue_S ||
-                                instructions[k].OpCode == OpCodes.Brfalse || instructions[k].OpCode == OpCodes.Brfalse_S ||
-                                instructions[k].OpCode == OpCodes.Bne_Un || instructions[k].OpCode == OpCodes.Bne_Un_S ||
-                                instructions[k].OpCode == OpCodes.Beq || instructions[k].OpCode == OpCodes.Beq_S)
+                            if (
+                                instructions[k].OpCode == OpCodes.Brtrue
+                                || instructions[k].OpCode == OpCodes.Brtrue_S
+                                || instructions[k].OpCode == OpCodes.Brfalse
+                                || instructions[k].OpCode == OpCodes.Brfalse_S
+                                || instructions[k].OpCode == OpCodes.Bne_Un
+                                || instructions[k].OpCode == OpCodes.Bne_Un_S
+                                || instructions[k].OpCode == OpCodes.Beq
+                                || instructions[k].OpCode == OpCodes.Beq_S
+                            )
                             {
                                 for (int n = start; n <= k; n++)
                                     NopInstr(instructions[n]);
-                                Console.WriteLine("[LinuxCompat] Patched FixSettings: skipped adapter.Outputs check");
+                                Console.WriteLine(
+                                    "[LinuxCompat] Patched FixSettings: skipped adapter.Outputs check"
+                                );
                                 return;
                             }
                         }
@@ -577,15 +752,21 @@ public static class Preloader
     private static void NopGameWindowOnModeChanged(TypeDefinition type, string methodName)
     {
         var method = type.Methods.FirstOrDefault(m => m.Name == methodName);
-        if (method?.HasBody != true) return;
+        if (method?.HasBody != true)
+            return;
 
         var instructions = method.Body.Instructions;
 
         for (int i = instructions.Count - 1; i >= 0; i--)
         {
-            if ((instructions[i].OpCode != OpCodes.Call && instructions[i].OpCode != OpCodes.Callvirt) ||
-                !(instructions[i].Operand is MethodReference mr) ||
-                mr.Name != "OnModeChanged")
+            if (
+                (
+                    instructions[i].OpCode != OpCodes.Call
+                    && instructions[i].OpCode != OpCodes.Callvirt
+                )
+                || !(instructions[i].Operand is MethodReference mr)
+                || mr.Name != "OnModeChanged"
+            )
                 continue;
 
             int callIdx = i;
@@ -593,21 +774,26 @@ public static class Preloader
             int startIdx = -1;
             for (int j = callIdx - 1; j >= 0; j--)
             {
-                if (instructions[j].OpCode == OpCodes.Ldfld &&
-                    instructions[j].Operand is FieldReference fr &&
-                    fr.Name == "m_windows")
+                if (
+                    instructions[j].OpCode == OpCodes.Ldfld
+                    && instructions[j].Operand is FieldReference fr
+                    && fr.Name == "m_windows"
+                )
                 {
                     startIdx = j > 0 && instructions[j - 1].OpCode == OpCodes.Ldarg_0 ? j - 1 : j;
                     break;
                 }
             }
 
-            if (startIdx < 0) continue;
+            if (startIdx < 0)
+                continue;
 
             for (int j = startIdx; j <= callIdx; j++)
                 NopInstr(instructions[j]);
 
-            Console.WriteLine($"[LinuxCompat] NOP'd GameWindow.OnModeChanged in {type.Name}.{methodName}");
+            Console.WriteLine(
+                $"[LinuxCompat] NOP'd GameWindow.OnModeChanged in {type.Name}.{methodName}"
+            );
         }
     }
 
@@ -627,7 +813,8 @@ public static class Preloader
     private static void NopMethodBody(TypeDefinition type, string methodName)
     {
         var method = type.Methods.FirstOrDefault(m => m.Name == methodName);
-        if (method == null) return;
+        if (method == null)
+            return;
 
         var il = method.Body.GetILProcessor();
         method.Body.Instructions.Clear();
@@ -639,20 +826,24 @@ public static class Preloader
     private static void ReplaceWithBoolReturn(TypeDefinition type, string methodName, bool value)
     {
         var method = type.Methods.FirstOrDefault(m => m.Name == methodName);
-        if (method == null) return;
+        if (method == null)
+            return;
 
         var il = method.Body.GetILProcessor();
         method.Body.Instructions.Clear();
         method.Body.ExceptionHandlers.Clear();
         method.Body.Variables.Clear();
-        il.Append(il.Create(value ? Mono.Cecil.Cil.OpCodes.Ldc_I4_1 : Mono.Cecil.Cil.OpCodes.Ldc_I4_0));
+        il.Append(
+            il.Create(value ? Mono.Cecil.Cil.OpCodes.Ldc_I4_1 : Mono.Cecil.Cil.OpCodes.Ldc_I4_0)
+        );
         il.Append(il.Create(Mono.Cecil.Cil.OpCodes.Ret));
     }
 
     private static void ReplaceWithConstant(TypeDefinition type, string methodName, float value)
     {
         var method = type.Methods.FirstOrDefault(m => m.Name == methodName);
-        if (method == null) return;
+        if (method == null)
+            return;
 
         var il = method.Body.GetILProcessor();
         method.Body.Instructions.Clear();
@@ -665,12 +856,14 @@ public static class Preloader
     private static void ReplaceWithUintReturn(TypeDefinition type, string methodName, uint value)
     {
         var method = type.Methods.FirstOrDefault(m => m.Name == methodName);
-        if (method == null) return;
+        if (method == null)
+            return;
 
         method.IsPInvokeImpl = false;
         method.IsPreserveSig = false;
         method.PInvokeInfo = null;
-        method.ImplAttributes = Mono.Cecil.MethodImplAttributes.IL | Mono.Cecil.MethodImplAttributes.Managed;
+        method.ImplAttributes =
+            Mono.Cecil.MethodImplAttributes.IL | Mono.Cecil.MethodImplAttributes.Managed;
         method.Body = new Mono.Cecil.Cil.MethodBody(method);
 
         var il = method.Body.GetILProcessor();
@@ -680,8 +873,11 @@ public static class Preloader
 
     private static void ReplaceWithDefaultReturn(TypeDefinition type, string methodName)
     {
-        var method = type.Methods.FirstOrDefault(m => m.Name == methodName && !m.IsPInvokeImpl && m.HasBody);
-        if (method == null) return;
+        var method = type.Methods.FirstOrDefault(m =>
+            m.Name == methodName && !m.IsPInvokeImpl && m.HasBody
+        );
+        if (method == null)
+            return;
 
         var il = method.Body.GetILProcessor();
         method.Body.Instructions.Clear();
@@ -697,11 +893,16 @@ public static class Preloader
     private static void ReplaceProcessPrivateMemory(TypeDefinition type)
     {
         var method = type.Methods.FirstOrDefault(m => m.Name == "get_ProcessPrivateMemory");
-        if (method == null) return;
+        if (method == null)
+            return;
 
         var module = type.Module;
-        var getCurrentProcess = module.ImportReference(typeof(System.Diagnostics.Process).GetMethod("GetCurrentProcess"));
-        var privateMemSize = module.ImportReference(typeof(System.Diagnostics.Process).GetProperty("PrivateMemorySize64")!.GetGetMethod()!);
+        var getCurrentProcess = module.ImportReference(
+            typeof(System.Diagnostics.Process).GetMethod("GetCurrentProcess")
+        );
+        var privateMemSize = module.ImportReference(
+            typeof(System.Diagnostics.Process).GetProperty("PrivateMemorySize64")!.GetGetMethod()!
+        );
 
         var il = method.Body.GetILProcessor();
         method.Body.Instructions.Clear();
@@ -713,10 +914,15 @@ public static class Preloader
     }
 
     // ReSharper disable once UnusedMember.Global
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    [System.Runtime.CompilerServices.MethodImpl(
+        System.Runtime.CompilerServices.MethodImplOptions.NoInlining
+    )]
     public static void Finish()
     {
-        AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", true);
+        AppContext.SetSwitch(
+            "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization",
+            true
+        );
 
         Assembly.Load("System.Collections.Immutable");
 
@@ -728,19 +934,16 @@ public static class Preloader
             ClientPlugin.Compatibility.SdlRenderThread.Start();
 #endif
 
-        string[] dlls = [
-            "System.Management",
-        ];
+        string[] dlls = ["System.Management"];
         AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
         {
             var targetName = new AssemblyName(args.Name).Name;
             return dlls.Contains(targetName) ? Assembly.Load(targetName) : null;
         };
-        
+
 #if DEBUG && HARMONY_DEBUG
         Harmony.DEBUG = true;
 #endif
-        
 #if MAGNETAR
         const string harmonyId = "LinuxCompatServer";
 #else
@@ -754,11 +957,25 @@ public static class Preloader
         catch (Exception e)
         {
             Console.WriteLine($"[LinuxCompat] PatchCategory(\"Finish\") threw: {e}");
-            try { VRage.Utils.MyLog.Default.WriteLineAndConsole($"[LinuxCompat] PatchCategory(\"Finish\") threw: {e}"); } catch { }
+            try
+            {
+                VRage.Utils.MyLog.Default.WriteLineAndConsole(
+                    $"[LinuxCompat] PatchCategory(\"Finish\") threw: {e}"
+                );
+            }
+            catch { }
             throw;
         }
-        Console.WriteLine($"[LinuxCompat] PatchCategory(\"Finish\") applied {harmony.GetPatchedMethods().Count()} methods");
-        try { VRage.Utils.MyLog.Default.WriteLineAndConsole($"[LinuxCompat] PatchCategory(\"Finish\") applied {harmony.GetPatchedMethods().Count()} methods"); } catch { }
+        Console.WriteLine(
+            $"[LinuxCompat] PatchCategory(\"Finish\") applied {harmony.GetPatchedMethods().Count()} methods"
+        );
+        try
+        {
+            VRage.Utils.MyLog.Default.WriteLineAndConsole(
+                $"[LinuxCompat] PatchCategory(\"Finish\") applied {harmony.GetPatchedMethods().Count()} methods"
+            );
+        }
+        catch { }
 #if MAGNETAR
         // Server Plugin.Init runs after the auto-loaded world's mods compile.
         ClientPlugin.Patches.PathHandling.PathTranslation.Init();
@@ -773,14 +990,18 @@ public static class Preloader
     {
         if (s_nativeWrappersInitialized)
         {
-            throw new Exception("[LinuxCompat] InitNativeWrappers: already initialized. This is the second attempt.");
+            throw new Exception(
+                "[LinuxCompat] InitNativeWrappers: already initialized. This is the second attempt."
+            );
         }
         s_nativeWrappersInitialized = true;
 
         var gameRoot = Environment.GetEnvironmentVariable("SPACE_ENGINEERS_ROOT");
         if (string.IsNullOrEmpty(gameRoot))
         {
-            Console.WriteLine("[LinuxCompat] WARNING: SPACE_ENGINEERS_ROOT not set, cannot initialize native wrappers");
+            Console.WriteLine(
+                "[LinuxCompat] WARNING: SPACE_ENGINEERS_ROOT not set, cannot initialize native wrappers"
+            );
             return;
         }
 
@@ -790,14 +1011,19 @@ public static class Preloader
             binDir = Path.Combine(gameRoot, "Bin64");
 #else
         var binDir = Path.Combine(gameRoot, "Bin64");
-        InitWrapper("D3DCompiler",  binDir, "d3dcompiler_47.dll", D3DCompilerLinux.Init);
+        InitWrapper("D3DCompiler", binDir, "d3dcompiler_47.dll", D3DCompilerLinux.Init);
 #endif
-        InitWrapper("Havok",        binDir, "Havok.dll",          HavokLinux.Init);
-        InitWrapper("RecastDetour", binDir, "RecastDetour.dll",   RecastDetourLinux.Init);
-        InitWrapper("VRageNative",  binDir, "VRage.Native.dll",   VRageNativeLinux.Init);
+        InitWrapper("Havok", binDir, "Havok.dll", HavokLinux.Init);
+        InitWrapper("RecastDetour", binDir, "RecastDetour.dll", RecastDetourLinux.Init);
+        InitWrapper("VRageNative", binDir, "VRage.Native.dll", VRageNativeLinux.Init);
     }
 
-    private static void InitWrapper(string name, string binDir, string dllName, Action<string> initFunc)
+    private static void InitWrapper(
+        string name,
+        string binDir,
+        string dllName,
+        Action<string> initFunc
+    )
     {
         var dllPath = Path.Combine(binDir, dllName);
         if (!File.Exists(dllPath))

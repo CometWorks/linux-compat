@@ -13,9 +13,11 @@ static class RenderModelPathCanonicalizer
         if (string.IsNullOrEmpty(path))
             return;
 
-        if (path.Length >= 2 && path[1] == ':' &&
-            ((path[0] >= 'A' && path[0] <= 'Z') ||
-             (path[0] >= 'a' && path[0] <= 'z')))
+        if (
+            path.Length >= 2
+            && path[1] == ':'
+            && ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z'))
+        )
         {
             path = PathTranslation.Untranslate(path.Replace('\\', '/'));
         }

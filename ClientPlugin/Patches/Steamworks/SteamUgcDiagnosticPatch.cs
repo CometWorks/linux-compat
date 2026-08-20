@@ -30,10 +30,16 @@ static class SteamUgcDiagnosticPatch
     [HarmonyPatchCategory("Finish")]
     static class StartItemUpdate_Patch
     {
-        static void Postfix(AppId_t nConsumerAppId, PublishedFileId_t nPublishedFileID, UGCUpdateHandle_t __result)
+        static void Postfix(
+            AppId_t nConsumerAppId,
+            PublishedFileId_t nPublishedFileID,
+            UGCUpdateHandle_t __result
+        )
         {
-            Log($"StartItemUpdate(app={nConsumerAppId.m_AppId}, item={nPublishedFileID.m_PublishedFileId}) " +
-                $"=> handle=0x{__result.m_UGCUpdateHandle:X16} valid={__result.m_UGCUpdateHandle != ulong.MaxValue}");
+            Log(
+                $"StartItemUpdate(app={nConsumerAppId.m_AppId}, item={nPublishedFileID.m_PublishedFileId}) "
+                    + $"=> handle=0x{__result.m_UGCUpdateHandle:X16} valid={__result.m_UGCUpdateHandle != ulong.MaxValue}"
+            );
         }
     }
 
@@ -43,7 +49,9 @@ static class SteamUgcDiagnosticPatch
     {
         static void Postfix(UGCUpdateHandle_t handle, string pchTitle, bool __result)
         {
-            Log($"SetItemTitle(handle=0x{handle.m_UGCUpdateHandle:X16}, title='{pchTitle}') => {__result}");
+            Log(
+                $"SetItemTitle(handle=0x{handle.m_UGCUpdateHandle:X16}, title='{pchTitle}') => {__result}"
+            );
         }
     }
 
@@ -52,10 +60,16 @@ static class SteamUgcDiagnosticPatch
     [HarmonyPatchCategory("Finish")]
     static class SetItemTags_Patch
     {
-        static void Postfix(UGCUpdateHandle_t updateHandle, System.Collections.Generic.IList<string> pTags, bool __result)
+        static void Postfix(
+            UGCUpdateHandle_t updateHandle,
+            System.Collections.Generic.IList<string> pTags,
+            bool __result
+        )
         {
             string tags = pTags == null ? "<null>" : string.Join(",", pTags);
-            Log($"SetItemTags(handle=0x{updateHandle.m_UGCUpdateHandle:X16}, tags=[{tags}]) => {__result}");
+            Log(
+                $"SetItemTags(handle=0x{updateHandle.m_UGCUpdateHandle:X16}, tags=[{tags}]) => {__result}"
+            );
         }
     }
 
@@ -63,9 +77,15 @@ static class SteamUgcDiagnosticPatch
     [HarmonyPatchCategory("Finish")]
     static class SetItemVisibility_Patch
     {
-        static void Postfix(UGCUpdateHandle_t handle, ERemoteStoragePublishedFileVisibility eVisibility, bool __result)
+        static void Postfix(
+            UGCUpdateHandle_t handle,
+            ERemoteStoragePublishedFileVisibility eVisibility,
+            bool __result
+        )
         {
-            Log($"SetItemVisibility(handle=0x{handle.m_UGCUpdateHandle:X16}, vis={eVisibility}) => {__result}");
+            Log(
+                $"SetItemVisibility(handle=0x{handle.m_UGCUpdateHandle:X16}, vis={eVisibility}) => {__result}"
+            );
         }
     }
 
@@ -76,7 +96,9 @@ static class SteamUgcDiagnosticPatch
         static void Postfix(UGCUpdateHandle_t handle, string pchDescription, bool __result)
         {
             int len = pchDescription?.Length ?? -1;
-            Log($"SetItemDescription(handle=0x{handle.m_UGCUpdateHandle:X16}, descLen={len}) => {__result}");
+            Log(
+                $"SetItemDescription(handle=0x{handle.m_UGCUpdateHandle:X16}, descLen={len}) => {__result}"
+            );
         }
     }
 
@@ -99,12 +121,12 @@ static class SteamUgcDiagnosticPatch
                         fileCount = Directory.GetFiles(pszContentFolder).Length;
                 }
             }
-            catch
-            {
-            }
+            catch { }
 
-            Log($"SetItemContent(handle=0x{handle.m_UGCUpdateHandle:X16}, folder='{pszContentFolder}', " +
-                $"absolute={isAbsolute}, exists={exists}, files={fileCount}) => {__result}");
+            Log(
+                $"SetItemContent(handle=0x{handle.m_UGCUpdateHandle:X16}, folder='{pszContentFolder}', "
+                    + $"absolute={isAbsolute}, exists={exists}, files={fileCount}) => {__result}"
+            );
         }
     }
 
@@ -128,12 +150,12 @@ static class SteamUgcDiagnosticPatch
                         size = fi.Length;
                 }
             }
-            catch
-            {
-            }
+            catch { }
 
-            Log($"SetItemPreview(handle=0x{handle.m_UGCUpdateHandle:X16}, file='{pszPreviewFile}', " +
-                $"absolute={isAbsolute}, exists={exists}, size={size}) => {__result}");
+            Log(
+                $"SetItemPreview(handle=0x{handle.m_UGCUpdateHandle:X16}, file='{pszPreviewFile}', "
+                    + $"absolute={isAbsolute}, exists={exists}, size={size}) => {__result}"
+            );
         }
     }
 
@@ -144,7 +166,9 @@ static class SteamUgcDiagnosticPatch
         static void Postfix(UGCUpdateHandle_t handle, string pchMetaData, bool __result)
         {
             int len = pchMetaData?.Length ?? -1;
-            Log($"SetItemMetadata(handle=0x{handle.m_UGCUpdateHandle:X16}, metadataLen={len}) => {__result}");
+            Log(
+                $"SetItemMetadata(handle=0x{handle.m_UGCUpdateHandle:X16}, metadataLen={len}) => {__result}"
+            );
         }
     }
 
@@ -155,8 +179,10 @@ static class SteamUgcDiagnosticPatch
         static void Postfix(UGCUpdateHandle_t handle, string pchChangeNote, SteamAPICall_t __result)
         {
             ulong call = __result.m_SteamAPICall;
-            Log($"SubmitItemUpdate(handle=0x{handle.m_UGCUpdateHandle:X16}, note='{pchChangeNote}') " +
-                $"=> apiCall=0x{call:X16} valid={call != 0UL}");
+            Log(
+                $"SubmitItemUpdate(handle=0x{handle.m_UGCUpdateHandle:X16}, note='{pchChangeNote}') "
+                    + $"=> apiCall=0x{call:X16} valid={call != 0UL}"
+            );
         }
     }
 
@@ -173,7 +199,9 @@ static class SteamUgcDiagnosticPatch
                 string thumb = __instance.Thumbnail;
                 string title = __instance.Title;
                 ulong id = __instance.Id;
-                Log($"UpdatePublishedItem ENTER id={id} title='{title}' folder='{folder}' thumb='{thumb}'");
+                Log(
+                    $"UpdatePublishedItem ENTER id={id} title='{title}' folder='{folder}' thumb='{thumb}'"
+                );
             }
             catch (Exception ex)
             {

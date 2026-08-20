@@ -90,7 +90,13 @@ public static class WindowsTextWriter
         writer.Write(Crlf);
     }
 
-    public static void WriteLine(TextWriter writer, string format, object arg0, object arg1, object arg2)
+    public static void WriteLine(
+        TextWriter writer,
+        string format,
+        object arg0,
+        object arg1,
+        object arg2
+    )
     {
         writer.Write(format, arg0, arg1, arg2);
         writer.Write(Crlf);

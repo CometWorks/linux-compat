@@ -5,9 +5,12 @@ using VRage.Render11.Resources;
 namespace ClientPlugin.Patches.PathHandling;
 
 // Restore absolute mod icon paths before URI normalization joins them to ContentPath.
-[HarmonyPatch(typeof(MyResourceUtils), nameof(MyResourceUtils.NormalizeFileTextureName),
+[HarmonyPatch(
+    typeof(MyResourceUtils),
+    nameof(MyResourceUtils.NormalizeFileTextureName),
     new[] { typeof(string), typeof(Uri) },
-    new[] { ArgumentType.Ref, ArgumentType.Out })]
+    new[] { ArgumentType.Ref, ArgumentType.Out }
+)]
 [HarmonyPatchCategory("Finish")]
 static class MyResourceUtilsNormalizeFileTextureNamePatch
 {

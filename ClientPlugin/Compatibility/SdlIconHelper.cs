@@ -26,13 +26,27 @@ internal static class SdlIconHelper
 
         try
         {
-            if (!TryLoadIcoSurface(path, out byte[] pixelData, out int width, out int height, out int pitch))
+            if (
+                !TryLoadIcoSurface(
+                    path,
+                    out byte[] pixelData,
+                    out int width,
+                    out int height,
+                    out int pitch
+                )
+            )
                 return;
 
             GCHandle handle = GCHandle.Alloc(pixelData, GCHandleType.Pinned);
             try
             {
-                IntPtr surface = SDL_CreateSurfaceFrom(width, height, SdlPixelFormatBgra32, handle.AddrOfPinnedObject(), pitch);
+                IntPtr surface = SDL_CreateSurfaceFrom(
+                    width,
+                    height,
+                    SdlPixelFormatBgra32,
+                    handle.AddrOfPinnedObject(),
+                    pitch
+                );
                 if (surface == IntPtr.Zero)
                     return;
 
@@ -50,12 +64,16 @@ internal static class SdlIconHelper
                 handle.Free();
             }
         }
-        catch (Exception)
-        {
-        }
+        catch (Exception) { }
     }
 
-    private static bool TryLoadIcoSurface(string path, out byte[] pixelData, out int width, out int height, out int pitch)
+    private static bool TryLoadIcoSurface(
+        string path,
+        out byte[] pixelData,
+        out int width,
+        out int height,
+        out int pitch
+    )
     {
         pixelData = null;
         width = 0;
@@ -82,14 +100,24 @@ internal static class SdlIconHelper
                 Planes = reader.ReadUInt16(),
                 BitCount = reader.ReadUInt16(),
                 BytesInRes = reader.ReadUInt32(),
-                ImageOffset = reader.ReadUInt32()
+                ImageOffset = reader.ReadUInt32(),
             };
         }
 
         Array.Sort(entries, CompareIcoEntries);
         for (int i = 0; i < entries.Length; i++)
         {
-            if (TryDecodeIcoEntry(stream, reader, entries[i], out pixelData, out width, out height, out pitch))
+            if (
+                TryDecodeIcoEntry(
+                    stream,
+                    reader,
+                    entries[i],
+                    out pixelData,
+                    out width,
+                    out height,
+                    out pitch
+                )
+            )
                 return true;
         }
 
@@ -97,7 +125,15 @@ internal static class SdlIconHelper
         return false;
     }
 
-    private static bool TryDecodeIcoEntry(FileStream stream, BinaryReader reader, IcoEntry entry, out byte[] pixelData, out int width, out int height, out int pitch)
+    private static bool TryDecodeIcoEntry(
+        FileStream stream,
+        BinaryReader reader,
+        IcoEntry entry,
+        out byte[] pixelData,
+        out int width,
+        out int height,
+        out int pitch
+    )
     {
         pixelData = null;
         width = 0;
@@ -192,7 +228,13 @@ internal static class SdlIconHelper
     private const string Lib = "libSDL3.so";
 
     [DllImport(Lib, EntryPoint = "SDL_CreateSurfaceFrom")]
-    private static extern IntPtr SDL_CreateSurfaceFrom(int width, int height, uint format, IntPtr pixels, int pitch);
+    private static extern IntPtr SDL_CreateSurfaceFrom(
+        int width,
+        int height,
+        uint format,
+        IntPtr pixels,
+        int pitch
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_SetWindowIcon")]
     private static extern bool SDL_SetWindowIcon(IntPtr window, IntPtr surface);

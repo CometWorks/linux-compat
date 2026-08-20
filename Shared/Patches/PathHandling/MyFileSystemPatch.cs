@@ -20,7 +20,12 @@ static class MyStorageBaseLoadFromFilePatch
 }
 
 // Resolve the parent of new files to avoid duplicate directories with different casing.
-[HarmonyPatch(typeof(MyFileSystem), nameof(MyFileSystem.OpenWrite), typeof(string), typeof(FileMode))]
+[HarmonyPatch(
+    typeof(MyFileSystem),
+    nameof(MyFileSystem.OpenWrite),
+    typeof(string),
+    typeof(FileMode)
+)]
 [HarmonyPatchCategory("Finish")]
 static class MyFileSystemOpenWritePatch
 {
@@ -133,7 +138,13 @@ static class MyFileSystemGetFilesFilterPatch
     static void Postfix(ref IEnumerable<string> __result) => GetFilesSort.Apply(ref __result);
 }
 
-[HarmonyPatch(typeof(MyFileSystem), nameof(MyFileSystem.GetFiles), typeof(string), typeof(string), typeof(MySearchOption))]
+[HarmonyPatch(
+    typeof(MyFileSystem),
+    nameof(MyFileSystem.GetFiles),
+    typeof(string),
+    typeof(string),
+    typeof(MySearchOption)
+)]
 [HarmonyPatchCategory("Finish")]
 static class MyFileSystemGetFilesSearchOptionPatch
 {
@@ -238,7 +249,10 @@ static class MyFileSystemCreateDirectoryRecursivePatch
 
         path = PathHelpers.Normalize(path);
 
-        var segments = path.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+        var segments = path.Split(
+            Path.DirectorySeparatorChar,
+            StringSplitOptions.RemoveEmptyEntries
+        );
         var resolved = path.StartsWith(Path.DirectorySeparatorChar)
             ? Path.DirectorySeparatorChar.ToString()
             : "";
@@ -259,16 +273,20 @@ static class MyFileSystemCreateDirectoryRecursivePatch
                 {
                     foreach (var entry in Directory.EnumerateDirectories(resolved))
                     {
-                        if (string.Equals(Path.GetFileName(entry), segment, StringComparison.OrdinalIgnoreCase))
+                        if (
+                            string.Equals(
+                                Path.GetFileName(entry),
+                                segment,
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                        )
                         {
                             found = entry;
                             break;
                         }
                     }
                 }
-                catch
-                {
-                }
+                catch { }
                 resolved = found ?? candidate;
             }
             else

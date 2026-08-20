@@ -13,9 +13,14 @@ static class MyModelConstructorPatch
         if (string.IsNullOrEmpty(assetName))
             return;
 
-        if (assetName.Length >= 2 && assetName[1] == ':' &&
-            ((assetName[0] >= 'A' && assetName[0] <= 'Z') ||
-             (assetName[0] >= 'a' && assetName[0] <= 'z')))
+        if (
+            assetName.Length >= 2
+            && assetName[1] == ':'
+            && (
+                (assetName[0] >= 'A' && assetName[0] <= 'Z')
+                || (assetName[0] >= 'a' && assetName[0] <= 'z')
+            )
+        )
         {
             assetName = PathTranslation.Untranslate(assetName.Replace('\\', '/'));
         }

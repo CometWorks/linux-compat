@@ -18,35 +18,101 @@ public static class WindowsPath
     // Preserve the .NET Framework invalid-character values exposed on Windows.
     private static readonly char[] InvalidFileNameChars =
     [
-        '"', '<', '>', '|', '\0',
-        (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7,
-        (char)8, (char)9, (char)10, (char)11, (char)12, (char)13, (char)14,
-        (char)15, (char)16, (char)17, (char)18, (char)19, (char)20, (char)21,
-        (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28,
-        (char)29, (char)30, (char)31,
-        ':', '*', '?', '\\', '/'
+        '"',
+        '<',
+        '>',
+        '|',
+        '\0',
+        (char)1,
+        (char)2,
+        (char)3,
+        (char)4,
+        (char)5,
+        (char)6,
+        (char)7,
+        (char)8,
+        (char)9,
+        (char)10,
+        (char)11,
+        (char)12,
+        (char)13,
+        (char)14,
+        (char)15,
+        (char)16,
+        (char)17,
+        (char)18,
+        (char)19,
+        (char)20,
+        (char)21,
+        (char)22,
+        (char)23,
+        (char)24,
+        (char)25,
+        (char)26,
+        (char)27,
+        (char)28,
+        (char)29,
+        (char)30,
+        (char)31,
+        ':',
+        '*',
+        '?',
+        '\\',
+        '/',
     ];
 
     // Ordering matches .NET Framework Path.GetInvalidPathChars() on Windows.
     private static readonly char[] InvalidPathChars =
     [
-        '"', '<', '>', '|', '\0',
-        (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7,
-        (char)8, (char)9, (char)10, (char)11, (char)12, (char)13, (char)14,
-        (char)15, (char)16, (char)17, (char)18, (char)19, (char)20, (char)21,
-        (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28,
-        (char)29, (char)30, (char)31
+        '"',
+        '<',
+        '>',
+        '|',
+        '\0',
+        (char)1,
+        (char)2,
+        (char)3,
+        (char)4,
+        (char)5,
+        (char)6,
+        (char)7,
+        (char)8,
+        (char)9,
+        (char)10,
+        (char)11,
+        (char)12,
+        (char)13,
+        (char)14,
+        (char)15,
+        (char)16,
+        (char)17,
+        (char)18,
+        (char)19,
+        (char)20,
+        (char)21,
+        (char)22,
+        (char)23,
+        (char)24,
+        (char)25,
+        (char)26,
+        (char)27,
+        (char)28,
+        (char)29,
+        (char)30,
+        (char)31,
     ];
 
     public static char[] GetInvalidFileNameChars() => (char[])InvalidFileNameChars.Clone();
+
     public static char[] GetInvalidPathChars() => (char[])InvalidPathChars.Clone();
 
     private static bool IsAnySeparator(char c) => c == '\\' || c == '/';
 
     private static bool HasDrivePrefix(string path)
     {
-        return path.Length >= 2 && path[1] == ':' &&
-               ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z'));
+        return path.Length >= 2
+            && path[1] == ':'
+            && ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z'));
     }
 
     public static bool IsPathRooted(string path)
@@ -180,8 +246,10 @@ public static class WindowsPath
 
     public static string Combine(string path1, string path2)
     {
-        if (path1 == null) throw new ArgumentNullException(nameof(path1));
-        if (path2 == null) throw new ArgumentNullException(nameof(path2));
+        if (path1 == null)
+            throw new ArgumentNullException(nameof(path1));
+        if (path2 == null)
+            throw new ArgumentNullException(nameof(path2));
         if (path2.Length == 0)
             return path1;
         if (path1.Length == 0 || IsPathRooted(path2))
@@ -192,19 +260,21 @@ public static class WindowsPath
         return path1 + DirectorySeparatorChar + path2;
     }
 
-    public static string Combine(string path1, string path2, string path3)
-        => Combine(Combine(path1, path2), path3);
+    public static string Combine(string path1, string path2, string path3) =>
+        Combine(Combine(path1, path2), path3);
 
-    public static string Combine(string path1, string path2, string path3, string path4)
-        => Combine(Combine(Combine(path1, path2), path3), path4);
+    public static string Combine(string path1, string path2, string path3, string path4) =>
+        Combine(Combine(Combine(path1, path2), path3), path4);
 
     public static string Combine(params string[] paths)
     {
-        if (paths == null) throw new ArgumentNullException(nameof(paths));
+        if (paths == null)
+            throw new ArgumentNullException(nameof(paths));
         string result = "";
         for (int i = 0; i < paths.Length; i++)
         {
-            if (paths[i] == null) throw new ArgumentNullException(nameof(paths));
+            if (paths[i] == null)
+                throw new ArgumentNullException(nameof(paths));
             result = result.Length == 0 ? paths[i] : Combine(result, paths[i]);
         }
         return result;
@@ -212,26 +282,30 @@ public static class WindowsPath
 
     public static string Join(string path1, string path2)
     {
-        if (string.IsNullOrEmpty(path1)) return path2 ?? "";
-        if (string.IsNullOrEmpty(path2)) return path1;
+        if (string.IsNullOrEmpty(path1))
+            return path2 ?? "";
+        if (string.IsNullOrEmpty(path2))
+            return path1;
         char last = path1[path1.Length - 1];
         bool hasSep = IsAnySeparator(last) || IsAnySeparator(path2[0]);
         return hasSep ? path1 + path2 : path1 + DirectorySeparatorChar + path2;
     }
 
-    public static string Join(string path1, string path2, string path3)
-        => Join(Join(path1, path2), path3);
+    public static string Join(string path1, string path2, string path3) =>
+        Join(Join(path1, path2), path3);
 
-    public static string Join(string path1, string path2, string path3, string path4)
-        => Join(Join(Join(path1, path2), path3), path4);
+    public static string Join(string path1, string path2, string path3, string path4) =>
+        Join(Join(Join(path1, path2), path3), path4);
 
     public static string Join(params string[] paths)
     {
-        if (paths == null) throw new ArgumentNullException(nameof(paths));
+        if (paths == null)
+            throw new ArgumentNullException(nameof(paths));
         string result = "";
         for (int i = 0; i < paths.Length; i++)
         {
-            if (string.IsNullOrEmpty(paths[i])) continue;
+            if (string.IsNullOrEmpty(paths[i]))
+                continue;
             result = result.Length == 0 ? paths[i] : Join(result, paths[i]);
         }
         return result;
@@ -243,7 +317,8 @@ public static class WindowsPath
     /// </summary>
     public static string GetFullPath(string path)
     {
-        if (path == null) throw new ArgumentNullException(nameof(path));
+        if (path == null)
+            throw new ArgumentNullException(nameof(path));
 
         if (HasDrivePrefix(path))
         {
@@ -265,9 +340,7 @@ public static class WindowsPath
         string full = Path.GetFullPath(forward);
         string fullFlipped = ToBackslashes(full);
         var fullTranslated = PathTranslation.Translate(fullFlipped);
-        return ReferenceEquals(fullTranslated, fullFlipped)
-            ? "C:" + fullFlipped
-            : fullTranslated;
+        return ReferenceEquals(fullTranslated, fullFlipped) ? "C:" + fullFlipped : fullTranslated;
     }
 
     public static string GetTempPath() => PathTranslation.TempPath;

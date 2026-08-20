@@ -18,13 +18,17 @@ static class CreateVideoPlayerPatch
     {
         try
         {
-            MyLog.Default.WriteLineAndConsole("[LinuxCompat] CreateVideoPlayer: constructing MyLinuxVideoPlayer");
+            MyLog.Default.WriteLineAndConsole(
+                "[LinuxCompat] CreateVideoPlayer: constructing MyLinuxVideoPlayer"
+            );
             __result = new MyLinuxVideoPlayer();
             return false;
         }
         catch (Exception ex)
         {
-            MyLog.Default.WriteLineAndConsole($"[LinuxCompat] MyLinuxVideoPlayer construction failed: {ex}");
+            MyLog.Default.WriteLineAndConsole(
+                $"[LinuxCompat] MyLinuxVideoPlayer construction failed: {ex}"
+            );
             __result = null;
             return false;
         }

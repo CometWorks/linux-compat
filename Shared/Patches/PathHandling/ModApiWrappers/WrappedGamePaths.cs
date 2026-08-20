@@ -16,10 +16,10 @@ internal sealed class WrappedGamePaths : IMyGamePaths
         _inner = inner;
     }
 
-    public string ContentPath  => PathHelpers.ToWindowsPath(_inner.ContentPath);
-    public string ModsPath     => PathHelpers.ToWindowsPath(_inner.ModsPath);
+    public string ContentPath => PathHelpers.ToWindowsPath(_inner.ContentPath);
+    public string ModsPath => PathHelpers.ToWindowsPath(_inner.ModsPath);
     public string UserDataPath => PathHelpers.ToWindowsPath(_inner.UserDataPath);
-    public string SavesPath    => PathHelpers.ToWindowsPath(_inner.SavesPath);
+    public string SavesPath => PathHelpers.ToWindowsPath(_inner.SavesPath);
 
     // Forwarding would make GetCallingAssembly return LinuxCompat instead of the mod.
     // NoInlining preserves the stack frame required by that lookup.

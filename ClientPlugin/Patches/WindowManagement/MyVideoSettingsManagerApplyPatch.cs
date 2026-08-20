@@ -13,10 +13,12 @@ static class MyVideoSettingsManagerApplyPatch
     static void Prefix(MyRenderDeviceSettings settings)
     {
         var current = MyVideoSettingsManager.CurrentDeviceSettings;
-        if (settings.BackBufferWidth == current.BackBufferWidth
+        if (
+            settings.BackBufferWidth == current.BackBufferWidth
             && settings.BackBufferHeight == current.BackBufferHeight
             && settings.WindowMode == current.WindowMode
-            && settings.AdapterOrdinal == current.AdapterOrdinal)
+            && settings.AdapterOrdinal == current.AdapterOrdinal
+        )
             return;
         ModeChangeForwarder.DriveDirect(settings);
     }

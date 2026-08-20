@@ -75,9 +75,14 @@ internal static class SdlJoystick
     private static string s_openDeviceName;
     private static bool s_connected;
     private static MyJoystickState s_state;
-    private static bool s_xSupported, s_ySupported, s_zSupported;
-    private static bool s_rxSupported, s_rySupported, s_rzSupported;
-    private static bool s_slider1Supported, s_slider2Supported;
+    private static bool s_xSupported,
+        s_ySupported,
+        s_zSupported;
+    private static bool s_rxSupported,
+        s_rySupported,
+        s_rzSupported;
+    private static bool s_slider1Supported,
+        s_slider2Supported;
 
     #region SDL render thread
 
@@ -89,7 +94,9 @@ internal static class SdlJoystick
 
         if (!SDL_InitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD))
         {
-            Console.WriteLine($"[LinuxCompat] SdlJoystick SDL_InitSubSystem(JOYSTICK|GAMEPAD) failed: {GetErrorString()}");
+            Console.WriteLine(
+                $"[LinuxCompat] SdlJoystick SDL_InitSubSystem(JOYSTICK|GAMEPAD) failed: {GetErrorString()}"
+            );
             return;
         }
 
@@ -106,9 +113,11 @@ internal static class SdlJoystick
         if (eventType == SDL_EVENT_JOYSTICK_ADDED || eventType == SDL_EVENT_JOYSTICK_REMOVED)
         {
             RefreshDeviceNames();
-            Console.WriteLine(eventType == SDL_EVENT_JOYSTICK_ADDED
-                ? "[LinuxCompat] SdlJoystick device added"
-                : "[LinuxCompat] SdlJoystick device removed");
+            Console.WriteLine(
+                eventType == SDL_EVENT_JOYSTICK_ADDED
+                    ? "[LinuxCompat] SdlJoystick device added"
+                    : "[LinuxCompat] SdlJoystick device removed"
+            );
 
             // Bridge SDL hotplug to the game's WM_DEVICECHANGE-equivalent callback.
             // The callback mutates game-thread state and must run there.
@@ -159,7 +168,9 @@ internal static class SdlJoystick
         state.Z_Right = rt * 2;
 
         for (int i = 0; i < GamepadButtonOrder.Length; i++)
-            state.Buttons[i] = SDL_GetGamepadButton(s_gamepad, GamepadButtonOrder[i]) ? (byte)0x80 : (byte)0;
+            state.Buttons[i] = SDL_GetGamepadButton(s_gamepad, GamepadButtonOrder[i])
+                ? (byte)0x80
+                : (byte)0;
 
         bool up = SDL_GetGamepadButton(s_gamepad, SDL_GAMEPAD_BUTTON_DPAD_UP);
         bool down = SDL_GetGamepadButton(s_gamepad, SDL_GAMEPAD_BUTTON_DPAD_DOWN);
@@ -179,14 +190,30 @@ internal static class SdlJoystick
             int value = SDL_GetJoystickAxis(s_joystick, i) + 32768;
             switch (i)
             {
-                case 0: state.X = value; break;
-                case 1: state.Y = value; break;
-                case 2: state.Z = value; break;
-                case 3: state.RotationX = value; break;
-                case 4: state.RotationY = value; break;
-                case 5: state.RotationZ = value; break;
-                case 6: state.Sliders[0] = value; break;
-                case 7: state.Sliders[1] = value; break;
+                case 0:
+                    state.X = value;
+                    break;
+                case 1:
+                    state.Y = value;
+                    break;
+                case 2:
+                    state.Z = value;
+                    break;
+                case 3:
+                    state.RotationX = value;
+                    break;
+                case 4:
+                    state.RotationY = value;
+                    break;
+                case 5:
+                    state.RotationZ = value;
+                    break;
+                case 6:
+                    state.Sliders[0] = value;
+                    break;
+                case 7:
+                    state.Sliders[1] = value;
+                    break;
             }
         }
 
@@ -204,7 +231,8 @@ internal static class SdlJoystick
                     (hat & SDL_HAT_UP) != 0,
                     (hat & SDL_HAT_RIGHT) != 0,
                     (hat & SDL_HAT_DOWN) != 0,
-                    (hat & SDL_HAT_LEFT) != 0);
+                    (hat & SDL_HAT_LEFT) != 0
+                );
             }
             else
             {
@@ -219,14 +247,22 @@ internal static class SdlJoystick
     /// </summary>
     private static int DirectionsToPov(bool up, bool right, bool down, bool left)
     {
-        if (up && right) return 4500;
-        if (right && down) return 13500;
-        if (down && left) return 22500;
-        if (left && up) return 31500;
-        if (up) return 0;
-        if (right) return 9000;
-        if (down) return 18000;
-        if (left) return 27000;
+        if (up && right)
+            return 4500;
+        if (right && down)
+            return 13500;
+        if (down && left)
+            return 22500;
+        if (left && up)
+            return 31500;
+        if (up)
+            return 0;
+        if (right)
+            return 9000;
+        if (down)
+            return 18000;
+        if (left)
+            return 27000;
         return -1;
     }
 
@@ -256,9 +292,11 @@ internal static class SdlJoystick
 
         // The Options controller selection matches these names by substring.
         if (changed)
-            Console.WriteLine(names.Count == 0
-                ? "[LinuxCompat] SdlJoystick devices: (none)"
-                : $"[LinuxCompat] SdlJoystick devices: {string.Join(", ", names.Select(n => $"'{n}'"))}");
+            Console.WriteLine(
+                names.Count == 0
+                    ? "[LinuxCompat] SdlJoystick devices: (none)"
+                    : $"[LinuxCompat] SdlJoystick devices: {string.Join(", ", names.Select(n => $"'{n}'"))}"
+            );
     }
 
     /// <summary>
@@ -295,7 +333,9 @@ internal static class SdlJoystick
                 s_joystick = SDL_OpenJoystick(id);
                 if (s_joystick == IntPtr.Zero)
                 {
-                    Console.WriteLine($"[LinuxCompat] SdlJoystick failed to open '{name}': {GetErrorString()}");
+                    Console.WriteLine(
+                        $"[LinuxCompat] SdlJoystick failed to open '{name}': {GetErrorString()}"
+                    );
                     continue;
                 }
 
@@ -345,8 +385,9 @@ internal static class SdlJoystick
         }
 
         Console.WriteLine(
-            $"[LinuxCompat] SdlJoystick opened '{openedName}' " +
-            $"({(isGamepad ? "gamepad" : "joystick")}, {axes} axes, {buttons} buttons, {hats} hats)");
+            $"[LinuxCompat] SdlJoystick opened '{openedName}' "
+                + $"({(isGamepad ? "gamepad" : "joystick")}, {axes} axes, {buttons} buttons, {hats} hats)"
+        );
 
         UpdateSnapshot();
         return openedName;

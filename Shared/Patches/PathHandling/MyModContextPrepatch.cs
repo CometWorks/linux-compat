@@ -32,8 +32,7 @@ public static class MyModContextPrepatch
 
     private static MethodReference ImportToWindowsPath(ModuleDefinition module)
     {
-        var linuxCompatRef = module.AssemblyReferences
-            .FirstOrDefault(r => r.Name == "LinuxCompat");
+        var linuxCompatRef = module.AssemblyReferences.FirstOrDefault(r => r.Name == "LinuxCompat");
         if (linuxCompatRef == null)
         {
             linuxCompatRef = new AssemblyNameReference("LinuxCompat", new Version(1, 0, 0, 0))
@@ -47,7 +46,12 @@ public static class MyModContextPrepatch
         }
 
         var pathHelpersType = new TypeReference(
-            "ClientPlugin.Patches.PathHandling", "PathHelpers", module, linuxCompatRef, false);
+            "ClientPlugin.Patches.PathHandling",
+            "PathHelpers",
+            module,
+            linuxCompatRef,
+            false
+        );
 
         var stringRef = module.TypeSystem.String;
         var method = new MethodReference("ToWindowsPath", stringRef, pathHelpersType)
@@ -61,11 +65,17 @@ public static class MyModContextPrepatch
     }
 
     private static void InjectExplicitGetter(
-        TypeDefinition type, TypeDefinition iface, ModuleDefinition module, string propName,
-        MethodReference toWindowsPath)
+        TypeDefinition type,
+        TypeDefinition iface,
+        ModuleDefinition module,
+        string propName,
+        MethodReference toWindowsPath
+    )
     {
         var publicGetter = type.Methods.FirstOrDefault(m => m.Name == "get_" + propName);
-        var backingField = type.Fields.FirstOrDefault(f => f.Name == $"<{propName}>k__BackingField");
+        var backingField = type.Fields.FirstOrDefault(f =>
+            f.Name == $"<{propName}>k__BackingField"
+        );
         var ifaceGetter = iface.Methods.FirstOrDefault(m => m.Name == "get_" + propName);
         if (publicGetter?.Body == null || backingField == null || ifaceGetter == null)
             return;
@@ -81,12 +91,13 @@ public static class MyModContextPrepatch
         if (type.Methods.Any(m => m.Name == mangled))
             return;
 
-        var attrs = MethodAttributes.Private
-                  | MethodAttributes.Final
-                  | MethodAttributes.HideBySig
-                  | MethodAttributes.NewSlot
-                  | MethodAttributes.Virtual
-                  | MethodAttributes.SpecialName;
+        var attrs =
+            MethodAttributes.Private
+            | MethodAttributes.Final
+            | MethodAttributes.HideBySig
+            | MethodAttributes.NewSlot
+            | MethodAttributes.Virtual
+            | MethodAttributes.SpecialName;
 
         var newMethod = new MethodDefinition(mangled, attrs, stringRef)
         {

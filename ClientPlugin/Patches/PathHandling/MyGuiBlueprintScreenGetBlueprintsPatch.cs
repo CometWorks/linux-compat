@@ -14,7 +14,8 @@ static class MyGuiBlueprintScreenGetBlueprintsPatch
     static bool Prefix(
         MyGuiBlueprintScreen_Reworked __instance,
         string directory,
-        MyBlueprintTypeEnum type)
+        MyBlueprintTypeEnum type
+    )
     {
         var data = new List<MyBlueprintItemInfo>();
         if (!Directory.Exists(directory))

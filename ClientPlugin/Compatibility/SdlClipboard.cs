@@ -32,7 +32,10 @@ internal static class SdlClipboard
             IntPtr ptr = SDL_GetClipboardText();
             try
             {
-                string value = ptr == IntPtr.Zero ? string.Empty : (Marshal.PtrToStringUTF8(ptr) ?? string.Empty);
+                string value =
+                    ptr == IntPtr.Zero
+                        ? string.Empty
+                        : (Marshal.PtrToStringUTF8(ptr) ?? string.Empty);
                 lock (s_cacheLock)
                     s_cachedText = value;
                 return value;
@@ -46,7 +49,13 @@ internal static class SdlClipboard
         catch (Exception ex)
         {
             // Preserve in-game clipboard access if the native binding fails.
-            try { MyLog.Default?.WriteLineAndConsole($"[LinuxCompat] SdlClipboard.GetText failed: {ex.Message}"); } catch { }
+            try
+            {
+                MyLog.Default?.WriteLineAndConsole(
+                    $"[LinuxCompat] SdlClipboard.GetText failed: {ex.Message}"
+                );
+            }
+            catch { }
             lock (s_cacheLock)
                 return s_cachedText;
         }
@@ -83,7 +92,13 @@ internal static class SdlClipboard
         }
         catch (Exception ex)
         {
-            try { MyLog.Default?.WriteLineAndConsole($"[LinuxCompat] SdlClipboard.HasText failed: {ex.Message}"); } catch { }
+            try
+            {
+                MyLog.Default?.WriteLineAndConsole(
+                    $"[LinuxCompat] SdlClipboard.HasText failed: {ex.Message}"
+                );
+            }
+            catch { }
             lock (s_cacheLock)
                 return !string.IsNullOrEmpty(s_cachedText);
         }
@@ -121,7 +136,13 @@ internal static class SdlClipboard
             }
             catch (Exception ex)
             {
-                try { MyLog.Default?.WriteLineAndConsole($"[LinuxCompat] SdlClipboard.RequestText failed: {ex.Message}"); } catch { }
+                try
+                {
+                    MyLog.Default?.WriteLineAndConsole(
+                        $"[LinuxCompat] SdlClipboard.RequestText failed: {ex.Message}"
+                    );
+                }
+                catch { }
                 lock (s_cacheLock)
                     result = string.IsNullOrEmpty(s_cachedText) ? null : s_cachedText;
             }
@@ -157,7 +178,13 @@ internal static class SdlClipboard
         }
         catch (Exception ex)
         {
-            try { MyLog.Default?.WriteLineAndConsole($"[LinuxCompat] SdlClipboard.SetText failed: {ex.Message}"); } catch { }
+            try
+            {
+                MyLog.Default?.WriteLineAndConsole(
+                    $"[LinuxCompat] SdlClipboard.SetText failed: {ex.Message}"
+                );
+            }
+            catch { }
         }
     }
 
@@ -166,7 +193,9 @@ internal static class SdlClipboard
 
     [DllImport(Lib, EntryPoint = "SDL_SetClipboardText")]
     [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_SetClipboardText([MarshalAs(UnmanagedType.LPUTF8Str)] string text);
+    private static extern bool SDL_SetClipboardText(
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string text
+    );
 
     [DllImport(Lib, EntryPoint = "SDL_HasClipboardText")]
     [return: MarshalAs(UnmanagedType.I1)]

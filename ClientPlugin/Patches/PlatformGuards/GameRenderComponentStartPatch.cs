@@ -11,16 +11,34 @@ namespace ClientPlugin.Patches.PlatformGuards;
 [HarmonyPatchCategory("Finish")]
 static class GameRenderComponentStartPatch
 {
-    static bool Prefix(MyGameRenderComponent __instance, MyGameTimer timer, InitHandler windowInitializer,
-        MyRenderDeviceSettings? settingsToTry, float maxFrameRate)
+    static bool Prefix(
+        MyGameRenderComponent __instance,
+        MyGameTimer timer,
+        InitHandler windowInitializer,
+        MyRenderDeviceSettings? settingsToTry,
+        float maxFrameRate
+    )
     {
-        Console.WriteLine("[LinuxCompat] MyGameRenderComponent.Start: calling window initializer on main thread");
+        Console.WriteLine(
+            "[LinuxCompat] MyGameRenderComponent.Start: calling window initializer on main thread"
+        );
         IVRageWindow window = windowInitializer();
 
-        __instance.RenderThread = MyRenderThread.Start(timer, () => window, settingsToTry, maxFrameRate);
+        __instance.RenderThread = MyRenderThread.Start(
+            timer,
+            () => window,
+            settingsToTry,
+            maxFrameRate
+        );
 
-        MyVRage.Platform.Render.OnSuspending += delegate { __instance.RenderThread.Suspend = true; };
-        MyVRage.Platform.Render.OnResuming += delegate { __instance.RenderThread.Suspend = false; };
+        MyVRage.Platform.Render.OnSuspending += delegate
+        {
+            __instance.RenderThread.Suspend = true;
+        };
+        MyVRage.Platform.Render.OnResuming += delegate
+        {
+            __instance.RenderThread.Suspend = false;
+        };
 
         return false;
     }

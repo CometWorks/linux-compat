@@ -27,7 +27,8 @@ internal static class MyCueBankGetVoicePatch
                 typeof(int),
                 typeof(MyVoicePoolType),
             },
-            null);
+            null
+        );
     }
 
     private static Exception Finalizer(Exception __exception, ref MySourceVoice __result)

@@ -24,7 +24,8 @@ static class MyPhysicsCreateHkWorldPatch
             broadphaseSize,
             MyFakes.WHEEL_SOFTNESS ? float.MaxValue : MyPhysics.RestingVelocity,
             MyFakes.ENABLE_HAVOK_MULTITHREADING,
-            8);
+            8
+        );
 
         var hkWorld = new HkWorld(ref cInfo);
         hkWorld.MarkForWrite();

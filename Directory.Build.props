@@ -7,17 +7,17 @@
         <DS64></DS64>
 
         <!-- Plugin loader folders for automatic deployment -->
-        <Pulsar></Pulsar>
-        <Magnetar></Magnetar>
+        <Pulsar>/home/viktor/.config/Pulsar/</Pulsar>
+        <Magnetar>/home/viktor/.config/Magnetar/</Magnetar>
 
         <!-- Steam release of https://github.com/CometWorks/linux-dependencies -->
-        <Steamworks></Steamworks>
+        <Steamworks>/home/viktor/dev/se1/linux-dependencies/build/Libraries-Steam/</Steamworks>
 
         <!-- SE1 release of https://github.com/CometWorks/linux-dependencies -->
-        <Dependencies></Dependencies>
+        <Dependencies>/home/viktor/dev/se1/linux-dependencies/dist/se1-dependencies/</Dependencies>
 
         <!-- Release of https://github.com/CometWorks/linux-native-wrappers -->
-        <Wrappers></Wrappers>
+        <Wrappers>/home/viktor/dev/se1/linux-native-wrappers/build/</Wrappers>
         
         <!-- Plugin version -->
         <Version>10.0.0</Version>

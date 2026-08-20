@@ -50,9 +50,9 @@ public static class PathTranslation
 
         var winSE = WindowsGameInstallPath;
         // Keep the real Linux user out of mod-visible paths.
-        const string winUserSE   = @"C:\users\steamuser\AppData\Roaming\SpaceEngineers";
+        const string winUserSE = @"C:\users\steamuser\AppData\Roaming\SpaceEngineers";
         const string winUserHome = @"C:\users\steamuser";
-        const string winTempDir  = @"C:\users\steamuser\AppData\Local\Temp";
+        const string winTempDir = @"C:\users\steamuser\AppData\Local\Temp";
 
         var list = new List<Mapping>
         {
@@ -74,9 +74,12 @@ public static class PathTranslation
         if (string.IsNullOrEmpty(flipped))
             return flipped;
 
-        bool hadDrive = flipped.Length >= 2 && flipped[1] == ':' &&
-                        ((flipped[0] >= 'A' && flipped[0] <= 'Z') ||
-                         (flipped[0] >= 'a' && flipped[0] <= 'z'));
+        bool hadDrive =
+            flipped.Length >= 2
+            && flipped[1] == ':'
+            && (
+                (flipped[0] >= 'A' && flipped[0] <= 'Z') || (flipped[0] >= 'a' && flipped[0] <= 'z')
+            );
         var body = hadDrive ? flipped.Substring(2) : flipped;
 
         var mappings = s_mappings;
@@ -85,8 +88,9 @@ public static class PathTranslation
             var key = mappings[i].KeyNoDrive;
             if (body.Length < key.Length)
                 continue;
-            if (string.Compare(body, 0, key, 0, key.Length,
-                    StringComparison.OrdinalIgnoreCase) != 0)
+            if (
+                string.Compare(body, 0, key, 0, key.Length, StringComparison.OrdinalIgnoreCase) != 0
+            )
                 continue;
             if (body.Length != key.Length && body[key.Length] != '\\')
                 continue;
@@ -103,9 +107,14 @@ public static class PathTranslation
         if (string.IsNullOrEmpty(forwardSlashPath))
             return forwardSlashPath;
 
-        if (forwardSlashPath.Length < 2 || forwardSlashPath[1] != ':' ||
-            !((forwardSlashPath[0] >= 'A' && forwardSlashPath[0] <= 'Z') ||
-              (forwardSlashPath[0] >= 'a' && forwardSlashPath[0] <= 'z')))
+        if (
+            forwardSlashPath.Length < 2
+            || forwardSlashPath[1] != ':'
+            || !(
+                (forwardSlashPath[0] >= 'A' && forwardSlashPath[0] <= 'Z')
+                || (forwardSlashPath[0] >= 'a' && forwardSlashPath[0] <= 'z')
+            )
+        )
             return forwardSlashPath;
 
         var mappings = s_mappings;
@@ -116,10 +125,21 @@ public static class PathTranslation
             var winPrefix = mappings[i].ReplacementForward;
             if (forwardSlashPath.Length < winPrefix.Length)
                 continue;
-            if (string.Compare(forwardSlashPath, 0, winPrefix, 0, winPrefix.Length,
-                    StringComparison.OrdinalIgnoreCase) != 0)
+            if (
+                string.Compare(
+                    forwardSlashPath,
+                    0,
+                    winPrefix,
+                    0,
+                    winPrefix.Length,
+                    StringComparison.OrdinalIgnoreCase
+                ) != 0
+            )
                 continue;
-            if (forwardSlashPath.Length != winPrefix.Length && forwardSlashPath[winPrefix.Length] != '/')
+            if (
+                forwardSlashPath.Length != winPrefix.Length
+                && forwardSlashPath[winPrefix.Length] != '/'
+            )
                 continue;
             if (bestPrefix == null || winPrefix.Length > bestPrefix.Length)
             {

@@ -35,11 +35,14 @@ static class MyGuiFolderScreenRepopulatePatch
                     Name = name,
                     Path = directory,
                 };
-                fileItems.Add(new MyGuiControlListbox.Item(
-                    new StringBuilder(name),
-                    directory,
-                    MyGuiConstants.TEXTURE_ICON_BLUEPRINTS_FOLDER.Normal,
-                    itemInfo));
+                fileItems.Add(
+                    new MyGuiControlListbox.Item(
+                        new StringBuilder(name),
+                        directory,
+                        MyGuiConstants.TEXTURE_ICON_BLUEPRINTS_FOLDER.Normal,
+                        itemInfo
+                    )
+                );
             }
             else
             {
@@ -49,11 +52,14 @@ static class MyGuiFolderScreenRepopulatePatch
                     Name = name,
                     Path = directory,
                 };
-                directoryItems.Add(new MyGuiControlListbox.Item(
-                    new StringBuilder(name),
-                    directory,
-                    MyGuiConstants.TEXTURE_ICON_MODS_LOCAL.Normal,
-                    itemInfo));
+                directoryItems.Add(
+                    new MyGuiControlListbox.Item(
+                        new StringBuilder(name),
+                        directory,
+                        MyGuiConstants.TEXTURE_ICON_MODS_LOCAL.Normal,
+                        itemInfo
+                    )
+                );
             }
         }
 
@@ -65,11 +71,14 @@ static class MyGuiFolderScreenRepopulatePatch
                 Name = string.Empty,
                 Path = string.Empty,
             };
-            fileList.Add(new MyGuiControlListbox.Item(
-                new StringBuilder("[..]"),
-                __instance.m_pathLocalCurrent,
-                MyGuiConstants.TEXTURE_ICON_MODS_LOCAL.Normal,
-                parentInfo));
+            fileList.Add(
+                new MyGuiControlListbox.Item(
+                    new StringBuilder("[..]"),
+                    __instance.m_pathLocalCurrent,
+                    MyGuiConstants.TEXTURE_ICON_MODS_LOCAL.Normal,
+                    parentInfo
+                )
+            );
         }
 
         foreach (var item in directoryItems)

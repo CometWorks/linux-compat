@@ -6,8 +6,13 @@ using VRage.Game.Components;
 
 namespace ClientPlugin.Patches.NullSafety;
 
-[HarmonyPatch(typeof(MySession), nameof(MySession.TryRegisterSessionComponent),
-    typeof(Type), typeof(bool), typeof(MyModContext))]
+[HarmonyPatch(
+    typeof(MySession),
+    nameof(MySession.TryRegisterSessionComponent),
+    typeof(Type),
+    typeof(bool),
+    typeof(MyModContext)
+)]
 [HarmonyPatchCategory("Init")]
 static class SessionComponentRegistrationPatch
 {

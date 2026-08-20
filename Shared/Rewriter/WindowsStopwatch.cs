@@ -21,9 +21,7 @@ public sealed class WindowsStopwatch
     static WindowsStopwatch()
     {
         var hostFreq = Stopwatch.Frequency;
-        _scale = hostFreq >= Frequency && hostFreq % Frequency == 0
-            ? hostFreq / Frequency
-            : 0L;
+        _scale = hostFreq >= Frequency && hostFreq % Frequency == 0 ? hostFreq / Frequency : 0L;
         _baseline = Stopwatch.GetTimestamp();
     }
 

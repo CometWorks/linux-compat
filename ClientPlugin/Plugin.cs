@@ -3,12 +3,12 @@ using ClientPlugin.Patches.PathHandling;
 using ClientPlugin.Rewriter;
 using HarmonyLib;
 using VRage.Plugins;
-
 #if !LOCAL_BUILD
 using System.Reflection;
 
 [assembly: AssemblyVersion("1.0.17.0")]
 [assembly: AssemblyFileVersion("1.0.17.0")]
+
 #endif
 
 namespace ClientPlugin;
@@ -18,7 +18,9 @@ public class Plugin : IPlugin
 {
     public const string Name = "LinuxCompat";
 
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    [System.Runtime.CompilerServices.MethodImpl(
+        System.Runtime.CompilerServices.MethodImplOptions.NoInlining
+    )]
     public void Init(object gameInstance)
     {
         // Cecil-injected mod path getters require translation before mods run.
