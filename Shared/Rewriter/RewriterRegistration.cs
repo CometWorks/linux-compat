@@ -58,14 +58,14 @@ internal static class RewriterRegistration
         catch (Exception ex)
         {
             Console.WriteLine($"[LinuxCompat] PathSubstitutionRewriter registration failed: {ex}");
-#if DEDICATED
+#if MAGNETAR
             try { VRage.Utils.MyLog.Default.WriteLineAndConsole($"[LinuxCompat] PathSubstitutionRewriter registration failed: {ex}"); } catch { }
 #endif
             throw;
         }
     }
 
-#if DEDICATED
+#if MAGNETAR
     private const string ExtensionTypeName = "ServerPlugin.Rewriter.CompilerHookExtensions";
 #else
     private const string ExtensionTypeName = "ClientPlugin.Rewriter.CompilerHookExtensions";
@@ -97,7 +97,7 @@ internal static class RewriterRegistration
         catch (Exception ex)
         {
             Console.WriteLine($"[LinuxCompat] Rewriter shim plumb failed: {ex}");
-#if DEDICATED
+#if MAGNETAR
             try { VRage.Utils.MyLog.Default.WriteLineAndConsole($"[LinuxCompat] Rewriter shim plumb failed: {ex}"); } catch { }
 #endif
             throw;

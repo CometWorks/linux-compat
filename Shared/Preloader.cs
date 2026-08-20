@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
 using ClientPlugin.Compatibility;
-#if !DEDICATED
+#if !MAGNETAR
 using ClientPlugin.Compatibility.Rendering;
 #endif
 using HarmonyLib;
@@ -36,7 +36,7 @@ public static class Preloader
     // ReSharper disable once UnusedMember.Global
     public static IEnumerable<string> TargetDLLs { get; } =
     [
-#if DEDICATED
+#if MAGNETAR
         "Sandbox.Game.dll",
         "SpaceEngineers.Game.dll",
         "VRage.dll",
@@ -82,7 +82,7 @@ public static class Preloader
             case "VRage.Platform.Windows":
                 PatchVRagePlatformWindows(asmDef);
                 break;
-#if !DEDICATED
+#if !MAGNETAR
             case "VRage.Audio":
                 PatchVRageAudio(asmDef);
                 break;
@@ -90,7 +90,7 @@ public static class Preloader
             case "VRage.Steam":
                 PatchVRageSteam(asmDef);
                 break;
-#if !DEDICATED
+#if !MAGNETAR
             case "SharpDX":
                 PatchSharpDX(asmDef);
                 break;
@@ -104,7 +104,7 @@ public static class Preloader
             case "SpaceEngineers.Game":
                 PatchSpaceEngineersGame(asmDef);
                 break;
-#if DEDICATED
+#if MAGNETAR
             case "VRage.Dedicated":
                 ServerPlugin.Patches.PlatformGuards.AttachConsolePrepatch.Prepatch(asmDef);
                 ServerPlugin.Patches.PlatformGuards.IsVcRedist2019InstalledPrepatch.Prepatch(asmDef);
@@ -134,7 +134,7 @@ public static class Preloader
 
     private static void PatchVRagePlatformWindows(AssemblyDefinition asmDef)
     {
-#if !DEDICATED
+#if !MAGNETAR
         // Resolve XAudio2 and X3DAudio references to this assembly's shims.
         RedirectAssemblyRef(asmDef, "SharpDX.XAudio2", "LinuxCompat");
 #endif
@@ -175,7 +175,7 @@ public static class Preloader
             NopMethodBody(myWindowsWindows, "CreateToolWindow");
         }
 
-#if !DEDICATED
+#if !MAGNETAR
         var myPlatformRender = asmDef.MainModule.GetType("VRage.Platform.Windows.Render.MyPlatformRender");
         if (myPlatformRender != null)
         {
@@ -195,7 +195,7 @@ public static class Preloader
 #endif
     }
 
-#if !DEDICATED
+#if !MAGNETAR
     private static void PatchSharpDX(AssemblyDefinition asmDef)
     {
         var module = asmDef.MainModule;
@@ -393,7 +393,7 @@ public static class Preloader
         }
     }
 
-#if !DEDICATED
+#if !MAGNETAR
     private static void PatchCreateRenderDevice(TypeDefinition type, ModuleDefinition module)
     {
         var method = type.Methods.FirstOrDefault(m => m.Name == "CreateRenderDevice");
@@ -722,7 +722,7 @@ public static class Preloader
 
         InitNativeWrappers();
 
-#if !DEDICATED
+#if !MAGNETAR
         // Splash creation uses SDL before Plugin.Init.
         if (ClientPlugin.Compatibility.RenderingConfig.AllowRendering)
             ClientPlugin.Compatibility.SdlRenderThread.Start();
@@ -741,7 +741,7 @@ public static class Preloader
         Harmony.DEBUG = true;
 #endif
         
-#if DEDICATED
+#if MAGNETAR
         const string harmonyId = "LinuxCompatServer";
 #else
         const string harmonyId = "LinuxCompat";
@@ -759,7 +759,7 @@ public static class Preloader
         }
         Console.WriteLine($"[LinuxCompat] PatchCategory(\"Finish\") applied {harmony.GetPatchedMethods().Count()} methods");
         try { VRage.Utils.MyLog.Default.WriteLineAndConsole($"[LinuxCompat] PatchCategory(\"Finish\") applied {harmony.GetPatchedMethods().Count()} methods"); } catch { }
-#if DEDICATED
+#if MAGNETAR
         // Server Plugin.Init runs after the auto-loaded world's mods compile.
         ClientPlugin.Patches.PathHandling.PathTranslation.Init();
         ClientPlugin.Rewriter.RewriterRegistration.Register();
@@ -784,7 +784,7 @@ public static class Preloader
             return;
         }
 
-#if DEDICATED
+#if MAGNETAR
         var binDir = Path.Combine(gameRoot, "DedicatedServer64");
         if (!Directory.Exists(binDir))
             binDir = Path.Combine(gameRoot, "Bin64");

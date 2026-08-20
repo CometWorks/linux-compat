@@ -1,7 +1,7 @@
 using HarmonyLib;
 using VRage.Plugins;
 
-#if PULSAR
+#if !LOCAL_BUILD
 using System.Reflection;
 
 [assembly: AssemblyVersion("1.0.9.0")]

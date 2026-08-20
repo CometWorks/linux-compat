@@ -4,7 +4,7 @@ using ClientPlugin.Rewriter;
 using HarmonyLib;
 using VRage.Plugins;
 
-#if PULSAR
+#if !LOCAL_BUILD
 using System.Reflection;
 
 [assembly: AssemblyVersion("1.0.17.0")]

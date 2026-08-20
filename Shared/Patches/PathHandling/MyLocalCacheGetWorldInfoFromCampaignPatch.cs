@@ -4,7 +4,7 @@ using System.IO;
 using HarmonyLib;
 using Sandbox.Engine.Networking;
 using Sandbox.Game;
-#if !DEDICATED
+#if !MAGNETAR
 using Sandbox.Game.Screens;
 #endif
 using Sandbox.Game.World;
@@ -58,7 +58,7 @@ static class MyLocalCacheGetWorldInfoFromCampaignPatch
     }
 }
 
-#if !DEDICATED
+#if !MAGNETAR
 [HarmonyPatch(typeof(MyGuiScreenNewGameScenarioSelection), "AddModCampaignCarouselItem")]
 [HarmonyPatchCategory("Finish")]
 static class MyGuiScreenNewGameScenarioSelectionAddModCampaignCarouselItemPatch

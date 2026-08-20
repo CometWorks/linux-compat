@@ -1,4 +1,4 @@
-#if PULSAR
+#if !LOCAL_BUILD
 namespace System.Runtime.CompilerServices
 {
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]

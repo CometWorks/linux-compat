@@ -12,8 +12,8 @@
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
 
         <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
-
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <DefineConstants>$(DefineConstants);PULSAR;LOCAL_BUILD</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>

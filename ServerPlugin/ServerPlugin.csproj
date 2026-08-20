@@ -13,7 +13,7 @@
 
         <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <DefineConstants>$(DefineConstants);DEDICATED</DefineConstants>
+        <DefineConstants>$(DefineConstants);MAGNETAR;LOCAL_BUILD</DefineConstants>
     </PropertyGroup>
 
     <!-- Null-render servers require VRage.Render for model and LOD loading. -->

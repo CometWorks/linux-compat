@@ -6,7 +6,7 @@ using ParallelTasks;
 namespace ClientPlugin.Patches.PlatformGuards;
 
 [HarmonyPatch(typeof(Parallel), nameof(Parallel.WaitForAll))]
-#if DEDICATED
+#if MAGNETAR
 [HarmonyPatchCategory("Finish")]
 #else
 [HarmonyPatchCategory("Init")]
