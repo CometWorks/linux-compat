@@ -15,10 +15,8 @@ static class MyLargeGatlingTurretOnModelChangePatch
     {
         if (__exception is KeyNotFoundException)
         {
-            var m_base1 = AccessTools.Field(typeof(MyLargeGatlingTurret).BaseType, "m_base1");
-            var m_base2 = AccessTools.Field(typeof(MyLargeGatlingTurret).BaseType, "m_base2");
-            m_base1.SetValue(__instance, null);
-            m_base2.SetValue(__instance, null);
+            __instance.m_base1 = null;
+            __instance.m_base2 = null;
             return null;
         }
         return __exception;
@@ -33,10 +31,8 @@ static class MyLaserAntennaOnModelChangePatch
     {
         if (__exception is KeyNotFoundException)
         {
-            var m_base1 = AccessTools.Field(typeof(MyLaserAntenna), "m_base1");
-            var m_base2 = AccessTools.Field(typeof(MyLaserAntenna), "m_base2");
-            m_base1.SetValue(__instance, null);
-            m_base2.SetValue(__instance, null);
+            __instance.m_base1 = null;
+            __instance.m_base2 = null;
             return null;
         }
         return __exception;

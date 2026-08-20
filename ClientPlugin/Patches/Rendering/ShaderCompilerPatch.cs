@@ -7,6 +7,7 @@ using ClientPlugin.Compatibility.Rendering;
 using HarmonyLib;
 using SharpDX.Direct3D;
 using VRage.Library.Utils;
+using VRage.Render11.Shader;
 using VRageRender;
 
 namespace ClientPlugin.Patches.Rendering;
@@ -44,13 +45,12 @@ static class ShaderCompilerPatch
     {
         filepath = PathUtils.Normalize(filepath);
 
-        var globalMacros = AccessTools.StaticFieldRefAccess<ShaderMacro[]>(typeof(MyShaderCompiler), "m_globalShaderMacros") ?? Array.Empty<ShaderMacro>();
+        var globalMacros = MyShaderCompiler.m_globalShaderMacros ?? Array.Empty<ShaderMacro>();
         var macroList = new List<ShaderMacro>();
         macroList.AddRange(globalMacros);
         macroList.AddRange(macros);
 
-        var fillGlobalMacros = AccessTools.Method(typeof(MyShaderCompiler), "FillGlobalMacros");
-        fillGlobalMacros.Invoke(null, new object[] { macroList, optimize });
+        MyShaderCompiler.FillGlobalMacros(macroList, optimize);
         macros = macroList.ToArray();
 
         string entryPoint = profile switch
@@ -92,19 +92,14 @@ static class ShaderCompilerPatch
             return false;
         }
 
-        var shaderCacheType = AccessTools.TypeByName("VRage.Render11.Shader.MyShaderCache");
-        var getShaderHash = AccessTools.Method(shaderCacheType, "GetShaderHash");
-        hash = (string)getShaderHash.Invoke(null, new object[] { preprocessedSource, profile });
+        hash = MyShaderCache.GetShaderHash(preprocessedSource, profile);
 
         if (!invalidateCache)
         {
-            var tryFetch = AccessTools.Method(shaderCacheType, "TryFetch", new[] { typeof(string), typeof(MyShaderProfile), typeof(string), typeof(byte[]).MakeByRefType() });
-            var fetchArgs = new object[] { preprocessedSource, profile, hash, null };
-            bool fetched = (bool)tryFetch.Invoke(null, fetchArgs);
-            if (fetched)
+            if (MyShaderCache.TryFetch(preprocessedSource, profile, hash, out var cachedBytecode))
             {
                 wasCached = true;
-                __result = (byte[])fetchArgs[3];
+                __result = cachedBytecode;
                 return false;
             }
         }
@@ -119,10 +114,7 @@ static class ShaderCompilerPatch
 
             byte[] bytecode = D3DCompilerLinux.Compile(resolvedFilepath, macros, entryPoint, profileStr, optimize, out compileLog);
             if (bytecode != null)
-            {
-                var store = AccessTools.Method(shaderCacheType, "Store");
-                store.Invoke(null, new object[] { preprocessedSource, profile, bytecode, hash });
-            }
+                MyShaderCache.Store(preprocessedSource, profile, bytecode, hash);
 
             if (!string.IsNullOrEmpty(compileLog))
             {

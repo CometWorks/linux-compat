@@ -11,6 +11,7 @@
 [assembly: IgnoresAccessChecksTo("VRage.EOS")]
 [assembly: IgnoresAccessChecksTo("VRage.Network")]
 [assembly: IgnoresAccessChecksTo("VRage.Platform.Windows")]
+[assembly: IgnoresAccessChecksTo("VRage.Render")]
 [assembly: IgnoresAccessChecksTo("VRage.Render11")]
 [assembly: IgnoresAccessChecksTo("VRage.Scripting")]
 [assembly: IgnoresAccessChecksTo("VRage.Steam")]

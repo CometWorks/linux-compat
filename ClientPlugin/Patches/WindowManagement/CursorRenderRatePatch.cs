@@ -1,6 +1,6 @@
-using System.Reflection;
 using ClientPlugin.Patches.PlatformGuards;
 using HarmonyLib;
+using VRage.Render11.Sprites;
 using VRageMath;
 using VRageRender;
 using VRageRender.Messages;
@@ -16,15 +16,10 @@ internal static class CursorRenderRateState
 
 // Move the software cursor from its 60 Hz game-thread position to the latest
 // SDL position when the render thread processes its sprite. Preserve size for HiDPI.
-[HarmonyPatch]
+[HarmonyPatch(typeof(MySpritesRenderer), nameof(MySpritesRenderer.ProcessDrawMessage))]
 [HarmonyPatchCategory("Finish")]
 static class CursorRenderRatePatch
 {
-    static MethodBase TargetMethod() =>
-        AccessTools.Method("VRage.Render11.Sprites.MySpritesRenderer:ProcessDrawMessage");
-
-    static bool Prepare() => TargetMethod() != null;
-
     static void Prefix(MyRenderMessageBase drawMessage)
     {
         if (drawMessage == null || drawMessage.MessageType != MyRenderMessageEnum.DrawSprite)

@@ -6,8 +6,10 @@ using ClientPlugin.Compatibility;
 using HarmonyLib;
 using Sandbox;
 using Sandbox.Engine.Utils;
+using Sandbox.Game.Screens.Helpers;
 using SpaceEngineers.Game;
 using VRage;
+using VRage.Platform.Windows.Forms;
 using VRage.UserInterface;
 using VRageMath;
 using VRageRender;
@@ -89,20 +91,12 @@ static class MyProgramInitializeRenderPatch
 
     internal static void InstallHeadlessWindow(MySandboxGame game)
     {
-        var windows = MyVRage.Platform.Windows;
-        var windowsType = windows.GetType();
-
-        AccessTools.PropertySetter(windowsType, "Window")
-            ?.Invoke(windows, [Window]);
-
-        AccessTools.PropertySetter(windowsType, "WindowHandle")
-            ?.Invoke(windows, [IntPtr.Zero]);
+        var windows = (MyWindowsWindows)MyVRage.Platform.Windows;
+        windows.Window = Window;
+        windows.WindowHandle = IntPtr.Zero;
 
         if (game != null)
-        {
-            AccessTools.Field(typeof(MySandboxGame), "form")
-                ?.SetValue(game, Window);
-        }
+            game.form = Window;
     }
 }
 
@@ -121,20 +115,10 @@ static class SpaceEngineersGameInitializeRenderPatch
     }
 }
 
-[HarmonyPatch]
+[HarmonyPatch(typeof(MyHudControlGravityIndicator), nameof(MyHudControlGravityIndicator.Draw))]
 [HarmonyPatchCategory("Finish")]
 static class HeadlessGravityIndicatorDrawPatch
 {
-    static bool Prepare()
-    {
-        return TargetMethod() != null;
-    }
-
-    static MethodBase TargetMethod()
-    {
-        return AccessTools.Method("Sandbox.Game.Screens.Helpers.MyHudControlGravityIndicator:Draw");
-    }
-
     static bool Prefix()
     {
         return RenderingConfig.AllowRendering;

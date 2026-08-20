@@ -25,7 +25,6 @@ static class MyGuiScreenGamePlayUpdateCursorPatch
         if (__instance.GetDrawMouseCursor() == wantCursor)
             return;
 
-        AccessTools.PropertySetter(typeof(MyGuiScreenBase), "DrawMouseCursor")
-            ?.Invoke(__instance, [wantCursor]);
+        __instance.DrawMouseCursor = wantCursor;
     }
 }

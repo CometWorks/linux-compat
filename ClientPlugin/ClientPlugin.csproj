@@ -214,6 +214,7 @@
         <Publicize Include="VRage.EOS"/>
         <Publicize Include="VRage.Network"/>
         <Publicize Include="VRage.Platform.Windows"/>
+        <Publicize Include="VRage.Render"/>
         <Publicize Include="VRage.Render11"/>
         <Publicize Include="VRage.Scripting"/>
         <Publicize Include="VRage.Steam"/>

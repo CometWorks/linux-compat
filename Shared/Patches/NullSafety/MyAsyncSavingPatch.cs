@@ -9,8 +9,6 @@ static class MyAsyncSavingOnSnapshotDonePatch
 {
     static void Postfix()
     {
-        var field = AccessTools.Field(typeof(MyAsyncSaving), "m_screenshotTaken");
-        if (field != null)
-            field.SetValue(null, true);
+        MyAsyncSaving.m_screenshotTaken = true;
     }
 }

@@ -1,7 +1,5 @@
 using System;
-using HarmonyLib;
 using Sandbox;
-using Sandbox.Engine.Utils;
 
 namespace ClientPlugin.Compatibility;
 
@@ -71,10 +69,7 @@ internal static class PluginWindowConfig
             return null;
         try
         {
-            var method = AccessTools.Method(typeof(MyConfigBase), "GetParameterValue", [typeof(string)]);
-            if (method == null)
-                return null;
-            var raw = method.Invoke(config, [key]) as string;
+            var raw = config.GetParameterValue(key);
             if (string.IsNullOrEmpty(raw))
                 return null;
             if (int.TryParse(raw, System.Globalization.NumberStyles.Integer,
@@ -95,9 +90,7 @@ internal static class PluginWindowConfig
             return;
         try
         {
-            var method = AccessTools.Method(typeof(MyConfigBase), "SetParameterValue",
-                [typeof(string), typeof(int)]);
-            method?.Invoke(config, [key, value]);
+            config.SetParameterValue(key, value);
         }
         catch (Exception)
         {

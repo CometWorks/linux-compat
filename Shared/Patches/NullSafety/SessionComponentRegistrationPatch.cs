@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using HarmonyLib;
 using Sandbox.Game.World;
 using VRage.Game;
@@ -7,33 +6,24 @@ using VRage.Game.Components;
 
 namespace ClientPlugin.Patches.NullSafety;
 
-[HarmonyPatch]
+[HarmonyPatch(typeof(MySession), nameof(MySession.TryRegisterSessionComponent),
+    typeof(Type), typeof(bool), typeof(MyModContext))]
 [HarmonyPatchCategory("Init")]
 static class SessionComponentRegistrationPatch
 {
-    static MethodBase TargetMethod()
-    {
-        return AccessTools.Method(typeof(MySession), "TryRegisterSessionComponent");
-    }
-
     static bool Prefix(MySession __instance, Type type, bool modAssembly, MyModContext context)
     {
         try
         {
-            MyDefinitionId? definition = null;
             var component = (MySessionComponentBase)Activator.CreateInstance(type);
 
             var isRequiredByGame = component.IsRequiredByGame;
-            var getComponentInfo = AccessTools.Method(typeof(MySession), "GetComponentInfo");
-            var args = new object[] { type, null };
-            var hasInfo = (bool)getComponentInfo.Invoke(__instance, args);
-            definition = (MyDefinitionId?)args[1];
+            var hasInfo = __instance.GetComponentInfo(type, out MyDefinitionId? definition);
 
             if (isRequiredByGame || modAssembly || hasInfo)
             {
                 __instance.RegisterComponent(component, component.UpdateOrder, component.Priority);
-                getComponentInfo.Invoke(__instance, args);
-                definition = (MyDefinitionId?)args[1];
+                __instance.GetComponentInfo(type, out definition);
                 component.Definition = definition;
                 component.ModContext = context;
             }
