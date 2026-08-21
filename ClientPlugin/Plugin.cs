@@ -31,10 +31,6 @@ public class Plugin : IPlugin
         // Cecil-injected mod path getters require translation before mods run.
         PathTranslation.Init();
 
-        // SDL owns its windows, event pump, and clipboard from one thread.
-        if (RenderingConfig.AllowRendering)
-            SdlRenderThread.Start();
-
         // Start the process-relative clock before mods use it.
         _ = WindowsStopwatch.GetTimestamp();
 

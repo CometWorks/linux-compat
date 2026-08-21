@@ -15,14 +15,7 @@ namespace ClientPlugin.Tools;
 
 public static class TranspilerHelpers
 {
-    private static readonly bool DisableCodeValidations =
-        (Environment.GetEnvironmentVariable("SE_PLUGIN_DISABLE_METHOD_VERIFICATION") ?? "0") != "0";
-
-    public delegate bool OpcodePredicate(OpCode opcode);
-
     public delegate bool CodeInstructionPredicate(CodeInstruction ci);
-
-    public delegate bool FieldInfoPredicate(FieldInfo fi);
 
     public static List<int> FindAllIndex(
         this IEnumerable<CodeInstruction> il,
@@ -35,90 +28,9 @@ public static class TranspilerHelpers
             .ToList();
     }
 
-    public static FieldInfo GetField(this List<CodeInstruction> il, FieldInfoPredicate predicate)
-    {
-        var ci = il.Find(i =>
-            (i.opcode == OpCodes.Ldfld || i.opcode == OpCodes.Stfld)
-            && i.operand is FieldInfo fi
-            && predicate(fi)
-        );
-        if (ci == null)
-            throw new CodeInstructionNotFound(
-                "No code instruction found loading or storing a field matching the given predicate"
-            );
-
-        return (FieldInfo)ci.operand;
-    }
-
-    public static MethodInfo FindPropertyGetter(this List<CodeInstruction> il, string name)
-    {
-        var ci = il.Find(i =>
-            i.opcode == OpCodes.Call && i.operand is MethodInfo fi && fi.Name == $"get_{name}"
-        );
-        if (ci == null)
-            throw new CodeInstructionNotFound(
-                "No code instruction found getting or setting a property matching the given predicate"
-            );
-
-        return (MethodInfo)ci.operand;
-    }
-
-    public static MethodInfo FindPropertySetter(this List<CodeInstruction> il, string name)
-    {
-        var ci = il.Find(i =>
-            i.opcode == OpCodes.Call && i.operand is MethodInfo fi && fi.Name == $"set_{name}"
-        );
-        if (ci == null)
-            throw new CodeInstructionNotFound(
-                "No code instruction found getting or setting a property matching the given predicate"
-            );
-
-        return (MethodInfo)ci.operand;
-    }
-
-    public static Label GetLabel(this List<CodeInstruction> il, OpcodePredicate predicate)
-    {
-        var ci = il.Find(i => i.operand is Label && predicate(i.opcode));
-        if (ci == null)
-            throw new CodeInstructionNotFound("No label found matching the opcode predicate");
-
-        return (Label)ci.operand;
-    }
-
-    public static void RemoveFieldInitialization(this List<CodeInstruction> il, string name)
-    {
-        var i = il.FindIndex(ci =>
-            ci.opcode == OpCodes.Stfld && ci.operand is FieldInfo fi && fi.Name.Contains(name)
-        );
-        if (i < 2)
-            throw new CodeInstructionNotFound(
-                $"No code instruction found initializing field: {name}"
-            );
-
-        Debug.Assert(il[i - 2].opcode == OpCodes.Ldarg_0);
-        Debug.Assert(il[i - 1].opcode == OpCodes.Newobj);
-
-        il.RemoveRange(i - 2, 3);
-    }
-
     public static string Hash(this List<CodeInstruction> il)
     {
         return il.HashInstructions().CombineHashCodes().ToString("x8");
-    }
-
-    public static void VerifyCodeHash(
-        this List<CodeInstruction> il,
-        MethodBase patchedMethod,
-        string expected
-    )
-    {
-        var actual = il.Hash();
-        if (actual != expected && !DisableCodeValidations)
-        {
-            throw new Exception(
-                $"Detected code change in {patchedMethod.Name}: expected {expected}, actual {actual}"
-            );
-        }
     }
 
     private static string FormatCode(this List<CodeInstruction> il)
@@ -231,17 +143,6 @@ public static class TranspilerHelpers
         RecordCode(il, callerFilePath, callerMemberName, patchedMethod, "patched");
     }
 
-    public static void RecordCustomCode(
-        this List<CodeInstruction> il,
-        string suffix,
-        MethodBase patchedMethod = null,
-        [CallerFilePath] string callerFilePath = "",
-        [CallerMemberName] string callerMemberName = ""
-    )
-    {
-        RecordCode(il, callerFilePath, callerMemberName, patchedMethod, suffix);
-    }
-
     private static void RecordCode(
         List<CodeInstruction> il,
         string callerFilePath,
@@ -292,29 +193,11 @@ public static class TranspilerHelpers
         File.WriteAllText(path, text);
 #endif
     }
-
-    public static CodeInstruction DeepClone(this CodeInstruction ci)
-    {
-        var clone = ci.Clone();
-        clone.labels = ci.labels.ToList();
-        clone.blocks = ci.blocks.Select(b => new ExceptionBlock(b.blockType, b.catchType)).ToList();
-        return clone;
-    }
-
-    public static List<CodeInstruction> DeepClone(this IEnumerable<CodeInstruction> il)
-    {
-        return il.Select(ci => ci.DeepClone()).ToList();
-    }
 }
 
 [SuppressMessage("ReSharper", "UnusedMember.Global")]
 public class CodeInstructionNotFound : Exception
 {
-    public CodeInstructionNotFound() { }
-
     public CodeInstructionNotFound(string message)
         : base(message) { }
-
-    public CodeInstructionNotFound(string message, Exception inner)
-        : base(message, inner) { }
 }

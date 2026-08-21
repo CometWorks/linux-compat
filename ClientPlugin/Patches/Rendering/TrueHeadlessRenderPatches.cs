@@ -18,36 +18,6 @@ namespace ClientPlugin.Patches.Rendering;
 
 [HarmonyPatch]
 [HarmonyPatchCategory("Finish")]
-static class DxvkNativeResolverInitializePatch
-{
-    static bool Prepare()
-    {
-        return AccessTools.Method(
-                "SpaceEngineers.PlatformInitialization.MyDxvkNativeResolver:Initialize"
-            ) != null;
-    }
-
-    static MethodBase TargetMethod()
-    {
-        return AccessTools.Method(
-            "SpaceEngineers.PlatformInitialization.MyDxvkNativeResolver:Initialize"
-        );
-    }
-
-    static bool Prefix()
-    {
-        if (RenderingConfig.AllowRendering)
-            return true;
-
-        Console.WriteLine(
-            "[LinuxCompat] rendering disabled (PULSAR_NO_RENDER); skipping DXVK native resolver initialization"
-        );
-        return false;
-    }
-}
-
-[HarmonyPatch]
-[HarmonyPatchCategory("Finish")]
 static class MyProgramInitializeRenderPatch
 {
     private const int HeadlessWidth = 640;
