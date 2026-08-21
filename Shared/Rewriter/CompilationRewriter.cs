@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -9,10 +8,6 @@ namespace ClientPlugin.Rewriter;
 
 internal static class CompilationRewriter
 {
-    private static readonly Lazy<PortableExecutableReference> LinuxCompatReference = new(() =>
-        MetadataReference.CreateFromFile(typeof(CompilationRewriter).Assembly.Location)
-    );
-
     public static CSharpCompilation Rewrite(CSharpCompilation compilation, MyApiTarget target)
     {
         if (target != MyApiTarget.Mod)
@@ -39,16 +34,14 @@ internal static class CompilationRewriter
         foreach (var (oldTree, newTree) in replacements)
             compilation = compilation.ReplaceSyntaxTree(oldTree, newTree);
 
-        if (requiresShimReference)
-        {
-            var reference = LinuxCompatReference.Value;
-            if (
-                !compilation
-                    .References.OfType<PortableExecutableReference>()
-                    .Any(existing => existing.FilePath == reference.FilePath)
-            )
-                compilation = compilation.AddReferences(reference);
-        }
+        // The whitelisted assembly identity only matches when both use this one reference.
+        var reference = ShimRegistration.Reference;
+        if (
+            requiresShimReference
+            && reference != null
+            && !compilation.References.Contains(reference)
+        )
+            compilation = compilation.AddReferences(reference);
 
         return compilation;
     }

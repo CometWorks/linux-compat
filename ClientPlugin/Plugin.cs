@@ -31,8 +31,8 @@ public class Plugin : IPlugin
         // Cecil-injected mod path getters require translation before mods run.
         PathTranslation.Init();
 
-        // Start the process-relative clock before mods use it.
-        _ = WindowsStopwatch.GetTimestamp();
+        // Mod compilation needs the rewriter shims whitelisted and referenced.
+        ShimRegistration.Register();
 
         var harmony = new Harmony("LinuxCompat");
         harmony.PatchCategory("Init");

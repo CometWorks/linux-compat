@@ -26,9 +26,7 @@ public class Plugin : IPlugin
     )]
     public void Init(object gameInstance)
     {
-        // Start the process-relative clock before mods use it.
-        _ = WindowsStopwatch.GetTimestamp();
-
+        // The rewriter shims are registered in Preloader.Finish, before mods compile.
         var harmony = new Harmony("LinuxCompatServer");
         harmony.PatchCategory("Init");
     }
