@@ -21,11 +21,12 @@
 	</NuGetReferences>
 
     <Asset Name="LinuxDependencies"
-           Path="../se1-dependencies"
+           Path="../linux-dependencies/dist/se1-dependencies.tar.gz"
+           Extract="true"
            Placement="Bin" />
 
     <Asset Name="NativeWrappers"
-           Path="../linux-native-wrappers-bin"
+           Path="../linux-native-wrappers/build"
            Placement="Bin" />
 
     <Runtimes>CoreCLR</Runtimes>
