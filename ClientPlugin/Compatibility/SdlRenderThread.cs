@@ -9,7 +9,7 @@ namespace ClientPlugin.Compatibility;
 
 /// <summary>
 /// Owns SDL video, windows, event pumping, and clipboard access. All SDL video
-/// calls use this thread to protect SDL's X11 connection state.
+/// calls use this thread to protect the active window-system connection.
 /// </summary>
 internal static class SdlRenderThread
 {
@@ -27,6 +27,7 @@ internal static class SdlRenderThread
     private static volatile bool s_running;
     private static volatile bool s_initOk;
 
+    private static readonly object s_startLock = new object();
     private static readonly object s_queueLock = new object();
     private static readonly Queue<Action> s_queue = new Queue<Action>();
     private static readonly ManualResetEventSlim s_started = new ManualResetEventSlim(false);
@@ -50,63 +51,45 @@ internal static class SdlRenderThread
     /// <summary>True once SDL_Init succeeded.</summary>
     internal static bool IsInitialized => s_initOk;
 
+    internal static bool IsWayland { get; private set; }
+
     /// <summary>
     /// Starts SDL once and blocks until initialization completes.
     /// </summary>
     internal static void Start()
     {
-        if (s_thread != null)
-            return;
-
-        var thread = new Thread(Run)
+        lock (s_startLock)
         {
-            // Keep the SDL context alive for the process lifetime.
-            IsBackground = false,
-            Name = "LinuxCompat-SDL",
-        };
-        s_thread = thread;
-        thread.Start();
+            if (s_thread != null)
+                return;
 
-        // s_started is signaled for both success and failure; timeout means
-        // native loading or SDL_Init is wedged.
-        if (!s_started.Wait(START_TIMEOUT_MS))
-        {
-            Console.Error.WriteLine(
-                $"[LinuxCompat] SdlRenderThread.Start: SDL_Init did not complete within {START_TIMEOUT_MS / 1000} s. "
-                    + "The render thread is wedged; killing the process to surface the failure."
-            );
-            try
+            var thread = new Thread(Run) { IsBackground = true, Name = "LinuxCompat-SDL" };
+            s_thread = thread;
+            thread.Start();
+
+            // s_started is signaled for both success and failure; timeout means
+            // native loading or SDL_Init is wedged.
+            if (!s_started.Wait(START_TIMEOUT_MS))
             {
-                Console.Error.Flush();
+                Console.Error.WriteLine(
+                    $"[LinuxCompat] SdlRenderThread.Start: SDL_Init did not complete within {START_TIMEOUT_MS / 1000} s. "
+                        + "The render thread is wedged; killing the process to surface the failure."
+                );
+                try
+                {
+                    Console.Error.Flush();
+                }
+                catch { }
+                // Runtime shutdown can block when a thread is stuck in native code.
+                try
+                {
+                    Process.GetCurrentProcess().Kill();
+                }
+                catch { }
+                // Fallback if Process.Kill returns.
+                Environment.FailFast("SdlRenderThread SDL_Init timeout");
             }
-            catch { }
-            // Runtime shutdown can block when a thread is stuck in native code.
-            try
-            {
-                Process.GetCurrentProcess().Kill();
-            }
-            catch { }
-            // Fallback if Process.Kill returns.
-            Environment.FailFast("SdlRenderThread SDL_Init timeout");
         }
-    }
-
-    /// <summary>
-    /// Stops and joins the render thread. Safe from any thread.
-    /// </summary>
-    internal static void Stop()
-    {
-        if (s_thread == null)
-            return;
-
-        s_running = false;
-        Dispatch(static () => { });
-
-        if (!IsCurrent)
-            s_thread.Join();
-
-        s_thread = null;
-        s_threadManagedId = 0;
     }
 
     /// <summary>
@@ -114,7 +97,7 @@ internal static class SdlRenderThread
     /// </summary>
     internal static void Dispatch(Action action)
     {
-        if (action == null)
+        if (action == null || s_thread == null || !s_running)
             return;
 
         if (IsCurrent)
@@ -144,6 +127,9 @@ internal static class SdlRenderThread
     {
         if (action == null)
             return;
+
+        if (s_thread == null || !s_running)
+            throw new InvalidOperationException("SDL render thread is not running.");
 
         if (IsCurrent)
         {
@@ -195,9 +181,6 @@ internal static class SdlRenderThread
     {
         s_threadManagedId = Thread.CurrentThread.ManagedThreadId;
 
-        // DXVK uses the tested X11 path. Set SDL's environment before SDL_Init.
-        ForceX11VideoDriver();
-
         // Long world loads cannot answer _NET_WM_PING. Disable it before
         // window creation to avoid false "not responding" dialogs.
         SDL_SetHint("SDL_VIDEO_X11_NET_WM_PING", "0");
@@ -211,7 +194,11 @@ internal static class SdlRenderThread
         }
         else
         {
-            Console.WriteLine("[LinuxCompat] SdlRenderThread initialised SDL3 (video)");
+            string videoDriver = Marshal.PtrToStringUTF8(SDL_GetCurrentVideoDriver());
+            IsWayland = string.Equals(videoDriver, "wayland", StringComparison.OrdinalIgnoreCase);
+            Console.WriteLine(
+                $"[LinuxCompat] SdlRenderThread initialised SDL3 video driver: {videoDriver ?? "unknown"}"
+            );
             SdlJoystick.Initialize();
         }
 
@@ -285,7 +272,7 @@ internal static class SdlRenderThread
             }
         }
 
-        // Process shutdown bypasses orderly SDL teardown.
+        // SDL is process-owned. Plugin disposal must not tear down a live window.
     }
 
     private static void DrainQueue()
@@ -315,13 +302,6 @@ internal static class SdlRenderThread
                 LogException("queued action", ex);
             }
         }
-    }
-
-    private static void ForceX11VideoDriver()
-    {
-        IntPtr env = SDL_GetEnvironment();
-        if (env != IntPtr.Zero)
-            SDL_SetEnvironmentVariable(env, "SDL_VIDEODRIVER", "x11", true);
     }
 
     private static void LogException(string where, Exception ex)
@@ -435,17 +415,8 @@ internal static class SdlRenderThread
     [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool SDL_SetHint(string name, string value);
 
-    [DllImport(Lib, EntryPoint = "SDL_GetEnvironment")]
-    private static extern IntPtr SDL_GetEnvironment();
-
-    [DllImport(Lib, EntryPoint = "SDL_SetEnvironmentVariable", CharSet = CharSet.Ansi)]
-    [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_SetEnvironmentVariable(
-        IntPtr environment,
-        string name,
-        string value,
-        [MarshalAs(UnmanagedType.I1)] bool overwrite
-    );
+    [DllImport(Lib, EntryPoint = "SDL_GetCurrentVideoDriver")]
+    private static extern IntPtr SDL_GetCurrentVideoDriver();
 
     [DllImport(Lib, EntryPoint = "SDL_PollEvent")]
     [return: MarshalAs(UnmanagedType.I1)]
