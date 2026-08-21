@@ -188,6 +188,11 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
                 m_endOfStream = false;
                 m_currentFrame = null;
                 m_audioQueued = false;
+
+                if (!TryDecodeNextFrame(0.0))
+                    throw new InvalidOperationException(
+                        $"FFmpeg decoded no video frames from '{fileName}'."
+                    );
             }
             catch (Exception inner)
             {
@@ -281,11 +286,11 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
 
             while (true)
             {
-                if (!m_hasPendingFrame && !TryDecodeNextFrame())
+                if (!m_hasPendingFrame && !TryDecodeNextFrame(targetSeconds))
                     break;
                 if (!m_hasPendingFrame)
                     break;
-                if (m_currentPositionSeconds > 0.0 && m_pendingFrameSeconds > targetSeconds)
+                if (m_pendingFrameSeconds > targetSeconds)
                     break;
 
                 m_videoDataRgba.CommitWrite();
@@ -344,14 +349,20 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
         }
     }
 
-    private bool TryDecodeNextFrame()
+    private bool TryDecodeNextFrame(double targetSeconds)
     {
         while (true)
         {
             int receiveResult = ffmpeg.avcodec_receive_frame(m_codecContext, m_decodedFrame);
             if (receiveResult == 0)
             {
-                ConvertFrame(m_decodedFrame);
+                double frameSeconds = GetFrameTimestampSeconds(m_decodedFrame);
+                if (frameSeconds + m_nominalFrameDurationSeconds < targetSeconds)
+                {
+                    ffmpeg.av_frame_unref(m_decodedFrame);
+                    continue;
+                }
+                ConvertFrame(m_decodedFrame, frameSeconds);
                 ffmpeg.av_frame_unref(m_decodedFrame);
                 return true;
             }
@@ -385,7 +396,7 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
         }
     }
 
-    private void ConvertFrame(AVFrame* sourceFrame)
+    private void ConvertFrame(AVFrame* sourceFrame, double frameSeconds)
     {
         AVPixelFormat sourceFormat = (AVPixelFormat)sourceFrame->format;
         bool wasNull = m_scaleContext == null;
@@ -436,7 +447,7 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
             for (int i = destinationOffset + 3; i < destinationOffset + destinationStride; i += 4)
                 write[i] = m_alphaTransparency;
         }
-        m_pendingFrameSeconds = GetFrameTimestampSeconds(m_decodedFrame);
+        m_pendingFrameSeconds = frameSeconds;
         m_hasPendingFrame = true;
     }
 
