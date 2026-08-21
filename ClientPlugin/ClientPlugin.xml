@@ -20,6 +20,14 @@
         <PackageReference Include="Silk.NET.OpenAL" Version="2.23.0" />
 	</NuGetReferences>
 
+    <Asset Name="LinuxDependencies"
+           Path="../se1-dependencies"
+           Placement="Bin" />
+
+    <Asset Name="NativeWrappers"
+           Path="../linux-native-wrappers-bin"
+           Placement="Bin" />
+
     <Runtimes>CoreCLR</Runtimes>
     <Platforms>Linux</Platforms>
     <Hidden>true</Hidden>

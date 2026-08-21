@@ -21,8 +21,15 @@ public static class D3DCompilerLinux
         public IntPtr Definition;
     }
 
-    [DllImport("libD3DCompiler.so")]
-    public static extern void Init(string dllPath);
+    private static readonly Lazy<bool> Initialized = new(() =>
+        NativeWrapper.Initialize("d3dcompiler_47.dll", Init)
+    );
+
+    [DllImport("libD3DCompiler.so", CallingConvention = CallingConvention.Cdecl)]
+    private static extern void Init(
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string dllPath,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string sidecarPath
+    );
 
     [DllImport("libD3DCompiler.so")]
     private static extern int SE_D3DCompile(
@@ -209,6 +216,7 @@ public static class D3DCompilerLinux
             var terminator = new D3D_SHADER_MACRO { Name = IntPtr.Zero, Definition = IntPtr.Zero };
             Marshal.StructureToPtr(terminator, pDefines + structSize * idx, false);
 
+            _ = Initialized.Value;
             int hr = SE_D3DCompile(
                 pSrcData,
                 (ulong)sourceBytes.Length,

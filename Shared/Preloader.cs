@@ -3,17 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using ClientPlugin.Compatibility;
 using HarmonyLib;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-#if !MAGNETAR
-using ClientPlugin.Compatibility.Rendering;
-#endif
 
 // Pulsar and Magnetar discover Preloader in the global namespace.
 
@@ -35,6 +29,9 @@ public static class Preloader
                 : null;
         };
     }
+
+    // ReSharper disable once UnusedMember.Global
+    public static void Initialize() => ClientPlugin.Compatibility.NativeLibraries.Initialize();
 
     // ReSharper disable once UnusedMember.Global
     public static IEnumerable<string> TargetDLLs { get; } =
@@ -926,8 +923,6 @@ public static class Preloader
 
         Assembly.Load("System.Collections.Immutable");
 
-        InitNativeWrappers();
-
 #if !MAGNETAR
         // Splash creation uses SDL before Plugin.Init.
         if (ClientPlugin.Compatibility.RenderingConfig.AllowRendering)
@@ -981,58 +976,5 @@ public static class Preloader
         ClientPlugin.Patches.PathHandling.PathTranslation.Init();
         ClientPlugin.Rewriter.RewriterRegistration.Register();
 #endif
-    }
-
-    private static bool s_nativeWrappersInitialized;
-
-    // Native wrapper export tables permit one initialization only.
-    private static void InitNativeWrappers()
-    {
-        if (s_nativeWrappersInitialized)
-        {
-            throw new Exception(
-                "[LinuxCompat] InitNativeWrappers: already initialized. This is the second attempt."
-            );
-        }
-        s_nativeWrappersInitialized = true;
-
-        var gameRoot = Environment.GetEnvironmentVariable("SPACE_ENGINEERS_ROOT");
-        if (string.IsNullOrEmpty(gameRoot))
-        {
-            Console.WriteLine(
-                "[LinuxCompat] WARNING: SPACE_ENGINEERS_ROOT not set, cannot initialize native wrappers"
-            );
-            return;
-        }
-
-#if MAGNETAR
-        var binDir = Path.Combine(gameRoot, "DedicatedServer64");
-        if (!Directory.Exists(binDir))
-            binDir = Path.Combine(gameRoot, "Bin64");
-#else
-        var binDir = Path.Combine(gameRoot, "Bin64");
-        InitWrapper("D3DCompiler", binDir, "d3dcompiler_47.dll", D3DCompilerLinux.Init);
-#endif
-        InitWrapper("Havok", binDir, "Havok.dll", HavokLinux.Init);
-        InitWrapper("RecastDetour", binDir, "RecastDetour.dll", RecastDetourLinux.Init);
-        InitWrapper("VRageNative", binDir, "VRage.Native.dll", VRageNativeLinux.Init);
-    }
-
-    private static void InitWrapper(
-        string name,
-        string binDir,
-        string dllName,
-        Action<string> initFunc
-    )
-    {
-        var dllPath = Path.Combine(binDir, dllName);
-        if (!File.Exists(dllPath))
-        {
-            Console.WriteLine($"[LinuxCompat] WARNING: {dllName} not found at {dllPath}");
-            return;
-        }
-
-        initFunc(dllPath);
-        Console.WriteLine($"[LinuxCompat] {name} initialized: {dllPath}");
     }
 }
