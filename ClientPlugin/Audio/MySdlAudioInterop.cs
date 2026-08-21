@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using ClientPlugin.Audio;
+using ClientPlugin.Compatibility;
 using FFmpeg.AutoGen;
 using SharpDX.Multimedia;
 
@@ -54,37 +54,9 @@ internal static unsafe class MySdlAudioInterop
                     $"SDL3 audio initialization failed: {GetErrorString()}"
                 );
             }
-            InitializeFfmpegBindings();
-            _ = ffmpeg.avformat_version();
+            FfmpegBindings.EnsureInitialized();
             m_initialized = true;
         }
-    }
-
-    private static void InitializeFfmpegBindings()
-    {
-        ffmpeg.RootPath = string.Empty;
-        ffmpeg.av_log_set_level(ffmpeg.AV_LOG_ERROR);
-        PinFfmpegLibraryVersions();
-        Type bindingsType = typeof(ffmpeg).Assembly.GetType(
-            "FFmpeg.AutoGen.DynamicallyLoadedBindings"
-        );
-        MethodInfo initializeMethod = bindingsType?.GetMethod(
-            "Initialize",
-            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
-        );
-        initializeMethod?.Invoke(null, null);
-    }
-
-    private static void PinFfmpegLibraryVersions()
-    {
-        // FFmpeg.AutoGen 8.1.0 requires the FFmpeg 8.1 ABI bundled by Pulsar.
-        // FFmpeg 7 has a different AVCodecContext layout after `framerate`.
-        // Omit unused libraries to avoid loading a second FFmpeg dependency set.
-        ffmpeg.LibraryVersionMap["avcodec"] = 62;
-        ffmpeg.LibraryVersionMap["avformat"] = 62;
-        ffmpeg.LibraryVersionMap["avutil"] = 60;
-        ffmpeg.LibraryVersionMap["swresample"] = 6;
-        ffmpeg.LibraryVersionMap["swscale"] = 9;
     }
 
     public static byte[] LoadAudioFile(string path, out WaveFormat waveFormat)

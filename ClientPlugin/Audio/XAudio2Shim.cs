@@ -337,7 +337,7 @@ namespace SharpDX.XAudio2
         {
             _nativePointer = (void*)1;
 
-            // MySdlAudioInterop initializes the FFmpeg bindings used for decoding.
+            // Initialize SDL audio before the engine starts creating voices.
             MySdlAudioInterop.EnsureInitialized();
 
             m_alc = ALContext.GetApi(soft: true);
