@@ -10,7 +10,7 @@ namespace ClientPlugin.Rewriter;
 /// Symbol-based matching leaves mod-defined types with the same names unchanged.
 /// Bare calls imported with <c>using static System.IO.Path</c> are not rewritten.
 /// </summary>
-internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
+internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
 {
     private const string SystemIoPathFqn = "global::System.IO.Path";
     private const string ReplacementFqn = "global::ClientPlugin.Rewriter.WindowsPath";
@@ -27,7 +27,9 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
 
     private readonly SemanticModel _semanticModel;
 
-    public PathSubstitutionRewriter(SemanticModel semanticModel)
+    internal bool RequiresShimReference { get; private set; }
+
+    public WindowsSemanticsRewriter(SemanticModel semanticModel)
     {
         _semanticModel = semanticModel;
     }
@@ -39,6 +41,7 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         // Bind the original node because synthesized nodes are detached from the syntax tree.
         if (IsSystemIoPathTypeReference(node.Expression))
         {
+            RequiresShimReference = true;
             var newType = SyntaxFactory
                 .ParseName(ReplacementFqn)
                 .WithLeadingTrivia(rewritten.Expression.GetLeadingTrivia())
@@ -61,6 +64,7 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         // Replace the whole chain because its Name slot requires SimpleNameSyntax.
         if (IsNamedTypeReference(node, StopwatchFqn))
         {
+            RequiresShimReference = true;
             return SyntaxFactory
                 .ParseName(WindowsStopwatchFqn)
                 .WithLeadingTrivia(rewritten.GetLeadingTrivia())
@@ -95,6 +99,7 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
             var receiver = TryGetGetPathReceiver(rewritten);
             if (receiver != null)
             {
+                RequiresShimReference = true;
                 return SyntaxFactory
                     .InvocationExpression(
                         SyntaxFactory.ParseExpression(FromGameFqn),
@@ -113,7 +118,14 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
             return RewriteStringBuilderAppendLine(rewritten) ?? (SyntaxNode)rewritten;
 
         if (IsTextWriterWriteLine(node))
-            return RewriteTextWriterWriteLine(rewritten) ?? (SyntaxNode)rewritten;
+        {
+            var replacement = RewriteTextWriterWriteLine(rewritten);
+            if (replacement == null)
+                return rewritten;
+
+            RequiresShimReference = true;
+            return replacement;
+        }
 
         return rewritten;
     }
@@ -287,6 +299,7 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
             && rewrittenTail.Expression is MemberAccessExpressionSyntax rewrittenAccess
         )
         {
+            RequiresShimReference = true;
             // Keep nested substitutions from the rewritten receiver.
             var peeled = rewritten.WithWhenNotNull(rewrittenAccess.Expression);
 
@@ -357,6 +370,7 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
         // SemanticModel contains only original syntax-tree nodes.
         if (IsSystemIoPathTypeReference(node.Type))
         {
+            RequiresShimReference = true;
             var newType = SyntaxFactory
                 .ParseTypeName(ReplacementFqn)
                 .WithLeadingTrivia(rewritten.Type.GetLeadingTrivia())
@@ -391,9 +405,12 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
 
         var replacement = TryGetTypeSubstitution(node, node.Identifier.ValueText);
         if (replacement != null)
+        {
+            RequiresShimReference = true;
             return replacement
                 .WithLeadingTrivia(node.GetLeadingTrivia())
                 .WithTrailingTrivia(node.GetTrailingTrivia());
+        }
 
         return base.VisitIdentifierName(node);
     }
@@ -417,9 +434,12 @@ internal sealed class PathSubstitutionRewriter : CSharpSyntaxRewriter
     {
         var replacement = TryGetTypeSubstitution(node, node.Right.Identifier.ValueText);
         if (replacement != null)
+        {
+            RequiresShimReference = true;
             return replacement
                 .WithLeadingTrivia(node.GetLeadingTrivia())
                 .WithTrailingTrivia(node.GetTrailingTrivia());
+        }
 
         return base.VisitQualifiedName(node);
     }

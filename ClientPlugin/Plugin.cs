@@ -2,7 +2,9 @@
 using ClientPlugin.Patches.PathHandling;
 using ClientPlugin.Rewriter;
 using HarmonyLib;
+using Microsoft.CodeAnalysis.CSharp;
 using VRage.Plugins;
+using VRage.Scripting;
 #if !LOCAL_BUILD
 using System.Reflection;
 
@@ -18,6 +20,9 @@ public class Plugin : IPlugin
 {
     public const string Name = "LinuxCompat";
 
+    public static CSharpCompilation Rewrite(CSharpCompilation compilation, MyApiTarget target) =>
+        CompilationRewriter.Rewrite(compilation, target);
+
     [System.Runtime.CompilerServices.MethodImpl(
         System.Runtime.CompilerServices.MethodImplOptions.NoInlining
     )]
@@ -30,7 +35,8 @@ public class Plugin : IPlugin
         if (RenderingConfig.AllowRendering)
             SdlRenderThread.Start();
 
-        RewriterRegistration.Register();
+        // Start the process-relative clock before mods use it.
+        _ = WindowsStopwatch.GetTimestamp();
 
         var harmony = new Harmony("LinuxCompat");
         harmony.PatchCategory("Init");

@@ -7,7 +7,7 @@ using VRage.Scripting;
 namespace ClientPlugin.Patches.PathHandling;
 
 /// <summary>
-/// Whitelists <see cref="WindowsPath"/> for rewritten mod IL.
+/// Whitelists the compatibility types emitted into rewritten mod IL.
 /// The postfix runs after DotNetCompat populates the default whitelist.
 /// </summary>
 [HarmonyPatchCategory("Init")]
@@ -19,6 +19,11 @@ public static class WindowsPathWhitelistPatch
     [HarmonyPostfix]
     private static void Postfix(IMyWhitelistBatch handle)
     {
-        handle.AllowTypes(MyWhitelistTarget.Both, typeof(WindowsPath));
+        handle.AllowTypes(
+            MyWhitelistTarget.Both,
+            typeof(WindowsPath),
+            typeof(WindowsTextWriter),
+            typeof(WindowsStopwatch)
+        );
     }
 }

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using HarmonyLib;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -14,22 +13,6 @@ using Mono.Cecil.Cil;
 // ReSharper disable once UnusedType.Global
 public static class Preloader
 {
-    static Preloader()
-    {
-        // Loader-randomized identities must resolve to this in-memory assembly.
-        var selfAssembly = typeof(Preloader).Assembly;
-        var selfName = selfAssembly.GetName().Name;
-        AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
-        {
-            var name = new AssemblyName(args.Name).Name;
-            if (name == null)
-                return null;
-            return name == "LinuxCompat" || name == "LinuxCompatServer" || name == selfName
-                ? selfAssembly
-                : null;
-        };
-    }
-
     // ReSharper disable once UnusedMember.Global
     public static void Initialize() => ClientPlugin.Compatibility.NativeLibraries.Initialize();
 
@@ -37,36 +20,20 @@ public static class Preloader
     public static IEnumerable<string> TargetDLLs { get; } =
     [
 #if MAGNETAR
-        "Sandbox.Game.dll",
         "SpaceEngineers.Game.dll",
-        "VRage.dll",
         "VRage.Dedicated.dll",
         "VRage.Game.dll",
         "VRage.Library.dll",
         "VRage.Platform.Windows.dll",
-        "VRage.Scripting.dll",
         "VRage.Steam.dll",
 #else
-        "HavokWrapper.dll",
-        "Sandbox.Common.dll",
-        "Sandbox.Game.dll",
-        "Sandbox.Graphics.dll",
         "SpaceEngineers.Game.dll",
-        "VRage.dll",
         "VRage.Audio.dll",
         "VRage.Game.dll",
-        "VRage.Input.dll",
         "VRage.Library.dll",
-        "VRage.Math.dll",
-        "VRage.Network.dll",
         "VRage.Platform.Windows.dll",
-        "VRage.Render.dll",
-        "VRage.Render11.dll",
-        "VRage.Scripting.dll",
         "VRage.Steam.dll",
         "SharpDX.dll",
-        "SharpDX.DXGI.dll",
-        "SixLabors.ImageSharp.dll",
 #endif
     ];
 
@@ -143,7 +110,7 @@ public static class Preloader
     {
 #if !MAGNETAR
         // Resolve XAudio2 and X3DAudio references to this assembly's shims.
-        RedirectAssemblyRef(asmDef, "SharpDX.XAudio2", "LinuxCompat");
+        RedirectAssemblyRef(asmDef, "SharpDX.XAudio2");
 #endif
 
         var myWindowsSystem = asmDef.MainModule.GetType(
@@ -251,16 +218,10 @@ public static class Preloader
     private static void PatchVRageAudio(AssemblyDefinition asmDef)
     {
         // Resolve SharpDX.XAudio2 types to this assembly's shims.
-        RedirectAssemblyRef(asmDef, "SharpDX.XAudio2", "LinuxCompat");
+        RedirectAssemblyRef(asmDef, "SharpDX.XAudio2");
     }
 
-    private static readonly Version LinuxCompatVersion = new Version(1, 0, 0, 0);
-
-    private static void RedirectAssemblyRef(
-        AssemblyDefinition asmDef,
-        string fromName,
-        string toName
-    )
+    private static void RedirectAssemblyRef(AssemblyDefinition asmDef, string fromName)
     {
         var module = asmDef.MainModule;
         var asmRef = module.AssemblyReferences.FirstOrDefault(r => r.Name == fromName);
@@ -272,15 +233,16 @@ public static class Preloader
             return;
         }
 
-        asmRef.Name = toName;
-        asmRef.Version = LinuxCompatVersion;
-        asmRef.PublicKeyToken = Array.Empty<byte>();
-        asmRef.PublicKey = Array.Empty<byte>();
-        asmRef.Culture = string.Empty;
+        var runtimeName = typeof(Preloader).Assembly.GetName();
+        asmRef.Name = runtimeName.Name;
+        asmRef.Version = runtimeName.Version;
+        asmRef.PublicKeyToken = runtimeName.GetPublicKeyToken() ?? Array.Empty<byte>();
+        asmRef.PublicKey = runtimeName.GetPublicKey() ?? Array.Empty<byte>();
+        asmRef.Culture = runtimeName.CultureName ?? string.Empty;
         asmRef.HashAlgorithm = Mono.Cecil.AssemblyHashAlgorithm.None;
 
         Console.WriteLine(
-            $"[LinuxCompat] Redirected AssemblyRef in {asmDef.Name.Name}: {fromName} -> {toName} {LinuxCompatVersion}"
+            $"[LinuxCompat] Redirected AssemblyRef in {asmDef.Name.Name}: {fromName} -> {runtimeName.FullName}"
         );
     }
 #endif
@@ -916,25 +878,11 @@ public static class Preloader
     )]
     public static void Finish()
     {
-        AppContext.SetSwitch(
-            "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization",
-            true
-        );
-
-        Assembly.Load("System.Collections.Immutable");
-
 #if !MAGNETAR
         // Splash creation uses SDL before Plugin.Init.
         if (ClientPlugin.Compatibility.RenderingConfig.AllowRendering)
             ClientPlugin.Compatibility.SdlRenderThread.Start();
 #endif
-
-        string[] dlls = ["System.Management"];
-        AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
-        {
-            var targetName = new AssemblyName(args.Name).Name;
-            return dlls.Contains(targetName) ? Assembly.Load(targetName) : null;
-        };
 
 #if DEBUG && HARMONY_DEBUG
         Harmony.DEBUG = true;
@@ -974,7 +922,6 @@ public static class Preloader
 #if MAGNETAR
         // Server Plugin.Init runs after the auto-loaded world's mods compile.
         ClientPlugin.Patches.PathHandling.PathTranslation.Init();
-        ClientPlugin.Rewriter.RewriterRegistration.Register();
 #endif
     }
 }
