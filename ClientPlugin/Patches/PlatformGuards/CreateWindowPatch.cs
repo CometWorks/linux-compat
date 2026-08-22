@@ -9,6 +9,7 @@ using VRage;
 using VRage.Ansel;
 using VRage.Platform.Windows;
 using VRage.Platform.Windows.Forms;
+using VRageMath;
 using VRageRender;
 
 namespace ClientPlugin.Patches.PlatformGuards;
@@ -140,14 +141,22 @@ static class CreateWindowPatch
             height = savedH;
         }
 
-        bool havePos = PluginWindowConfig.TryGetWindowedPosition(out int savedX, out int savedY);
+        Vector2I windowSize = SdlGameWindow.PixelsToPrimaryWindowSize(width, height);
+        width = windowSize.X;
+        height = windowSize.Y;
+
+        int savedX = 0,
+            savedY = 0;
+        bool havePos =
+            !SdlRenderThread.IsWayland
+            && PluginWindowConfig.TryGetWindowedPosition(out savedX, out savedY);
         if (havePos)
         {
             x = savedX;
             y = savedY;
         }
 
-        // Clamp against the primary display before the window has an assigned display.
+        // Clamp logical window coordinates before the window has an assigned display.
         if (
             TryGetPrimaryDisplayBounds(out int dx, out int dy, out int dw, out int dh)
             && dw >= 640
@@ -197,7 +206,7 @@ static class CreateWindowPatch
             H;
     }
 
-    // SDL video queries share X11 state and must run on the SDL thread.
+    // SDL video queries must run on the SDL thread.
     private static bool TryGetPrimaryDisplayBounds(out int x, out int y, out int w, out int h)
     {
         var result = TryGetPrimaryDisplayBoundsOnRenderThread();

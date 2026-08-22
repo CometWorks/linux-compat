@@ -605,12 +605,6 @@ public static class Preloader
     )]
     public static void Finish()
     {
-#if !MAGNETAR
-        // Splash creation uses SDL before Plugin.Init.
-        if (ClientPlugin.Compatibility.RenderingConfig.AllowRendering)
-            ClientPlugin.Compatibility.SdlRenderThread.Start();
-#endif
-
 #if DEBUG && HARMONY_DEBUG
         Harmony.DEBUG = true;
 #endif

@@ -17,7 +17,7 @@ install and run it. Please read the release notes to decide which one is the bes
 
 - With the plugin, the game will run natively on Linux and does not use Proton/Wine at all.
 - The game's window (in windowed mode) can be resized freely and is compatible with display scaling.
-- Runs on both X11 and Wayland (requires XWayland for X11 compatibility).
+- Runs on native Wayland and X11. Set `SDL_VIDEODRIVER=x11` to force X11.
 - Fonts and icons are sharper than on Windows.
 
 ## Development

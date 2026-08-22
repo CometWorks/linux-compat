@@ -15,7 +15,7 @@ internal static class CursorRenderRateState
 }
 
 // Move the software cursor from its 60 Hz game-thread position to the latest
-// SDL position when the render thread processes its sprite. Preserve size for HiDPI.
+// SDL position when the render thread processes its sprite.
 [HarmonyPatch(typeof(MySpritesRenderer), nameof(MySpritesRenderer.ProcessDrawMessage))]
 [HarmonyPatchCategory("Finish")]
 static class CursorRenderRatePatch
@@ -45,7 +45,14 @@ static class CursorRenderRatePatch
         if (!sdlWindow.TryGetFreshInWindowMousePosition(out Vector2 fresh))
             return;
 
-        // Translate only; size retains the game thread's HiDPI scaling.
+        Vector2I windowSize = sdlWindow.ClientSize;
+        Vector2I renderSize = MyRender11.ResolutionI;
+        if (windowSize.X <= 0 || windowSize.Y <= 0 || renderSize.X <= 0 || renderSize.Y <= 0)
+            return;
+        fresh.X *= renderSize.X / (float)windowSize.X;
+        fresh.Y *= renderSize.Y / (float)windowSize.Y;
+
+        // SDL input is in logical coordinates; the sprite uses the current render size.
         RectangleF rect = sprite.DestinationRectangle;
         rect.X = fresh.X - rect.Width * 0.5f;
         rect.Y = fresh.Y - rect.Height * 0.5f;

@@ -38,11 +38,7 @@ public class Plugin : IPlugin
         harmony.PatchCategory("Init");
     }
 
-    public void Dispose()
-    {
-        if (RenderingConfig.AllowRendering)
-            SdlRenderThread.Stop();
-    }
+    public void Dispose() { }
 
     public void Update()
     {

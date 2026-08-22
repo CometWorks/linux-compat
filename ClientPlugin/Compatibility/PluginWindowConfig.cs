@@ -6,9 +6,10 @@ namespace ClientPlugin.Compatibility;
 // Stores Linux window geometry in SpaceEngineers.cfg through protected MyConfig accessors.
 internal static class PluginWindowConfig
 {
-    // Windowed size shares the game's render-resolution keys.
-    private const string KEY_WINDOWED_WIDTH = "ScreenWidth";
-    private const string KEY_WINDOWED_HEIGHT = "ScreenHeight";
+    // Windowed size is persisted in drawable pixels. Keep it separate from the
+    // game's current render resolution, which may describe fullscreen mode.
+    private const string KEY_WINDOWED_WIDTH = "LinuxCompat_WindowedWidth";
+    private const string KEY_WINDOWED_HEIGHT = "LinuxCompat_WindowedHeight";
     private const string KEY_WINDOWED_X = "LinuxCompat_WindowedX";
     private const string KEY_WINDOWED_Y = "LinuxCompat_WindowedY";
 

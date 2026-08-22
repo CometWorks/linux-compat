@@ -1,6 +1,7 @@
 using ClientPlugin.Patches.PlatformGuards;
 using HarmonyLib;
 using Sandbox;
+using Sandbox.Engine.Platform.VideoMode;
 using VRage.Utils;
 using VRageMath;
 using VRageRender;
@@ -11,38 +12,51 @@ namespace ClientPlugin.Patches.WindowManagement;
 // Same-mode resize flow is one-way from window to backbuffer to avoid feedback.
 internal static class BackbufferResizeRequest
 {
-    // Periodic reconciliation covers missed SDL resize signals.
-    private const int PERIODIC_CHECK_INTERVAL_FRAMES = 60;
-
+    private static readonly object Sync = new object();
     private static bool s_requested;
-    private static int s_frameCounter;
+    private static int s_pendingModeChanges;
 
     public static void Request()
     {
-        s_requested = true;
+        lock (Sync)
+        {
+            if (s_pendingModeChanges == 0)
+                s_requested = true;
+        }
+    }
+
+    public static void BeginModeChange()
+    {
+        lock (Sync)
+        {
+            s_pendingModeChanges++;
+            s_requested = false;
+        }
+    }
+
+    public static void CompleteModeChange()
+    {
+        lock (Sync)
+        {
+            if (--s_pendingModeChanges == 0)
+                s_requested = true;
+        }
     }
 
     public static void ProcessIfRequested(MySandboxGame game)
     {
-        if (++s_frameCounter >= PERIODIC_CHECK_INTERVAL_FRAMES)
+        lock (Sync)
         {
-            s_frameCounter = 0;
-            s_requested = true;
+            if (!s_requested)
+                return;
+            s_requested = false;
         }
-
-        if (!s_requested)
-            return;
-        s_requested = false;
 
         if (Sandbox.Engine.Platform.Game.IsDedicated)
             return;
 
         var sdl = SdlInput2Provider.Instance;
         if (sdl == null)
-            return;
-
-        // Fullscreen transitions briefly expose stale windowed state.
-        if (!sdl.IsWindowed)
             return;
 
         var render = game?.GameRenderComponent?.RenderThread;
@@ -58,7 +72,11 @@ internal static class BackbufferResizeRequest
         if (backbuffer == target)
             return;
 
-        MyRenderDeviceSettings current = render.CurrentSettings;
+        MyRenderDeviceSettings current = MyVideoSettingsManager.CurrentDeviceSettings;
+        if (current.BackBufferWidth <= 0 || current.BackBufferHeight <= 0)
+            current = render.CurrentSettings;
+        if (current.BackBufferWidth <= 0 || current.BackBufferHeight <= 0)
+            return;
         current.BackBufferWidth = target.X;
         current.BackBufferHeight = target.Y;
         MyLog.Default.WriteLine(

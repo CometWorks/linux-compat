@@ -23,6 +23,8 @@ internal sealed class MySdlSplashScreen : IDisposable
 
     private const ulong SdlWindowAlwaysOnTop = 0x8000uL;
 
+    private const ulong SdlWindowHighPixelDensity = 0x2000uL;
+
     // SDL_PIXELFORMAT_RGBA32 is the byte-array RGBA alias on little-endian platforms.
     private const uint SdlPixelFormatRgba32 = 0x16762004u;
 
@@ -55,6 +57,9 @@ internal sealed class MySdlSplashScreen : IDisposable
     /// </summary>
     internal static void Hide()
     {
+        if (!SdlRenderThread.IsInitialized)
+            return;
+
         SdlRenderThread.Invoke(() =>
         {
             s_current?.Dispose();
@@ -87,32 +92,88 @@ internal sealed class MySdlSplashScreen : IDisposable
             using Image<Rgba32> sourceImage = Image.Load<Rgba32>(path);
             int width = Math.Max(1, (int)MathF.Round(sourceImage.Width * scale.X));
             int height = Math.Max(1, (int)MathF.Round(sourceImage.Height * scale.Y));
+            float contentScale = 1f;
+            if (!SdlRenderThread.IsWayland)
+            {
+                contentScale = GetDisplayContentScale(GetPrimaryDisplay());
+                if (contentScale <= 0f || !float.IsFinite(contentScale))
+                    contentScale = 1f;
+                width = Math.Max(1, (int)MathF.Round(width * contentScale));
+                height = Math.Max(1, (int)MathF.Round(height * contentScale));
+            }
+
+            m_windowHandle = CreateWindow(
+                "Space Engineers",
+                width,
+                height,
+                SdlWindowBorderless
+                    | SdlWindowAlwaysOnTop
+                    | SdlWindowHidden
+                    | SdlWindowHighPixelDensity
+            );
+            if (m_windowHandle == IntPtr.Zero)
+            {
+                Console.WriteLine($"[LinuxCompat] SDL_CreateWindow failed: {GetErrorString()}");
+                return;
+            }
+
+            SetWindowAlwaysOnTop(m_windowHandle, true);
+            SdlIconHelper.Apply(m_windowHandle, gameIcon);
+            SetWindowPosition(m_windowHandle, SdlWindowPosCentered, SdlWindowPosCentered);
+
+            if (SdlRenderThread.IsWayland)
+            {
+                if (!ShowWindow(m_windowHandle))
+                {
+                    Console.WriteLine($"[LinuxCompat] SDL_ShowWindow failed: {GetErrorString()}");
+                    return;
+                }
+
+                if (!SyncWindow(m_windowHandle))
+                {
+                    Console.WriteLine($"[LinuxCompat] SDL_SyncWindow failed: {GetErrorString()}");
+                    return;
+                }
+            }
+
+            if (
+                !GetWindowSizeInPixels(m_windowHandle, out int pixelWidth, out int pixelHeight)
+                || pixelWidth <= 0
+                || pixelHeight <= 0
+            )
+            {
+                pixelWidth = width;
+                pixelHeight = height;
+            }
 
             using Image<Rgba32> splashImage = sourceImage.Clone(context =>
             {
-                if (sourceImage.Width != width || sourceImage.Height != height)
+                if (sourceImage.Width != pixelWidth || sourceImage.Height != pixelHeight)
                 {
-                    context.Resize(width, height);
+                    context.Resize(pixelWidth, pixelHeight);
                 }
             });
 
-            m_pixelData = new byte[width * height * 4];
+            m_pixelData = new byte[pixelWidth * pixelHeight * 4];
             Span<Rgba32> destSpan = MemoryMarshal.Cast<byte, Rgba32>(m_pixelData.AsSpan());
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < pixelHeight; y++)
             {
                 Span<Rgba32> row = splashImage.Frames[0].GetPixelRowSpan(y);
-                row.CopyTo(destSpan.Slice(y * width, width));
+                row.CopyTo(destSpan.Slice(y * pixelWidth, pixelWidth));
             }
             m_pixelDataHandle = GCHandle.Alloc(m_pixelData, GCHandleType.Pinned);
 
-            Console.WriteLine($"[LinuxCompat] Splash image loaded: {width}x{height}");
+            Console.WriteLine(
+                $"[LinuxCompat] Splash image loaded: window={width}x{height} pixels={pixelWidth}x{pixelHeight} "
+                    + $"contentScale={contentScale:F2}"
+            );
 
             IntPtr surface = CreateSurfaceFrom(
-                width,
-                height,
+                pixelWidth,
+                pixelHeight,
                 SdlPixelFormatRgba32,
                 m_pixelDataHandle.AddrOfPinnedObject(),
-                width * 4
+                pixelWidth * 4
             );
             if (surface == IntPtr.Zero)
             {
@@ -125,30 +186,14 @@ internal sealed class MySdlSplashScreen : IDisposable
 
             try
             {
-                m_windowHandle = CreateWindow(
-                    "Space Engineers",
-                    width,
-                    height,
-                    SdlWindowBorderless | SdlWindowAlwaysOnTop | SdlWindowHidden
-                );
-                if (m_windowHandle == IntPtr.Zero)
-                {
-                    Console.WriteLine($"[LinuxCompat] SDL_CreateWindow failed: {GetErrorString()}");
-                    return;
-                }
                 Console.WriteLine(
                     $"[LinuxCompat] Splash window created: 0x{m_windowHandle.ToInt64():X}"
                 );
 
-                SetWindowAlwaysOnTop(m_windowHandle, true);
-                SdlIconHelper.Apply(m_windowHandle, gameIcon);
-                SetWindowPosition(m_windowHandle, SdlWindowPosCentered, SdlWindowPosCentered);
                 IntPtr windowSurface = GetWindowSurface(m_windowHandle);
                 Console.WriteLine(
                     $"[LinuxCompat] Splash window surface: 0x{windowSurface.ToInt64():X}"
                 );
-                bool shown = ShowWindow(m_windowHandle);
-                Console.WriteLine($"[LinuxCompat] SDL_ShowWindow returned {shown}");
                 if (windowSurface == IntPtr.Zero)
                 {
                     Console.WriteLine(
@@ -163,6 +208,19 @@ internal sealed class MySdlSplashScreen : IDisposable
                 {
                     Console.WriteLine($"[LinuxCompat] SDL_BlitSurface failed: {GetErrorString()}");
                     return;
+                }
+
+                if (!SdlRenderThread.IsWayland)
+                {
+                    bool shown = ShowWindow(m_windowHandle);
+                    Console.WriteLine($"[LinuxCompat] SDL_ShowWindow returned {shown}");
+                    if (!shown)
+                    {
+                        Console.WriteLine(
+                            $"[LinuxCompat] SDL_ShowWindow failed: {GetErrorString()}"
+                        );
+                        return;
+                    }
                 }
 
                 bool updated = UpdateWindowSurface(m_windowHandle);
@@ -230,16 +288,33 @@ internal sealed class MySdlSplashScreen : IDisposable
     private static extern void DestroyWindow(IntPtr window);
 
     [DllImport(Lib, EntryPoint = "SDL_ShowWindow")]
+    [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool ShowWindow(IntPtr window);
 
+    [DllImport(Lib, EntryPoint = "SDL_SyncWindow")]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static extern bool SyncWindow(IntPtr window);
+
     [DllImport(Lib, EntryPoint = "SDL_SetWindowAlwaysOnTop")]
+    [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool SetWindowAlwaysOnTop(
         IntPtr window,
         [MarshalAs(UnmanagedType.I1)] bool onTop
     );
 
     [DllImport(Lib, EntryPoint = "SDL_SetWindowPosition")]
+    [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool SetWindowPosition(IntPtr window, int x, int y);
+
+    [DllImport(Lib, EntryPoint = "SDL_GetWindowSizeInPixels")]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static extern bool GetWindowSizeInPixels(IntPtr window, out int width, out int height);
+
+    [DllImport(Lib, EntryPoint = "SDL_GetPrimaryDisplay")]
+    private static extern uint GetPrimaryDisplay();
+
+    [DllImport(Lib, EntryPoint = "SDL_GetDisplayContentScale")]
+    private static extern float GetDisplayContentScale(uint displayId);
 
     [DllImport(Lib, EntryPoint = "SDL_CreateSurfaceFrom")]
     private static extern IntPtr CreateSurfaceFrom(
@@ -254,6 +329,7 @@ internal sealed class MySdlSplashScreen : IDisposable
     private static extern IntPtr GetWindowSurface(IntPtr window);
 
     [DllImport(Lib, EntryPoint = "SDL_BlitSurface")]
+    [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool BlitSurface(
         IntPtr source,
         IntPtr sourceRect,
@@ -262,6 +338,7 @@ internal sealed class MySdlSplashScreen : IDisposable
     );
 
     [DllImport(Lib, EntryPoint = "SDL_UpdateWindowSurface")]
+    [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool UpdateWindowSurface(IntPtr window);
 
     [DllImport(Lib, EntryPoint = "SDL_DestroySurface")]
