@@ -567,8 +567,6 @@ namespace SharpDX.XAudio2
 
         private bool m_started;
 
-        private bool m_paused;
-
         private bool m_stopRequested;
 
         private bool m_loopReplayEnabled;
@@ -1639,7 +1637,7 @@ namespace SharpDX.XAudio2
             }
             base.GetVolume(out var ownVolume);
             float outputEff = OutputVoice?.EffectiveVolume ?? 1f;
-            float gain = Math.Max(0f, m_paused ? 0f : ownVolume * outputEff * m_matrixGain);
+            float gain = Math.Max(0f, ownVolume * outputEff * m_matrixGain);
             lock (m_engine.AlLock)
                 m_al.SetSourceProperty(m_source, SourceFloat.Gain, gain);
         }

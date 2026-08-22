@@ -146,7 +146,7 @@
             <HintPath>$(Bin64)/VRage.NativeWrapper.dll</HintPath>
             <Private>False</Private>
         </Reference>
-        <Reference Include="VRage.Network, Version=1.0.63.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="VRage.Network">
             <HintPath>$(Bin64)/VRage.Network.dll</HintPath>
             <Private>False</Private>
         </Reference>
