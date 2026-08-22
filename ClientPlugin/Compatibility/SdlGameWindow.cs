@@ -373,6 +373,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 SDL_SetWindowSize(Handle, restoredSize.X, restoredSize.Y);
                 SDL_SyncWindow(Handle);
             }
+
+            // Preserve SDL_WINDOW_HIDDEN until the game or Pulsar calls ShowAndFocus.
+            SDL_HideWindow(Handle);
+            SDL_SyncWindow(Handle);
         }
         RefreshWindowMetrics();
         if (IsValidWindowedSize(m_clientSize.X, m_clientSize.Y))
