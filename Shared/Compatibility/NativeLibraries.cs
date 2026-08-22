@@ -42,6 +42,15 @@ internal static class NativeLibraries
         [MarshalAs(UnmanagedType.LPUTF8Str)] string value,
         int overwrite
     );
+
+    // DXVK reads its configuration with getenv, which ignores
+    // Environment.SetEnvironmentVariable on Unix. Existing values are kept by
+    // default, so anything the user exported wins.
+    internal static void SetNativeEnvironmentVariable(
+        string name,
+        string value,
+        bool overwrite = false
+    ) => SetEnvironmentVariableNative(name, value, overwrite ? 1 : 0);
 #endif
 
     internal static void Initialize()
@@ -50,11 +59,13 @@ internal static class NativeLibraries
             return;
 
 #if !MAGNETAR
-        // DXVK reads these with getenv, which ignores Environment.SetEnvironmentVariable on Unix.
-        SetEnvironmentVariableNative("DXVK_WSI_DRIVER", "SDL3", overwrite: 0);
+        SetNativeEnvironmentVariable("DXVK_WSI_DRIVER", "SDL3");
 
         // "none" stops DXVK writing <exe>_dxgi.log / <exe>_d3d11.log; it still logs to stderr.
-        SetEnvironmentVariableNative("DXVK_LOG_PATH", "none", overwrite: 0);
+        SetNativeEnvironmentVariable("DXVK_LOG_PATH", "none");
+
+        // DXVK_SHADER_CACHE_PATH needs the game's user data path, which is only
+        // known once MyFileSystem is initialized; DxvkShaderCachePatch sets it.
 #endif
 
         AssemblyLoadContext.Default.ResolvingUnmanagedDll += Resolve;
