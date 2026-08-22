@@ -45,7 +45,6 @@ internal sealed class MySdlSplashScreen : IDisposable
     /// </summary>
     internal static void Show(string image, string gameIcon, Vector2 scale)
     {
-        SdlRenderThread.Start();
         SdlRenderThread.Invoke(() =>
         {
             s_current?.Dispose();

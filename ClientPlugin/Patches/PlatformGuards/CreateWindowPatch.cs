@@ -21,7 +21,6 @@ static class CreateWindowPatch
     static bool Prefix(MySandboxGame __instance, ref IVRageWindow __result)
     {
         __instance.DrawThread = Thread.CurrentThread;
-        SdlRenderThread.Start();
 
         // Resolve geometry before the first map to avoid a visible jump.
         ResolveInitialGeometry(

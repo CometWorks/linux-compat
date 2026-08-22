@@ -1,11 +1,23 @@
 using System;
 using ClientPlugin.Compatibility;
 using HarmonyLib;
+using Sandbox;
 using Sandbox.Game;
 using VRage.Platform.Windows.Forms;
 using VRageMath;
 
 namespace ClientPlugin.Patches.WindowManagement;
+
+[HarmonyPatch(typeof(MyCommonProgramStartup), nameof(MyCommonProgramStartup.InitSplashScreen))]
+[HarmonyPatchCategory("Finish")]
+static class InitSplashScreenPatch
+{
+    static void Prefix()
+    {
+        if (RenderingConfig.AllowRendering)
+            SdlRenderThread.Start();
+    }
+}
 
 /// <summary>
 /// Supplies SDL splash behavior for the preloader-disabled WinForms methods.
