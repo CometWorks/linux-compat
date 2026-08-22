@@ -12,7 +12,6 @@ using VRage.Library.Utils;
 using Sandbox.Game.Screens;
 #endif
 
-
 namespace ClientPlugin.Patches.PathHandling;
 
 [HarmonyPatch(typeof(MyLocalCache), nameof(MyLocalCache.GetWorldInfoFromCampaign))]
