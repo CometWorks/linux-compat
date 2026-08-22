@@ -93,6 +93,15 @@ internal sealed class MySdlSplashScreen : IDisposable
             using Image<Rgba32> sourceImage = Image.Load<Rgba32>(path);
             int width = Math.Max(1, (int)MathF.Round(sourceImage.Width * scale.X));
             int height = Math.Max(1, (int)MathF.Round(sourceImage.Height * scale.Y));
+            float contentScale = 1f;
+            if (!SdlRenderThread.IsWayland)
+            {
+                contentScale = GetDisplayContentScale(GetPrimaryDisplay());
+                if (contentScale <= 0f || !float.IsFinite(contentScale))
+                    contentScale = 1f;
+                width = Math.Max(1, (int)MathF.Round(width * contentScale));
+                height = Math.Max(1, (int)MathF.Round(height * contentScale));
+            }
 
             m_windowHandle = CreateWindow(
                 "Space Engineers",
@@ -156,7 +165,8 @@ internal sealed class MySdlSplashScreen : IDisposable
             m_pixelDataHandle = GCHandle.Alloc(m_pixelData, GCHandleType.Pinned);
 
             Console.WriteLine(
-                $"[LinuxCompat] Splash image loaded: logical={width}x{height} pixels={pixelWidth}x{pixelHeight}"
+                $"[LinuxCompat] Splash image loaded: window={width}x{height} pixels={pixelWidth}x{pixelHeight} "
+                    + $"contentScale={contentScale:F2}"
             );
 
             IntPtr surface = CreateSurfaceFrom(
@@ -300,6 +310,12 @@ internal sealed class MySdlSplashScreen : IDisposable
     [DllImport(Lib, EntryPoint = "SDL_GetWindowSizeInPixels")]
     [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool GetWindowSizeInPixels(IntPtr window, out int width, out int height);
+
+    [DllImport(Lib, EntryPoint = "SDL_GetPrimaryDisplay")]
+    private static extern uint GetPrimaryDisplay();
+
+    [DllImport(Lib, EntryPoint = "SDL_GetDisplayContentScale")]
+    private static extern float GetDisplayContentScale(uint displayId);
 
     [DllImport(Lib, EntryPoint = "SDL_CreateSurfaceFrom")]
     private static extern IntPtr CreateSurfaceFrom(
