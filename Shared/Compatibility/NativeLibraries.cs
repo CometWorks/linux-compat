@@ -50,14 +50,11 @@ internal static class NativeLibraries
             return;
 
 #if !MAGNETAR
-        const string name = "DXVK_WSI_DRIVER";
-        var value = Environment.GetEnvironmentVariable(name);
-        if (value == null)
-        {
-            value = "SDL3";
-            Environment.SetEnvironmentVariable(name, value);
-        }
-        SetEnvironmentVariableNative(name, value, overwrite: 0);
+        // DXVK reads these with getenv, which ignores Environment.SetEnvironmentVariable on Unix.
+        SetEnvironmentVariableNative("DXVK_WSI_DRIVER", "SDL3", overwrite: 0);
+
+        // "none" stops DXVK writing <exe>_dxgi.log / <exe>_d3d11.log; it still logs to stderr.
+        SetEnvironmentVariableNative("DXVK_LOG_PATH", "none", overwrite: 0);
 #endif
 
         AssemblyLoadContext.Default.ResolvingUnmanagedDll += Resolve;
