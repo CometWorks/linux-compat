@@ -2,7 +2,9 @@
 using ClientPlugin.Patches.PathHandling;
 using ClientPlugin.Rewriter;
 using HarmonyLib;
+using Microsoft.CodeAnalysis.CSharp;
 using VRage.Plugins;
+using VRage.Scripting;
 #if !LOCAL_BUILD
 using System.Reflection;
 
@@ -18,6 +20,9 @@ public class Plugin : IPlugin
 {
     public const string Name = "LinuxCompat";
 
+    public static CSharpCompilation Rewrite(CSharpCompilation compilation, MyApiTarget target) =>
+        CompilationRewriter.Rewrite(compilation, target);
+
     [System.Runtime.CompilerServices.MethodImpl(
         System.Runtime.CompilerServices.MethodImplOptions.NoInlining
     )]
@@ -26,11 +31,8 @@ public class Plugin : IPlugin
         // Cecil-injected mod path getters require translation before mods run.
         PathTranslation.Init();
 
-        // SDL owns its windows, event pump, and clipboard from one thread.
-        if (RenderingConfig.AllowRendering)
-            SdlRenderThread.Start();
-
-        RewriterRegistration.Register();
+        // Mod compilation needs the rewriter shims whitelisted and referenced.
+        ShimRegistration.Register();
 
         var harmony = new Harmony("LinuxCompat");
         harmony.PatchCategory("Init");

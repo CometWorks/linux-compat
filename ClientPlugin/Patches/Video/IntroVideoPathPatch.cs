@@ -5,7 +5,7 @@ namespace ClientPlugin.Patches.Video;
 
 [HarmonyPatch(typeof(MyGuiScreenIntroVideo), "TryPlayVideo")]
 [HarmonyPatchCategory("Finish")]
-static class TryPlayVideoDiagPatch
+static class IntroVideoPathPatch
 {
     static void Prefix(MyGuiScreenIntroVideo __instance)
     {

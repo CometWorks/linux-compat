@@ -3,73 +3,37 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using ClientPlugin.Compatibility;
 using HarmonyLib;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-#if !MAGNETAR
-using ClientPlugin.Compatibility.Rendering;
-#endif
 
 // Pulsar and Magnetar discover Preloader in the global namespace.
 
 // ReSharper disable once UnusedType.Global
 public static class Preloader
 {
-    static Preloader()
-    {
-        // Loader-randomized identities must resolve to this in-memory assembly.
-        var selfAssembly = typeof(Preloader).Assembly;
-        var selfName = selfAssembly.GetName().Name;
-        AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
-        {
-            var name = new AssemblyName(args.Name).Name;
-            if (name == null)
-                return null;
-            return name == "LinuxCompat" || name == "LinuxCompatServer" || name == selfName
-                ? selfAssembly
-                : null;
-        };
-    }
+    // ReSharper disable once UnusedMember.Global
+    public static void Initialize() => ClientPlugin.Compatibility.NativeLibraries.Initialize();
 
     // ReSharper disable once UnusedMember.Global
     public static IEnumerable<string> TargetDLLs { get; } =
     [
 #if MAGNETAR
-        "Sandbox.Game.dll",
         "SpaceEngineers.Game.dll",
-        "VRage.dll",
         "VRage.Dedicated.dll",
         "VRage.Game.dll",
         "VRage.Library.dll",
         "VRage.Platform.Windows.dll",
-        "VRage.Scripting.dll",
         "VRage.Steam.dll",
 #else
-        "HavokWrapper.dll",
-        "Sandbox.Common.dll",
-        "Sandbox.Game.dll",
-        "Sandbox.Graphics.dll",
         "SpaceEngineers.Game.dll",
-        "VRage.dll",
         "VRage.Audio.dll",
         "VRage.Game.dll",
-        "VRage.Input.dll",
         "VRage.Library.dll",
-        "VRage.Math.dll",
-        "VRage.Network.dll",
         "VRage.Platform.Windows.dll",
-        "VRage.Render.dll",
-        "VRage.Render11.dll",
-        "VRage.Scripting.dll",
         "VRage.Steam.dll",
         "SharpDX.dll",
-        "SharpDX.DXGI.dll",
-        "SixLabors.ImageSharp.dll",
 #endif
     ];
 
@@ -146,7 +110,7 @@ public static class Preloader
     {
 #if !MAGNETAR
         // Resolve XAudio2 and X3DAudio references to this assembly's shims.
-        RedirectAssemblyRef(asmDef, "SharpDX.XAudio2", "LinuxCompat");
+        RedirectAssemblyRef(asmDef, "SharpDX.XAudio2");
 #endif
 
         var myWindowsSystem = asmDef.MainModule.GetType(
@@ -191,17 +155,6 @@ public static class Preloader
         }
 
 #if !MAGNETAR
-        var myPlatformRender = asmDef.MainModule.GetType(
-            "VRage.Platform.Windows.Render.MyPlatformRender"
-        );
-        if (myPlatformRender != null)
-        {
-            PatchCreateRenderDevice(myPlatformRender, asmDef.MainModule);
-            PatchCreateSwapChain(myPlatformRender, asmDef.MainModule);
-            PatchApplySettings(myPlatformRender);
-            PatchFixSettings(myPlatformRender);
-        }
-
         var myWindowsRender = asmDef.MainModule.GetType(
             "VRage.Platform.Windows.Render.MyWindowsRender"
         );
@@ -254,16 +207,10 @@ public static class Preloader
     private static void PatchVRageAudio(AssemblyDefinition asmDef)
     {
         // Resolve SharpDX.XAudio2 types to this assembly's shims.
-        RedirectAssemblyRef(asmDef, "SharpDX.XAudio2", "LinuxCompat");
+        RedirectAssemblyRef(asmDef, "SharpDX.XAudio2");
     }
 
-    private static readonly Version LinuxCompatVersion = new Version(1, 0, 0, 0);
-
-    private static void RedirectAssemblyRef(
-        AssemblyDefinition asmDef,
-        string fromName,
-        string toName
-    )
+    private static void RedirectAssemblyRef(AssemblyDefinition asmDef, string fromName)
     {
         var module = asmDef.MainModule;
         var asmRef = module.AssemblyReferences.FirstOrDefault(r => r.Name == fromName);
@@ -275,15 +222,16 @@ public static class Preloader
             return;
         }
 
-        asmRef.Name = toName;
-        asmRef.Version = LinuxCompatVersion;
-        asmRef.PublicKeyToken = Array.Empty<byte>();
-        asmRef.PublicKey = Array.Empty<byte>();
-        asmRef.Culture = string.Empty;
+        var runtimeName = typeof(Preloader).Assembly.GetName();
+        asmRef.Name = runtimeName.Name;
+        asmRef.Version = runtimeName.Version;
+        asmRef.PublicKeyToken = runtimeName.GetPublicKeyToken() ?? Array.Empty<byte>();
+        asmRef.PublicKey = runtimeName.GetPublicKey() ?? Array.Empty<byte>();
+        asmRef.Culture = runtimeName.CultureName ?? string.Empty;
         asmRef.HashAlgorithm = Mono.Cecil.AssemblyHashAlgorithm.None;
 
         Console.WriteLine(
-            $"[LinuxCompat] Redirected AssemblyRef in {asmDef.Name.Name}: {fromName} -> {toName} {LinuxCompatVersion}"
+            $"[LinuxCompat] Redirected AssemblyRef in {asmDef.Name.Name}: {fromName} -> {runtimeName.FullName}"
         );
     }
 #endif
@@ -493,262 +441,6 @@ public static class Preloader
     }
 
 #if !MAGNETAR
-    private static void PatchCreateRenderDevice(TypeDefinition type, ModuleDefinition module)
-    {
-        var method = type.Methods.FirstOrDefault(m => m.Name == "CreateRenderDevice");
-        if (method?.HasBody != true)
-            return;
-
-        var instructions = method.Body.Instructions;
-
-        for (int i = 0; i < instructions.Count; i++)
-        {
-            var instr = instructions[i];
-            if (
-                instr.OpCode == OpCodes.Newobj
-                && instr.Operand is MethodReference ctor
-                && ctor.DeclaringType.Name == "Device"
-                && ctor.Parameters.Count >= 3
-                && (
-                    ctor.Parameters[0].ParameterType.Name == "Adapter"
-                    || ctor.Parameters[0].ParameterType.Name == "Adapter1"
-                )
-            )
-            {
-                for (int j = i - 1; j >= 0 && j >= i - 15; j--)
-                {
-                    if (
-                        instructions[j].OpCode == OpCodes.Ldloc
-                        || instructions[j].OpCode == OpCodes.Ldloc_S
-                        || instructions[j].OpCode == OpCodes.Ldloc_0
-                        || instructions[j].OpCode == OpCodes.Ldloc_1
-                        || instructions[j].OpCode == OpCodes.Ldloc_2
-                        || instructions[j].OpCode == OpCodes.Ldloc_3
-                    )
-                    {
-                        VariableDefinition varDef = null;
-                        if (instructions[j].Operand is VariableDefinition vd)
-                            varDef = vd;
-                        else if (instructions[j].Operand is int vi)
-                            varDef = method.Body.Variables[vi];
-                        else
-                        {
-                            int idx =
-                                instructions[j].OpCode == OpCodes.Ldloc_0 ? 0
-                                : instructions[j].OpCode == OpCodes.Ldloc_1 ? 1
-                                : instructions[j].OpCode == OpCodes.Ldloc_2 ? 2
-                                : 3;
-                            varDef = method.Body.Variables[idx];
-                        }
-
-                        if (varDef?.VariableType.Name == "Adapter")
-                        {
-                            SetInstr(instructions[j], OpCodes.Ldc_I4_1);
-
-                            // DriverType shares FeatureLevel's SharpDX scope.
-                            var featureLevelScope = (
-                                ctor.Parameters[2].ParameterType is ArrayType at
-                                    ? at.ElementType
-                                    : ctor.Parameters[2].ParameterType
-                            ).Scope;
-                            var driverTypeRef = module.ImportReference(
-                                new TypeReference(
-                                    "SharpDX.Direct3D",
-                                    "DriverType",
-                                    module,
-                                    featureLevelScope,
-                                    true
-                                )
-                            );
-                            var newCtor = new MethodReference(
-                                ".ctor",
-                                module.TypeSystem.Void,
-                                ctor.DeclaringType
-                            );
-                            newCtor.HasThis = true;
-                            newCtor.Parameters.Add(new ParameterDefinition(driverTypeRef));
-                            newCtor.Parameters.Add(
-                                new ParameterDefinition(ctor.Parameters[1].ParameterType)
-                            );
-                            newCtor.Parameters.Add(
-                                new ParameterDefinition(ctor.Parameters[2].ParameterType)
-                            );
-
-                            instr.Operand = newCtor;
-                            Console.WriteLine(
-                                "[LinuxCompat] Patched CreateRenderDevice: Device(Adapter) -> Device(DriverType.Hardware)"
-                            );
-                            break;
-                        }
-                    }
-                }
-                break;
-            }
-        }
-    }
-
-    private static void PatchCreateSwapChain(TypeDefinition type, ModuleDefinition module)
-    {
-        var method = type.Methods.FirstOrDefault(m => m.Name == "CreateSwapChain");
-        if (method?.HasBody != true)
-            return;
-
-        var instructions = method.Body.Instructions;
-
-        for (int i = 0; i < instructions.Count; i++)
-        {
-            var instr = instructions[i];
-            if (instr.OpCode == OpCodes.Stfld && instr.Operand is FieldReference fr)
-            {
-                if (fr.Name == "Flags" && fr.DeclaringType.Name == "SwapChainDescription" && i > 0)
-                {
-                    SetInstr(instructions[i - 1], OpCodes.Ldc_I4_0);
-                    Console.WriteLine("[LinuxCompat] Patched CreateSwapChain: Flags = None");
-                }
-                if (
-                    fr.Name == "SwapEffect"
-                    && fr.DeclaringType.Name == "SwapChainDescription"
-                    && i > 0
-                )
-                {
-                    SetInstr(instructions[i - 1], OpCodes.Ldc_I4_1);
-                    Console.WriteLine(
-                        "[LinuxCompat] Patched CreateSwapChain: SwapEffect = Sequential"
-                    );
-                }
-                if (fr.Name == "Usage" && fr.DeclaringType.Name == "SwapChainDescription" && i > 0)
-                {
-                    SetInstr(instructions[i - 1], OpCodes.Ldc_I4, 0x30);
-                    Console.WriteLine(
-                        "[LinuxCompat] Patched CreateSwapChain: Usage = ShaderInput | RenderTargetOutput"
-                    );
-                }
-            }
-        }
-
-        for (int i = 0; i < instructions.Count; i++)
-        {
-            if (
-                instructions[i].OpCode == OpCodes.Callvirt
-                && instructions[i].Operand is MethodReference mr
-                && mr.Name == "MakeWindowAssociation"
-            )
-            {
-                for (int j = i; j >= i - 3 && j >= 0; j--)
-                    NopInstr(instructions[j]);
-                Console.WriteLine(
-                    "[LinuxCompat] Patched CreateSwapChain: NOP'd MakeWindowAssociation"
-                );
-                break;
-            }
-        }
-    }
-
-    private static void PatchApplySettings(TypeDefinition type)
-    {
-        var method = type.Methods.FirstOrDefault(m => m.Name == "ApplySettings");
-        if (method?.HasBody != true)
-            return;
-
-        var instructions = method.Body.Instructions;
-
-        int settingsStoreIdx = -1;
-        for (int i = 0; i < instructions.Count; i++)
-        {
-            if (
-                instructions[i].OpCode == OpCodes.Stsfld
-                && instructions[i].Operand is FieldReference fr
-                && fr.Name == "m_settings"
-            )
-            {
-                settingsStoreIdx = i;
-                break;
-            }
-        }
-
-        if (settingsStoreIdx < 0)
-            return;
-
-        for (int i = settingsStoreIdx + 1; i < instructions.Count; i++)
-        {
-            if (instructions[i].OpCode == OpCodes.Ret)
-            {
-                break;
-            }
-            NopInstr(instructions[i]);
-        }
-
-        Console.WriteLine("[LinuxCompat] Patched ApplySettings: NOP'd swap chain operations");
-    }
-
-    private static void PatchFixSettings(TypeDefinition type)
-    {
-        var method = type.Methods.FirstOrDefault(m => m.Name == "FixSettings");
-        if (method?.HasBody != true)
-            return;
-
-        // Null-render adapters have no outputs but still accept these settings.
-        var instructions = method.Body.Instructions;
-        var il = method.Body.GetILProcessor();
-
-        for (int i = 0; i < instructions.Count; i++)
-        {
-            if (
-                instructions[i].OpCode == OpCodes.Callvirt
-                && instructions[i].Operand is MethodReference mr
-                && mr.Name == "get_Outputs"
-                && mr.DeclaringType.Name == "Adapter"
-            )
-            {
-                for (int j = i + 1; j < instructions.Count && j < i + 5; j++)
-                {
-                    if (instructions[j].OpCode == OpCodes.Ldlen)
-                    {
-                        int start = i - 1;
-                        while (
-                            start >= 0
-                            && instructions[start].OpCode != OpCodes.Ldarg_1
-                            && instructions[start].OpCode != OpCodes.Ldarg_S
-                            && !(
-                                instructions[start].OpCode == OpCodes.Ldloc
-                                || instructions[start].OpCode == OpCodes.Ldloc_S
-                                || instructions[start].OpCode == OpCodes.Ldloc_0
-                                || instructions[start].OpCode == OpCodes.Ldloc_1
-                            )
-                        )
-                        {
-                            start--;
-                        }
-
-                        for (int k = j + 1; k < instructions.Count && k < j + 5; k++)
-                        {
-                            if (
-                                instructions[k].OpCode == OpCodes.Brtrue
-                                || instructions[k].OpCode == OpCodes.Brtrue_S
-                                || instructions[k].OpCode == OpCodes.Brfalse
-                                || instructions[k].OpCode == OpCodes.Brfalse_S
-                                || instructions[k].OpCode == OpCodes.Bne_Un
-                                || instructions[k].OpCode == OpCodes.Bne_Un_S
-                                || instructions[k].OpCode == OpCodes.Beq
-                                || instructions[k].OpCode == OpCodes.Beq_S
-                            )
-                            {
-                                for (int n = start; n <= k; n++)
-                                    NopInstr(instructions[n]);
-                                Console.WriteLine(
-                                    "[LinuxCompat] Patched FixSettings: skipped adapter.Outputs check"
-                                );
-                                return;
-                            }
-                        }
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-    }
-
     private static void NopGameWindowOnModeChanged(TypeDefinition type, string methodName)
     {
         var method = type.Methods.FirstOrDefault(m => m.Name == methodName);
@@ -801,12 +493,6 @@ public static class Preloader
     {
         instr.OpCode = OpCodes.Nop;
         instr.Operand = null;
-    }
-
-    private static void SetInstr(Instruction instr, OpCode opCode, object operand = null)
-    {
-        instr.OpCode = opCode;
-        instr.Operand = operand;
     }
 #endif
 
@@ -919,27 +605,11 @@ public static class Preloader
     )]
     public static void Finish()
     {
-        AppContext.SetSwitch(
-            "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization",
-            true
-        );
-
-        Assembly.Load("System.Collections.Immutable");
-
-        InitNativeWrappers();
-
 #if !MAGNETAR
         // Splash creation uses SDL before Plugin.Init.
         if (ClientPlugin.Compatibility.RenderingConfig.AllowRendering)
             ClientPlugin.Compatibility.SdlRenderThread.Start();
 #endif
-
-        string[] dlls = ["System.Management"];
-        AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
-        {
-            var targetName = new AssemblyName(args.Name).Name;
-            return dlls.Contains(targetName) ? Assembly.Load(targetName) : null;
-        };
 
 #if DEBUG && HARMONY_DEBUG
         Harmony.DEBUG = true;
@@ -979,60 +649,7 @@ public static class Preloader
 #if MAGNETAR
         // Server Plugin.Init runs after the auto-loaded world's mods compile.
         ClientPlugin.Patches.PathHandling.PathTranslation.Init();
-        ClientPlugin.Rewriter.RewriterRegistration.Register();
+        ClientPlugin.Rewriter.ShimRegistration.Register();
 #endif
-    }
-
-    private static bool s_nativeWrappersInitialized;
-
-    // Native wrapper export tables permit one initialization only.
-    private static void InitNativeWrappers()
-    {
-        if (s_nativeWrappersInitialized)
-        {
-            throw new Exception(
-                "[LinuxCompat] InitNativeWrappers: already initialized. This is the second attempt."
-            );
-        }
-        s_nativeWrappersInitialized = true;
-
-        var gameRoot = Environment.GetEnvironmentVariable("SPACE_ENGINEERS_ROOT");
-        if (string.IsNullOrEmpty(gameRoot))
-        {
-            Console.WriteLine(
-                "[LinuxCompat] WARNING: SPACE_ENGINEERS_ROOT not set, cannot initialize native wrappers"
-            );
-            return;
-        }
-
-#if MAGNETAR
-        var binDir = Path.Combine(gameRoot, "DedicatedServer64");
-        if (!Directory.Exists(binDir))
-            binDir = Path.Combine(gameRoot, "Bin64");
-#else
-        var binDir = Path.Combine(gameRoot, "Bin64");
-        InitWrapper("D3DCompiler", binDir, "d3dcompiler_47.dll", D3DCompilerLinux.Init);
-#endif
-        InitWrapper("Havok", binDir, "Havok.dll", HavokLinux.Init);
-        InitWrapper("RecastDetour", binDir, "RecastDetour.dll", RecastDetourLinux.Init);
-        InitWrapper("VRageNative", binDir, "VRage.Native.dll", VRageNativeLinux.Init);
-    }
-
-    private static void InitWrapper(
-        string name,
-        string binDir,
-        string dllName,
-        Action<string> initFunc
-    )
-    {
-        var dllPath = Path.Combine(binDir, dllName);
-        if (!File.Exists(dllPath))
-        {
-            Console.WriteLine($"[LinuxCompat] WARNING: {dllName} not found at {dllPath}");
-            return;
-        }
-
-        initFunc(dllPath);
-        Console.WriteLine($"[LinuxCompat] {name} initialized: {dllPath}");
     }
 }

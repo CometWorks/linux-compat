@@ -81,35 +81,8 @@ public static class MyFileSystemOpenPrepatch
 
     private static MethodReference ImportResolveAbsolute(ModuleDefinition module)
     {
-        var linuxCompatRef = module.AssemblyReferences.FirstOrDefault(r => r.Name == "LinuxCompat");
-        if (linuxCompatRef == null)
-        {
-            linuxCompatRef = new AssemblyNameReference("LinuxCompat", new Version(1, 0, 0, 0))
-            {
-                PublicKeyToken = Array.Empty<byte>(),
-                PublicKey = Array.Empty<byte>(),
-                Culture = string.Empty,
-                HashAlgorithm = AssemblyHashAlgorithm.None,
-            };
-            module.AssemblyReferences.Add(linuxCompatRef);
-        }
-
-        var pathCacheType = new TypeReference(
-            "ClientPlugin.Patches.PathHandling",
-            "PathCache",
-            module,
-            linuxCompatRef,
-            false
+        return module.ImportReference(
+            typeof(PathCache).GetMethod(nameof(PathCache.ResolveAbsolute), [typeof(string)])
         );
-
-        var stringRef = module.TypeSystem.String;
-        var method = new MethodReference("ResolveAbsolute", stringRef, pathCacheType)
-        {
-            HasThis = false,
-            ExplicitThis = false,
-            CallingConvention = MethodCallingConvention.Default,
-        };
-        method.Parameters.Add(new ParameterDefinition(stringRef));
-        return method;
     }
 }

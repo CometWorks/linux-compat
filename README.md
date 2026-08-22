@@ -20,6 +20,15 @@ install and run it. Please read the release notes to decide which one is the bes
 - Runs on both X11 and Wayland (requires XWayland for X11 compatibility).
 - Fonts and icons are sharper than on Windows.
 
+## Development
+
+Local build paths (`Bin64`, `DS64`, `Pulsar`, `Magnetar`, `Steamworks`, `Dependencies`, `Wrappers`)
+are empty in `Directory.Build.props`. To override them, copy its first `PropertyGroup` into
+`Directory.Build.props.user` (git-ignored) in the repo root, wrapped in a top-level
+`<Project>` element, and fill in your paths.
+
+`Bin64` and `DS64` are auto-detected from Steam if left empty.
+
 ## Bug reports
 
 Please start a support thread on the [Pulsar Discord](https://discord.gg/z8ZczP2YZY)

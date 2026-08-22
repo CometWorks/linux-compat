@@ -337,7 +337,7 @@ namespace SharpDX.XAudio2
         {
             _nativePointer = (void*)1;
 
-            // MySdlAudioInterop initializes the FFmpeg bindings used for decoding.
+            // Initialize SDL audio before the engine starts creating voices.
             MySdlAudioInterop.EnsureInitialized();
 
             m_alc = ALContext.GetApi(soft: true);
@@ -566,8 +566,6 @@ namespace SharpDX.XAudio2
         private VoiceState m_state;
 
         private bool m_started;
-
-        private bool m_paused;
 
         private bool m_stopRequested;
 
@@ -1639,7 +1637,7 @@ namespace SharpDX.XAudio2
             }
             base.GetVolume(out var ownVolume);
             float outputEff = OutputVoice?.EffectiveVolume ?? 1f;
-            float gain = Math.Max(0f, m_paused ? 0f : ownVolume * outputEff * m_matrixGain);
+            float gain = Math.Max(0f, ownVolume * outputEff * m_matrixGain);
             lock (m_engine.AlLock)
                 m_al.SetSourceProperty(m_source, SourceFloat.Gain, gain);
         }

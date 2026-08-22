@@ -19,11 +19,6 @@ internal static class SdlAudio
         return SDL_InitSubSystem(flags);
     }
 
-    internal static IntPtr GetError()
-    {
-        return SDL_GetError();
-    }
-
     internal static string GetErrorString()
     {
         IntPtr ptr = SDL_GetError();
@@ -55,11 +50,6 @@ internal static class SdlAudio
         SDL_CloseAudioDevice(devid);
     }
 
-    internal static bool PauseAudioDevice(uint devid)
-    {
-        return SDL_PauseAudioDevice(devid);
-    }
-
     internal static bool GetAudioDeviceFormat(
         uint devid,
         out MySdlAudioInterop.SdlAudioSpec spec,
@@ -87,19 +77,9 @@ internal static class SdlAudio
         return SDL_BindAudioStream(devid, stream);
     }
 
-    internal static void UnbindAudioStream(IntPtr stream)
-    {
-        SDL_UnbindAudioStream(stream);
-    }
-
     internal static bool PutAudioStreamData(IntPtr stream, byte[] data, int len)
     {
         return SDL_PutAudioStreamData(stream, data, len);
-    }
-
-    internal static int GetAudioStreamQueued(IntPtr stream)
-    {
-        return SDL_GetAudioStreamQueued(stream);
     }
 
     internal static bool ClearAudioStream(IntPtr stream)
@@ -110,11 +90,6 @@ internal static class SdlAudio
     internal static bool SetAudioStreamGain(IntPtr stream, float gain)
     {
         return SDL_SetAudioStreamGain(stream, gain);
-    }
-
-    internal static bool SetAudioStreamFrequencyRatio(IntPtr stream, float ratio)
-    {
-        return SDL_SetAudioStreamFrequencyRatio(stream, ratio);
     }
 
     // SDL3 _Bool is one byte; the CLR's default unmanaged BOOL is four bytes.
@@ -147,10 +122,6 @@ internal static class SdlAudio
     [DllImport(Lib, EntryPoint = "SDL_CloseAudioDevice")]
     private static extern void SDL_CloseAudioDevice(uint devid);
 
-    [DllImport(Lib, EntryPoint = "SDL_PauseAudioDevice")]
-    [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_PauseAudioDevice(uint devid);
-
     [DllImport(Lib, EntryPoint = "SDL_GetAudioDeviceFormat")]
     [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool SDL_GetAudioDeviceFormat(
@@ -172,15 +143,9 @@ internal static class SdlAudio
     [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool SDL_BindAudioStream(uint devid, IntPtr stream);
 
-    [DllImport(Lib, EntryPoint = "SDL_UnbindAudioStream")]
-    private static extern void SDL_UnbindAudioStream(IntPtr stream);
-
     [DllImport(Lib, EntryPoint = "SDL_PutAudioStreamData")]
     [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool SDL_PutAudioStreamData(IntPtr stream, byte[] data, int len);
-
-    [DllImport(Lib, EntryPoint = "SDL_GetAudioStreamQueued")]
-    private static extern int SDL_GetAudioStreamQueued(IntPtr stream);
 
     [DllImport(Lib, EntryPoint = "SDL_ClearAudioStream")]
     [return: MarshalAs(UnmanagedType.I1)]
@@ -189,8 +154,4 @@ internal static class SdlAudio
     [DllImport(Lib, EntryPoint = "SDL_SetAudioStreamGain")]
     [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool SDL_SetAudioStreamGain(IntPtr stream, float gain);
-
-    [DllImport(Lib, EntryPoint = "SDL_SetAudioStreamFrequencyRatio")]
-    [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_SetAudioStreamFrequencyRatio(IntPtr stream, float ratio);
 }

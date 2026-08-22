@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using HarmonyLib;
 using Mono.Cecil.Cil;
@@ -25,20 +24,6 @@ public static class Hashing
 
             return hash;
         }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int HashBody(this MethodInfo methodInfo)
-    {
-        var code = PatchProcessor.GetCurrentInstructions(methodInfo);
-        return code.HashInstructions().CombineHashCodes();
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int HashBody(this ConstructorInfo constructorInfo)
-    {
-        var code = PatchProcessor.GetCurrentInstructions(constructorInfo);
-        return code.HashInstructions().CombineHashCodes();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

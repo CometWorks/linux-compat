@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using ClientPlugin.Audio;
 using FFmpeg.AutoGen;
@@ -22,8 +20,6 @@ namespace ClientPlugin.Compatibility.Video;
 /// </summary>
 internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
 {
-    private static readonly object FfmpegInitLock = new object();
-    private static bool s_ffmpegInitialized;
     private static readonly int Eagain = ffmpeg.AVERROR(11);
 
     private readonly object m_syncRoot = new object();
@@ -104,7 +100,7 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
                 // Game video paths use Windows separators.
                 if (!string.IsNullOrEmpty(fileName))
                     fileName = fileName.Replace('\\', '/');
-                EnsureFfmpegInitialized();
+                FfmpegBindings.EnsureInitialized();
                 LoadAudio(fileName);
 
                 fixed (AVFormatContext** formatContext = &m_formatContext)
@@ -192,6 +188,11 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
                 m_endOfStream = false;
                 m_currentFrame = null;
                 m_audioQueued = false;
+
+                if (!TryDecodeNextFrame(0.0))
+                    throw new InvalidOperationException(
+                        $"FFmpeg decoded no video frames from '{fileName}'."
+                    );
             }
             catch (Exception inner)
             {
@@ -285,11 +286,11 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
 
             while (true)
             {
-                if (!m_hasPendingFrame && !TryDecodeNextFrame())
+                if (!m_hasPendingFrame && !TryDecodeNextFrame(targetSeconds))
                     break;
                 if (!m_hasPendingFrame)
                     break;
-                if (m_currentPositionSeconds > 0.0 && m_pendingFrameSeconds > targetSeconds)
+                if (m_pendingFrameSeconds > targetSeconds)
                     break;
 
                 m_videoDataRgba.CommitWrite();
@@ -348,14 +349,20 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
         }
     }
 
-    private bool TryDecodeNextFrame()
+    private bool TryDecodeNextFrame(double targetSeconds)
     {
         while (true)
         {
             int receiveResult = ffmpeg.avcodec_receive_frame(m_codecContext, m_decodedFrame);
             if (receiveResult == 0)
             {
-                ConvertFrame(m_decodedFrame);
+                double frameSeconds = GetFrameTimestampSeconds(m_decodedFrame);
+                if (frameSeconds + m_nominalFrameDurationSeconds < targetSeconds)
+                {
+                    ffmpeg.av_frame_unref(m_decodedFrame);
+                    continue;
+                }
+                ConvertFrame(m_decodedFrame, frameSeconds);
                 ffmpeg.av_frame_unref(m_decodedFrame);
                 return true;
             }
@@ -389,7 +396,7 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
         }
     }
 
-    private void ConvertFrame(AVFrame* sourceFrame)
+    private void ConvertFrame(AVFrame* sourceFrame, double frameSeconds)
     {
         AVPixelFormat sourceFormat = (AVPixelFormat)sourceFrame->format;
         bool wasNull = m_scaleContext == null;
@@ -440,7 +447,7 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
             for (int i = destinationOffset + 3; i < destinationOffset + destinationStride; i += 4)
                 write[i] = m_alphaTransparency;
         }
-        m_pendingFrameSeconds = GetFrameTimestampSeconds(m_decodedFrame);
+        m_pendingFrameSeconds = frameSeconds;
         m_hasPendingFrame = true;
     }
 
@@ -566,41 +573,6 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
         throw new InvalidOperationException(
             $"FFmpeg failed to {operation}: {Marshal.PtrToStringAnsi((IntPtr)buffer)} ({errorCode})."
         );
-    }
-
-    private static void EnsureFfmpegInitialized()
-    {
-        if (s_ffmpegInitialized)
-            return;
-        lock (FfmpegInitLock)
-        {
-            if (s_ffmpegInitialized)
-                return;
-            ffmpeg.RootPath = string.Empty;
-            PinFfmpegLibraryVersions();
-            Type bindingsType = typeof(ffmpeg).Assembly.GetType(
-                "FFmpeg.AutoGen.DynamicallyLoadedBindings"
-            );
-            MethodInfo initializeMethod = bindingsType?.GetMethod(
-                "Initialize",
-                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
-            );
-            initializeMethod?.Invoke(null, null);
-            _ = ffmpeg.avformat_version();
-            s_ffmpegInitialized = true;
-        }
-    }
-
-    private static void PinFfmpegLibraryVersions()
-    {
-        // FFmpeg.AutoGen 8.1.0 requires the FFmpeg 8.1 ABI bundled by Pulsar.
-        // FFmpeg 7 has a different AVCodecContext layout after `framerate`.
-        // Omit unused libraries to avoid loading a second dependency set.
-        ffmpeg.LibraryVersionMap["avcodec"] = 62;
-        ffmpeg.LibraryVersionMap["avformat"] = 62;
-        ffmpeg.LibraryVersionMap["avutil"] = 60;
-        ffmpeg.LibraryVersionMap["swresample"] = 6;
-        ffmpeg.LibraryVersionMap["swscale"] = 9;
     }
 
     private void LoadAudio(string fileName)

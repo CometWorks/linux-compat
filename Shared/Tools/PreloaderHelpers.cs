@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -15,41 +14,6 @@ namespace ClientPlugin.Tools;
 
 public static class PreloaderHelpers
 {
-    public delegate bool CodeInstructionPredicate(Instruction ci);
-
-    public static int FindFirstIndex(
-        this Collection<Instruction> il,
-        CodeInstructionPredicate predicate
-    )
-    {
-        return il.Select((instruction, index) => new { Instruction = instruction, Index = index })
-            .Where(pair => predicate(pair.Instruction))
-            .Select(pair => pair.Index)
-            .FirstOrDefault(-1);
-    }
-
-    public static int FindLastIndex(
-        this Collection<Instruction> il,
-        CodeInstructionPredicate predicate
-    )
-    {
-        return il.Select((instruction, index) => new { Instruction = instruction, Index = index })
-            .Where(pair => predicate(pair.Instruction))
-            .Select(pair => pair.Index)
-            .LastOrDefault(-1);
-    }
-
-    public static List<int> FindAllIndex(
-        this Collection<Instruction> il,
-        CodeInstructionPredicate predicate
-    )
-    {
-        return il.Select((instruction, index) => new { Instruction = instruction, Index = index })
-            .Where(pair => predicate(pair.Instruction))
-            .Select(pair => pair.Index)
-            .ToList();
-    }
-
     public static string Hash(this Collection<Instruction> instructions)
     {
         return instructions.HashInstructions().CombineHashCodes().ToString("x8");

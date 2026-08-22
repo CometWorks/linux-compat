@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using ClientPlugin.Tools;
 using Mono.Cecil;
@@ -32,36 +31,9 @@ public static class MyModContextPrepatch
 
     private static MethodReference ImportToWindowsPath(ModuleDefinition module)
     {
-        var linuxCompatRef = module.AssemblyReferences.FirstOrDefault(r => r.Name == "LinuxCompat");
-        if (linuxCompatRef == null)
-        {
-            linuxCompatRef = new AssemblyNameReference("LinuxCompat", new Version(1, 0, 0, 0))
-            {
-                PublicKeyToken = Array.Empty<byte>(),
-                PublicKey = Array.Empty<byte>(),
-                Culture = string.Empty,
-                HashAlgorithm = AssemblyHashAlgorithm.None,
-            };
-            module.AssemblyReferences.Add(linuxCompatRef);
-        }
-
-        var pathHelpersType = new TypeReference(
-            "ClientPlugin.Patches.PathHandling",
-            "PathHelpers",
-            module,
-            linuxCompatRef,
-            false
+        return module.ImportReference(
+            typeof(PathHelpers).GetMethod(nameof(PathHelpers.ToWindowsPath), [typeof(string)])
         );
-
-        var stringRef = module.TypeSystem.String;
-        var method = new MethodReference("ToWindowsPath", stringRef, pathHelpersType)
-        {
-            HasThis = false,
-            ExplicitThis = false,
-            CallingConvention = MethodCallingConvention.Default,
-        };
-        method.Parameters.Add(new ParameterDefinition(stringRef));
-        return method;
     }
 
     private static void InjectExplicitGetter(
