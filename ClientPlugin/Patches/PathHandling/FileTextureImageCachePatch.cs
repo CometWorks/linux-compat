@@ -15,17 +15,10 @@ static class FileTextureImageCacheLoadImagePatch
         if (string.IsNullOrEmpty(filepath))
             return;
 
-        filepath = filepath.Replace('\\', '/');
-
-        // Remove synthetic Windows drive prefixes before Path.IsPathRooted.
-        filepath = PathTranslation.Untranslate(filepath);
-
-        // Resolve case-insensitively relative to Content path when possible.
+        // The funnel restores synthetic drive prefixes and resolves casing.
+        filepath = PathCache.ResolveAbsolute(filepath);
         if (Path.IsPathRooted(filepath))
-        {
-            filepath = PathCache.ResolveAbsolute(filepath);
             return;
-        }
 
         var contentPath = MyFileSystem.ContentPath;
         if (string.IsNullOrEmpty(contentPath))

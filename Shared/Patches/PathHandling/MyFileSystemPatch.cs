@@ -34,20 +34,12 @@ static class MyFileSystemOpenWritePatch
         if (path == null)
             return;
 
-        path = path.Replace('\\', '/');
+        // ResolveAbsolute is the single ingress funnel: it normalizes separators,
+        // restores synthetic drive prefixes, and resolves on-disk casing.
+        path = PathCache.ResolveAbsolute(path);
 
-        // Linux does not recognize synthetic drive prefixes as rooted.
-        path = PathTranslation.Untranslate(path);
-
-        if (!Path.IsPathRooted(path))
+        if (!Path.IsPathRooted(path) || File.Exists(path))
             return;
-
-        var resolved = PathCache.ResolveAbsolute(path);
-        if (resolved != path)
-        {
-            path = resolved;
-            return;
-        }
 
         // New files still need the parent's on-disk casing.
         var dir = Path.GetDirectoryName(path);
@@ -70,13 +62,7 @@ static class MyFileSystemFileExistsPatch
         if (path == null)
             return;
 
-        path = path.Replace('\\', '/');
-
-        // Linux does not recognize synthetic drive prefixes as rooted.
-        path = PathTranslation.Untranslate(path);
-
-        if (Path.IsPathRooted(path))
-            path = PathCache.ResolveAbsolute(path);
+        path = PathCache.ResolveAbsolute(path);
     }
 }
 
@@ -89,12 +75,7 @@ static class MyFileSystemDirectoryExistsPatch
         if (path == null)
             return;
 
-        path = path.Replace('\\', '/');
-
-        path = PathTranslation.Untranslate(path);
-
-        if (Path.IsPathRooted(path))
-            path = PathCache.ResolveAbsolute(path);
+        path = PathCache.ResolveAbsolute(path);
     }
 }
 
@@ -109,11 +90,7 @@ static class MyFileSystemGetFilesPatch
         if (path == null)
             return;
 
-        path = path.Replace('\\', '/');
-        path = PathTranslation.Untranslate(path);
-
-        if (Path.IsPathRooted(path))
-            path = PathCache.ResolveAbsolute(path);
+        path = PathCache.ResolveAbsolute(path);
     }
 
     static void Postfix(ref IEnumerable<string> __result) => GetFilesSort.Apply(ref __result);
@@ -128,11 +105,7 @@ static class MyFileSystemGetFilesFilterPatch
         if (path == null)
             return;
 
-        path = path.Replace('\\', '/');
-        path = PathTranslation.Untranslate(path);
-
-        if (Path.IsPathRooted(path))
-            path = PathCache.ResolveAbsolute(path);
+        path = PathCache.ResolveAbsolute(path);
     }
 
     static void Postfix(ref IEnumerable<string> __result) => GetFilesSort.Apply(ref __result);
@@ -153,11 +126,7 @@ static class MyFileSystemGetFilesSearchOptionPatch
         if (path == null)
             return;
 
-        path = path.Replace('\\', '/');
-        path = PathTranslation.Untranslate(path);
-
-        if (Path.IsPathRooted(path))
-            path = PathCache.ResolveAbsolute(path);
+        path = PathCache.ResolveAbsolute(path);
     }
 
     static void Postfix(ref IEnumerable<string> __result) => GetFilesSort.Apply(ref __result);
@@ -192,11 +161,7 @@ static class MyFileSystemIsDirectoryPatch
             return false;
         }
 
-        path = path.Replace('\\', '/');
-        path = PathTranslation.Untranslate(path);
-
-        if (Path.IsPathRooted(path))
-            path = PathCache.ResolveAbsolute(path);
+        path = PathCache.ResolveAbsolute(path);
 
         if (!MyFileSystem.DirectoryExists(path))
         {
@@ -227,13 +192,7 @@ static class MyFileSystemEnsureDirectoryExistsPatch
         if (path == null)
             return;
 
-        path = path.Replace('\\', '/');
-
-        // Prevent a synthetic drive prefix from becoming a Linux directory segment.
-        path = PathTranslation.Untranslate(path);
-
-        if (Path.IsPathRooted(path))
-            path = PathCache.ResolveAbsolute(path);
+        path = PathCache.ResolveAbsolute(path);
     }
 }
 
