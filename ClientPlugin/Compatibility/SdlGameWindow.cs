@@ -520,9 +520,11 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         if (modeChanged)
         {
             // Startup restores manual geometry; later mode changes honor the
-            // resolution selected in the display settings.
-            int w = initialMode ? m_savedWindowedSize?.X ?? targetW : targetW;
-            int h = initialMode ? m_savedWindowedSize?.Y ?? targetH : targetH;
+            // resolution selected in the display settings. Offscreen rendering
+            // has no window to restore, so the requested size always wins.
+            bool restoreSaved = initialMode && !SdlRenderThread.IsOffscreen;
+            int w = restoreSaved ? m_savedWindowedSize?.X ?? targetW : targetW;
+            int h = restoreSaved ? m_savedWindowedSize?.Y ?? targetH : targetH;
             if (boundsOk)
             {
                 w = Math.Min(w, displayBounds.Width);
@@ -637,6 +639,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     private void PersistSavedWindowedState()
     {
+        // Offscreen geometry is not the user's window geometry.
+        if (SdlRenderThread.IsOffscreen)
+            return;
+
         Vector2I? pixels = null;
         if (
             m_savedWindowedSize.HasValue
@@ -714,8 +720,11 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         return default;
     }
 
-    // Reject DXGI swapchain bounds masquerading as desktop geometry.
-    private static bool IsPlausibleDisplayBounds(Rectangle r) => r.Width >= 640 && r.Height >= 480;
+    // Reject DXGI swapchain bounds masquerading as desktop geometry. The SDL
+    // offscreen driver (headless) reports a fake 1024x768 desktop that would
+    // clamp any larger requested resolution, so it is never trusted either.
+    private static bool IsPlausibleDisplayBounds(Rectangle r) =>
+        !SdlRenderThread.IsOffscreen && r.Width >= 640 && r.Height >= 480;
 
     private static bool UsesWaylandCompositor()
     {
