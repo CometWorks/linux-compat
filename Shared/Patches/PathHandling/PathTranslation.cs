@@ -151,14 +151,14 @@ public static class PathTranslation
         if (bestPrefix != null)
         {
             var mapped = bestKey + forwardSlashPath.Substring(bestPrefix.Length);
-            if (IngressTrace.Enabled)
+            if (IngressTrace.Active)
                 IngressTrace.Record(forwardSlashPath, mapped);
             return mapped;
         }
 
         // Unmapped synthetic drives retain their Linux-rooted body.
         var stripped = forwardSlashPath.Substring(2);
-        if (IngressTrace.Enabled)
+        if (IngressTrace.Active)
             IngressTrace.Record(forwardSlashPath, stripped);
         return stripped;
     }
