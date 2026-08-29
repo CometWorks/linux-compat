@@ -54,6 +54,13 @@ internal static class SdlRenderThread
     internal static bool IsWayland { get; private set; }
 
     /// <summary>
+    /// True when SDL runs on the "offscreen" video driver (headless). Its
+    /// display is a fake 1024x768 desktop, not a real screen, so window
+    /// geometry must not be clamped to it.
+    /// </summary>
+    internal static bool IsOffscreen { get; private set; }
+
+    /// <summary>
     /// Starts SDL once and blocks until initialization completes.
     /// </summary>
     internal static void Start()
@@ -196,6 +203,11 @@ internal static class SdlRenderThread
         {
             string videoDriver = Marshal.PtrToStringUTF8(SDL_GetCurrentVideoDriver());
             IsWayland = string.Equals(videoDriver, "wayland", StringComparison.OrdinalIgnoreCase);
+            IsOffscreen = string.Equals(
+                videoDriver,
+                "offscreen",
+                StringComparison.OrdinalIgnoreCase
+            );
             Console.WriteLine(
                 $"[LinuxCompat] SdlRenderThread initialised SDL3 video driver: {videoDriver ?? "unknown"}"
             );
