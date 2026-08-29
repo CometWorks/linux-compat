@@ -35,6 +35,18 @@ public static class PathHelpers
     }
 
     /// <summary>
+    /// Converts a mod-supplied path to native Linux form at the mod API boundary.
+    /// Windows-shaped absolute paths are restored to their Linux roots; relative
+    /// paths only get their separators normalized.
+    /// </summary>
+    public static string FromModPath(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+            return path;
+        return PathTranslation.Untranslate(Normalize(path));
+    }
+
+    /// <summary>
     /// Converts Linux paths to synthetic Windows paths exposed only to mods.
     /// Known roots are translated; unmatched rooted paths receive a <c>C:</c> prefix.
     /// </summary>

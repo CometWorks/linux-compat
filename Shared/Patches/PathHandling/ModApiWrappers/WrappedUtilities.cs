@@ -104,7 +104,7 @@ internal sealed class WrappedUtilities : IMyUtilities
         if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
             throw new FileNotFoundException();
 
-        file = PathHelpers.Normalize(file);
+        file = PathHelpers.FromModPath(file);
         var modPath = modItem.GetPath();
         var fullPath = Path.GetFullPath(Path.Combine(modPath, file));
         if (fullPath.StartsWith(modPath))
@@ -129,7 +129,7 @@ internal sealed class WrappedUtilities : IMyUtilities
         if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
             throw new FileNotFoundException();
 
-        file = PathHelpers.Normalize(file);
+        file = PathHelpers.FromModPath(file);
         var resolved = PathHelpers.ResolveContentFilePath(file, MyFileSystem.ContentPath);
         if (resolved.StartsWith(MyFileSystem.ContentPath))
         {
@@ -145,7 +145,7 @@ internal sealed class WrappedUtilities : IMyUtilities
         if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
             return false;
 
-        file = PathHelpers.Normalize(file);
+        file = PathHelpers.FromModPath(file);
         var modPath = modItem.GetPath();
         var fullPath = Path.GetFullPath(Path.Combine(modPath, file));
         if (!fullPath.StartsWith(modPath))
@@ -164,7 +164,7 @@ internal sealed class WrappedUtilities : IMyUtilities
         if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
             return false;
 
-        file = PathHelpers.Normalize(file);
+        file = PathHelpers.FromModPath(file);
         var resolved = PathHelpers.ResolveContentFilePath(file, MyFileSystem.ContentPath);
         return resolved.StartsWith(MyFileSystem.ContentPath) && File.Exists(resolved);
     }
@@ -172,10 +172,10 @@ internal sealed class WrappedUtilities : IMyUtilities
     public BinaryReader ReadBinaryFileInModLocation(
         string file,
         MyObjectBuilder_Checkpoint.ModItem modItem
-    ) => _inner.ReadBinaryFileInModLocation(PathHelpers.Normalize(file), modItem);
+    ) => _inner.ReadBinaryFileInModLocation(PathHelpers.FromModPath(file), modItem);
 
     public BinaryReader ReadBinaryFileInGameContent(string file) =>
-        _inner.ReadBinaryFileInGameContent(PathHelpers.Normalize(file));
+        _inner.ReadBinaryFileInGameContent(PathHelpers.FromModPath(file));
 
     // Linux permits filename characters that Windows storage APIs reject.
     // Validate before delegation and preserve engine exceptions for valid names.
