@@ -193,10 +193,12 @@ internal sealed class WrappedConfigDedicated : IMyConfigDedicated
         get => _inner.RemoteApiIP;
         set => _inner.RemoteApiIP = value;
     }
+
+    // Plugin entries are assembly file paths loaded at startup and persisted by Save.
     public List<string> Plugins
     {
         get => _inner.Plugins;
-        set => _inner.Plugins = value;
+        set => _inner.Plugins = value?.ConvertAll(PathHelpers.FromModPath);
     }
     public float WatcherInterval
     {

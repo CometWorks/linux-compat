@@ -188,7 +188,11 @@ internal sealed class WrappedSession : IMySession
     public bool TryGetComponentByInterfaceType<T>(out T sessionComponent) =>
         _inner.TryGetComponentByInterfaceType(out sessionComponent);
 
-    public bool Save(string customSaveName = null) => _inner.Save(customSaveName);
+    // Save accepts a bare save name or an absolute path. A Windows-shaped path is
+    // not rooted on Linux, so untranslated it would be combined into the saves
+    // directory as one giant folder name, silently corrupting the save location.
+    public bool Save(string customSaveName = null) =>
+        _inner.Save(PathHelpers.FromModPath(customSaveName));
 
     public void SetCameraController(
         MyCameraControllerEnum cameraControllerEnum,
