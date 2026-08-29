@@ -35,11 +35,11 @@ public static class PathHelpers
     }
 
     /// <summary>
-    /// Converts a mod-supplied path to native Linux form at the mod API boundary.
-    /// Windows-shaped absolute paths are restored to their Linux roots; relative
-    /// paths only get their separators normalized.
+    /// Converts a mod-supplied Windows path to native Linux form at the mod API
+    /// boundary. Windows-shaped absolute paths are restored to their Linux roots;
+    /// relative paths only get their separators normalized.
     /// </summary>
-    public static string FromModPath(string path)
+    public static string FromWindowsPath(string path)
     {
         if (string.IsNullOrEmpty(path))
             return path;

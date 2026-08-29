@@ -192,7 +192,7 @@ internal sealed class WrappedSession : IMySession
     // not rooted on Linux, so untranslated it would be combined into the saves
     // directory as one giant folder name, silently corrupting the save location.
     public bool Save(string customSaveName = null) =>
-        _inner.Save(PathHelpers.FromModPath(customSaveName));
+        _inner.Save(PathHelpers.FromWindowsPath(customSaveName));
 
     public void SetCameraController(
         MyCameraControllerEnum cameraControllerEnum,

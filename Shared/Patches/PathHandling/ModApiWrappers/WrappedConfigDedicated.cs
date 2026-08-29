@@ -21,7 +21,7 @@ internal sealed class WrappedConfigDedicated : IMyConfigDedicated
     {
         get => PathHelpers.ToWindowsPath(_inner.PremadeCheckpointPath);
         // Engine file I/O requires native Linux paths on ingress.
-        set => _inner.PremadeCheckpointPath = PathHelpers.FromModPath(value);
+        set => _inner.PremadeCheckpointPath = PathHelpers.FromWindowsPath(value);
     }
 
     public string GetFilePath() => PathHelpers.ToWindowsPath(_inner.GetFilePath());
@@ -66,7 +66,7 @@ internal sealed class WrappedConfigDedicated : IMyConfigDedicated
     public string LoadWorld
     {
         get => PathHelpers.ToWindowsPath(_inner.LoadWorld);
-        set => _inner.LoadWorld = PathHelpers.FromModPath(value);
+        set => _inner.LoadWorld = PathHelpers.FromWindowsPath(value);
     }
     public bool CrossPlatform
     {
@@ -198,7 +198,7 @@ internal sealed class WrappedConfigDedicated : IMyConfigDedicated
     public List<string> Plugins
     {
         get => _inner.Plugins;
-        set => _inner.Plugins = value?.ConvertAll(PathHelpers.FromModPath);
+        set => _inner.Plugins = value?.ConvertAll(PathHelpers.FromWindowsPath);
     }
     public float WatcherInterval
     {
@@ -271,9 +271,9 @@ internal sealed class WrappedConfigDedicated : IMyConfigDedicated
         set => _inner.DedicatedId = value;
     }
 
-    public void Load(string path = null) => _inner.Load(PathHelpers.FromModPath(path));
+    public void Load(string path = null) => _inner.Load(PathHelpers.FromWindowsPath(path));
 
-    public void Save(string path = null) => _inner.Save(PathHelpers.FromModPath(path));
+    public void Save(string path = null) => _inner.Save(PathHelpers.FromWindowsPath(path));
 
     public void SetPassword(string password) => _inner.SetPassword(password);
 
