@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -8,7 +10,7 @@ namespace ClientPlugin.Rewriter;
 /// <summary>
 /// Rewrites mod source to use Windows path, newline, XML writer, and stopwatch semantics.
 /// Symbol-based matching leaves mod-defined types with the same names unchanged.
-/// Bare calls imported with <c>using static System.IO.Path</c> are not rewritten.
+/// Bare members imported with <c>using static System.IO.Path</c> are qualified with the shim.
 /// </summary>
 internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
 {
@@ -24,6 +26,14 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
     private const string StopwatchFqn = "global::System.Diagnostics.Stopwatch";
     private const string WindowsStopwatchFqn = "global::ClientPlugin.Rewriter.WindowsStopwatch";
     private const string XmlWriterSettingsFqn = "global::System.Xml.XmlWriterSettings";
+
+    // Only rewrite bare Path members the shim actually implements; unknown members
+    // keep their original binding rather than turning into compile errors.
+    private static readonly HashSet<string> WindowsPathMemberNames = new(
+        typeof(WindowsPath)
+            .GetMembers(BindingFlags.Public | BindingFlags.Static)
+            .Select(m => m.Name)
+    );
 
     private readonly SemanticModel _semanticModel;
 
@@ -412,7 +422,46 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
                 .WithTrailingTrivia(node.GetTrailingTrivia());
         }
 
+        // Bare Path members imported via `using static System.IO.Path`.
+        var bareMember = TryGetBarePathMemberSubstitution(node);
+        if (bareMember != null)
+        {
+            RequiresShimReference = true;
+            return bareMember
+                .WithLeadingTrivia(node.GetLeadingTrivia())
+                .WithTrailingTrivia(node.GetTrailingTrivia());
+        }
+
         return base.VisitIdentifierName(node);
+    }
+
+    /// <summary>
+    /// Qualifies bare <c>using static System.IO.Path</c> member references with the
+    /// shim type so they pick up Windows semantics like qualified calls do.
+    /// </summary>
+    private SyntaxNode TryGetBarePathMemberSubstitution(IdentifierNameSyntax node)
+    {
+        if (!WindowsPathMemberNames.Contains(node.Identifier.ValueText))
+            return null;
+
+        var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+        var isStaticPathMember = symbol switch
+        {
+            IMethodSymbol m => m.IsStatic,
+            IFieldSymbol f => f.IsStatic,
+            IPropertySymbol p => p.IsStatic,
+            _ => false,
+        };
+        if (!isStaticPathMember)
+            return null;
+
+        var containing = symbol.ContainingType;
+        if (containing == null)
+            return null;
+        if (containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) != SystemIoPathFqn)
+            return null;
+
+        return SyntaxFactory.ParseExpression(ReplacementFqn + "." + node.Identifier.ValueText);
     }
 
     /// <summary>

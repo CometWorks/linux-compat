@@ -348,7 +348,8 @@ public static class WindowsPath
     public static string GetTempFileName()
     {
         // Preserve GetTempFileName's side effect of creating a real file.
-        return ToBackslashes(Path.GetTempFileName());
+        // Translate so the result lives under the same root GetTempPath reports.
+        return FromGame(Path.GetTempFileName());
     }
 
     public static string GetRandomFileName() => Path.GetRandomFileName();
