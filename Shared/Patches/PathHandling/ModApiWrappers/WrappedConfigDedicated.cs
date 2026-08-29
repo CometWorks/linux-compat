@@ -62,11 +62,10 @@ internal sealed class WrappedConfigDedicated : IMyConfigDedicated
         set => _inner.IP = value;
     }
 
-    // LoadWorld carries the world save folder path.
     public string LoadWorld
     {
-        get => PathHelpers.ToWindowsPath(_inner.LoadWorld);
-        set => _inner.LoadWorld = PathHelpers.FromWindowsPath(value);
+        get => _inner.LoadWorld;
+        set => _inner.LoadWorld = value;
     }
     public bool CrossPlatform
     {
@@ -194,11 +193,10 @@ internal sealed class WrappedConfigDedicated : IMyConfigDedicated
         set => _inner.RemoteApiIP = value;
     }
 
-    // Plugin entries are assembly file paths loaded at startup and persisted by Save.
     public List<string> Plugins
     {
         get => _inner.Plugins;
-        set => _inner.Plugins = value?.ConvertAll(PathHelpers.FromWindowsPath);
+        set => _inner.Plugins = value;
     }
     public float WatcherInterval
     {
