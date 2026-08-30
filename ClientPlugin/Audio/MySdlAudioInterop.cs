@@ -67,11 +67,47 @@ internal static unsafe class MySdlAudioInterop
             throw new FileNotFoundException("Audio file was not found.", path);
         }
         string extension = Path.GetExtension(path);
-        if (extension.Equals(".wav", StringComparison.OrdinalIgnoreCase))
+        // Some mods ship xWMA data in files named .wav, which SDL_LoadWAV rejects
+        // outright while Windows XAudio2 plays it. Take the SDL fast path only for
+        // real RIFF/WAVE containers and let FFmpeg decode the rest, as it already
+        // does for every other extension.
+        if (extension.Equals(".wav", StringComparison.OrdinalIgnoreCase) && IsRiffWave(path))
         {
             return LoadWavFile(path, out waveFormat);
         }
         return MyFfmpegAudioInterop.LoadAudioFile(path, out waveFormat);
+    }
+
+    private static bool IsRiffWave(string path)
+    {
+        byte[] header = new byte[12];
+        try
+        {
+            using FileStream stream = File.OpenRead(path);
+            int read = 0;
+            while (read < header.Length)
+            {
+                int count = stream.Read(header, read, header.Length - read);
+                if (count <= 0)
+                {
+                    return false;
+                }
+                read += count;
+            }
+        }
+        catch (IOException)
+        {
+            // Let the decoder below fail with the actionable error instead.
+            return false;
+        }
+        return header[0] == (byte)'R'
+            && header[1] == (byte)'I'
+            && header[2] == (byte)'F'
+            && header[3] == (byte)'F'
+            && header[8] == (byte)'W'
+            && header[9] == (byte)'A'
+            && header[10] == (byte)'V'
+            && header[11] == (byte)'E';
     }
 
     private static byte[] LoadWavFile(string path, out WaveFormat waveFormat)
