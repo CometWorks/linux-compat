@@ -57,6 +57,21 @@ so results survive a broken storage API.
 
 ## Notes
 
+- Both harnesses hold an exclusive `flock` on `~/.cache/se-game.lock` while a
+  game instance runs — the machine-wide advisory lock shared with the other
+  automation sessions (auto-released if the holder dies). They wait up to 15
+  minutes for it.
+- DS provenance requirements (both were silent-failure modes): the Magnetar
+  sources entry for `se-linux-compat` must point at the
+  `~/dev/se1/se-linux-compat` symlink (the dev-folder plugin id is the folder
+  basename, and only the id `se-linux-compat` overrides the implicit core
+  plugin — otherwise the GitHub release is loaded), and the profile's
+  `DataFile` must be `ServerPlugin/ServerPlugin.xml`. `ServerPlugin.xml`
+  declares `Runtimes` as `CoreCLR;NETCoreApp` because Pulsar token-matches
+  `CoreCLR` while Magnetar v1.1.3 substring-matches `NETCoreApp`; with only
+  one token the dev plugin is skipped without any log line. `run-server.sh`
+  verifies a randomized `LinuxCompat*_<x>.<y>` assembly name in the DS log.
+
 - The compiled-mods cache clear in `run.sh` is REQUIRED: dev builds randomize
   the plugin assembly identity, and cached mods pin the stale assembly
   (world load then fails with `FileNotFoundException: LinuxCompat_...`).

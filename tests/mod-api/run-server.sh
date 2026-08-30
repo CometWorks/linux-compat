@@ -37,7 +37,7 @@ fail() {
 echo "== linux-compat mod API suite (dedicated server) =="
 [ -x "$LAUNCHER" ] || fail "Magnetar Interim launcher not found at $LAUNCHER"
 [ -d "$DS64" ] || fail "DS64 not found at $DS64"
-pgrep -f "Bin/MagnetarInterim" >/dev/null && fail "a MagnetarInterim instance is already running"
+pgrep -x MagnetarInterim >/dev/null && fail "a MagnetarInterim instance is already running"
 
 # 1. Build (Magnetar recompiles dev-folder plugins itself, but a broken tree
 #    should fail fast here rather than inside the DS).
@@ -55,7 +55,17 @@ python3 "$SCRIPT_DIR/prepare_ds.py" "$SCRIPT_DIR/LinuxCompatDiagnostics" || fail
 rm -f "$INSTANCE/Performance/Cache/CompiledMods"/*.cache
 rm -f "$SUITE_LOG"
 
-# 4. Launch the DS in the background.
+# 4. Launch the DS in the background, holding the machine-wide game lock
+#    shared with the other automation sessions (exclusive flock while any
+#    game instance runs; auto-released if the holder dies).
+GAME_LOCK="$HOME/.cache/se-game.lock"
+echo "== acquiring the game lock =="
+exec 9>"$GAME_LOCK"
+if ! flock -w 900 9; then
+    fail "game lock held by: $(cat "$GAME_LOCK" 2>/dev/null)"
+fi
+echo "pid $$ - linux-compat mod-api suite: dedicated server run" >&9
+
 echo "== starting the dedicated server =="
 DS_OUT="$(mktemp /tmp/linuxcompat-ds-run.XXXXXX.log)"
 SE_LINUX_COMPAT_TRACE_INGRESS="${SE_LINUX_COMPAT_TRACE_INGRESS:-0}" \
@@ -66,10 +76,14 @@ DS_PID=$!
 stop_ds() {
     kill "$DS_PID" >/dev/null 2>&1
     for _ in $(seq 1 15); do
-        kill -0 "$DS_PID" >/dev/null 2>&1 || return 0
+        if ! kill -0 "$DS_PID" >/dev/null 2>&1; then
+            flock -u 9 2>/dev/null
+            return 0
+        fi
         sleep 1
     done
     kill -9 "$DS_PID" >/dev/null 2>&1
+    flock -u 9 2>/dev/null
 }
 trap stop_ds EXIT
 

@@ -200,10 +200,79 @@ namespace LinuxCompatDiagnostics
                 false,
                 () => utils.FileExistsInLocalStorage("CaseSentinel.txt", owner)
             );
+            // World and Global storage must be case-insensitive too (each has
+            // its own directory resolution path in the wrapper).
+            CheckNoThrow(
+                OwnerLinux,
+                "write WorldCase.txt (world storage)",
+                () =>
+                {
+                    using (var w = utils.WriteFileInWorldStorage("WorldCase.txt", owner))
+                        w.WriteLine("world case sentinel");
+                }
+            );
+            CheckProbe(
+                OwnerLinux,
+                "exists worldcase.TXT (world, wrong case)",
+                true,
+                () => utils.FileExistsInWorldStorage("worldcase.TXT", owner)
+            );
+            CheckNoThrow(
+                OwnerLinux,
+                "delete WORLDCASE.txt (world, wrong case)",
+                () => utils.DeleteFileInWorldStorage("WORLDCASE.txt", owner)
+            );
+            CheckProbe(
+                OwnerLinux,
+                "exists WorldCase.txt after wrong-case delete",
+                false,
+                () => utils.FileExistsInWorldStorage("WorldCase.txt", owner)
+            );
+            try
+            {
+                utils.DeleteFileInWorldStorage("WorldCase.txt", owner);
+            }
+            catch { }
+
+            const string globalCase = "LinuxCompatDiagnostics-GlobalCase.txt";
+            const string globalCaseWrong = "linuxcompatdiagnostics-globalcase.TXT";
+            CheckNoThrow(
+                OwnerLinux,
+                "write GlobalCase sentinel (global storage)",
+                () =>
+                {
+                    using (var w = utils.WriteFileInGlobalStorage(globalCase))
+                        w.WriteLine("global case sentinel");
+                }
+            );
+            CheckProbe(
+                OwnerLinux,
+                "exists global sentinel (wrong case)",
+                true,
+                () => utils.FileExistsInGlobalStorage(globalCaseWrong)
+            );
+            CheckNoThrow(
+                OwnerLinux,
+                "delete global sentinel (wrong case)",
+                () => utils.DeleteFileInGlobalStorage(globalCaseWrong)
+            );
+            CheckProbe(
+                OwnerLinux,
+                "exists global sentinel after wrong-case delete",
+                false,
+                () => utils.FileExistsInGlobalStorage(globalCase)
+            );
+            try
+            {
+                utils.DeleteFileInGlobalStorage(globalCase);
+            }
+            catch { }
+
             // Cleanup in case the case-insensitive delete failed.
             try
             {
                 MyAPIGateway.Utilities.DeleteFileInLocalStorage("CaseSentinel.txt", owner);
+                MyAPIGateway.Utilities.DeleteFileInLocalStorage("casesentinel.txt", owner);
             }
             catch { }
         }

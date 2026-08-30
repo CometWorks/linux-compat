@@ -243,6 +243,54 @@ namespace LinuxCompatDiagnostics
                 "C:\\abs",
                 () => Path.Combine("x", "C:\\abs")
             );
+
+            // Remaining WindowsPath shim surface.
+            CheckProbe(
+                OwnerLinux,
+                "ChangeExtension(Data\\Foo.cs, .txt)",
+                "Data\\Foo.txt",
+                () => Path.ChangeExtension("Data\\Foo.cs", ".txt")
+            );
+            CheckProbe(
+                OwnerLinux,
+                "HasExtension(Data\\Foo.cs)",
+                true,
+                () => Path.HasExtension("Data\\Foo.cs")
+            );
+            CheckProbe(
+                OwnerLinux,
+                "HasExtension(Data\\Foo)",
+                false,
+                () => Path.HasExtension("Data\\Foo")
+            );
+
+            // GetTempFileName creates a real file and must report it under the
+            // same synthetic temp root as GetTempPath.
+            string tempFile = null;
+            try
+            {
+                tempFile = Path.GetTempFileName();
+            }
+            catch (Exception ex)
+            {
+                tempFile = "<EXCEPTION: " + ex.GetType().Name + ": " + ex.Message + ">";
+            }
+            Info("Path.GetTempFileName()", tempFile);
+            string tempRoot = null;
+            try
+            {
+                tempRoot = Path.GetTempPath();
+            }
+            catch { }
+            CheckTrue(
+                OwnerLinux,
+                "GetTempFileName lives under GetTempPath",
+                tempFile != null
+                    && tempRoot != null
+                    && tempFile.StartsWith(tempRoot)
+                    && tempFile.IndexOf('/') < 0,
+                tempFile
+            );
         }
 
         private void ProbeGamePaths()

@@ -75,13 +75,27 @@ rm -f "$SE_APPDATA/Performance/Cache/CompiledMods"/*.cache
 rm -f "$SUITE_LOG"
 
 # 4. Start the game headless (always --headless; never fullscreen).
+#    ~/.cache/se-game.lock is the machine-wide advisory lock shared with the
+#    other automation sessions (exclusive flock held while a game instance
+#    runs; auto-released if the holder dies).
+GAME_LOCK="$HOME/.cache/se-game.lock"
+echo "== acquiring the game lock =="
+exec 9>"$GAME_LOCK"
+if ! flock -w 900 9; then
+    fail "game lock held by: $(cat "$GAME_LOCK" 2>/dev/null)"
+fi
+echo "pid $$ - linux-compat mod-api suite: client run" >&9
+
 echo "== starting the game =="
-pgrep -x Interim.bin >/dev/null && fail "an Interim.bin instance is already running"
+if pgrep -x Interim.bin >/dev/null; then
+    fail "an Interim.bin instance is already running (not started by this harness)"
+fi
 "$SE_REMOTE_DIR/StartGame.sh" || fail "game start failed"
 
 stop_game() {
     if [ "$KEEP_RUNNING" -eq 0 ]; then
         "$SE_REMOTE_DIR/StopGame.sh" >/dev/null 2>&1
+        flock -u 9 2>/dev/null
     fi
 }
 trap stop_game EXIT

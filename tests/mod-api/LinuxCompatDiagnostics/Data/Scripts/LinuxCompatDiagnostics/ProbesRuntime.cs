@@ -273,15 +273,22 @@ namespace LinuxCompatDiagnostics
                 () => Encoding.Default.CodePage
             );
             // Raw .NET 10 has no codepage 1252 without
-            // CodePagesEncodingProvider; Framework returned Windows-1252.
-            // A PASS here means nothing registered the provider; if this
-            // FAILs with windows-1252, dotnet-compat (or the game) registered
-            // it - verify the intent in the dotnet-compat repo.
-            CheckThrows(
+            // CodePagesEncodingProvider; .NET Framework always resolved it.
+            // The game only registered the provider on some code paths
+            // (observed flipping between runs), so dotnet-compat now
+            // registers it deterministically at plugin init - mods must see
+            // the Framework behavior.
+            CheckProbe(
                 OwnerDotnet,
-                "Encoding.GetEncoding(1252) unavailable",
-                typeof(NotSupportedException),
-                () => Encoding.GetEncoding(1252)
+                "Encoding.GetEncoding(1252) resolves (dotnet-compat provider)",
+                "windows-1252",
+                () => Encoding.GetEncoding(1252).WebName
+            );
+            CheckProbe(
+                OwnerDotnet,
+                "Encoding.GetEncoding(437) resolves (dotnet-compat provider)",
+                "ibm437",
+                () => Encoding.GetEncoding(437).WebName
             );
             CheckProbe(OwnerDotnet, "Encoding.UTF8.WebName", "utf-8", () => Encoding.UTF8.WebName);
             CheckProbe(
