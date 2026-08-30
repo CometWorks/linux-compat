@@ -94,6 +94,39 @@ public static class PathHelpers
     {
         return PathCache.Resolve(relativePath, rootPath);
     }
+
+    /// <summary>
+    /// The engine's own containment guard: canonicalize, then match the root
+    /// prefix exactly as <c>MyAPIUtilities</c> does on Windows.
+    /// <para>
+    /// A raw <c>StartsWith(root)</c> is not a containment check on Linux.
+    /// <see cref="PathCache.ResolveAbsolute"/> is a resolver, not a gate: it
+    /// returns its input unchanged as soon as the path exists on disk, and the
+    /// Linux kernel resolves <c>..</c> itself, so <c>&lt;root&gt;/../../etc/passwd</c>
+    /// both opens and passes a raw prefix test. Windows never sees that because
+    /// the engine canonicalizes with <see cref="Path.GetFullPath(string)"/> before
+    /// comparing.
+    /// </para>
+    /// </summary>
+    public static bool IsInsideRoot(string path, string root)
+    {
+        if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(root))
+            return false;
+
+        string full;
+        try
+        {
+            full = Path.GetFullPath(path);
+        }
+        catch
+        {
+            return false;
+        }
+
+        // Ordinal prefix match without a trailing separator, matching the
+        // engine byte for byte; tightening it here would diverge from Windows.
+        return full.StartsWith(root, StringComparison.Ordinal);
+    }
 }
 
 static class CaseInsensitivePathResolver

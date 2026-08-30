@@ -120,7 +120,7 @@ internal sealed class WrappedUtilities : IMyUtilities
 
         file = PathHelpers.FromWindowsPath(file);
         var resolved = PathHelpers.ResolveContentFilePath(file, MyFileSystem.ContentPath);
-        if (resolved.StartsWith(MyFileSystem.ContentPath))
+        if (PathHelpers.IsInsideRoot(resolved, MyFileSystem.ContentPath))
         {
             var stream = MyFileSystem.OpenRead(resolved);
             if (stream != null)
@@ -155,7 +155,8 @@ internal sealed class WrappedUtilities : IMyUtilities
 
         file = PathHelpers.FromWindowsPath(file);
         var resolved = PathHelpers.ResolveContentFilePath(file, MyFileSystem.ContentPath);
-        return resolved.StartsWith(MyFileSystem.ContentPath) && File.Exists(resolved);
+        return PathHelpers.IsInsideRoot(resolved, MyFileSystem.ContentPath)
+            && File.Exists(resolved);
     }
 
     public BinaryReader ReadBinaryFileInModLocation(
@@ -196,7 +197,7 @@ internal sealed class WrappedUtilities : IMyUtilities
 
         file = PathHelpers.FromWindowsPath(file);
         var resolved = PathHelpers.ResolveContentFilePath(file, MyFileSystem.ContentPath);
-        if (resolved.StartsWith(MyFileSystem.ContentPath))
+        if (PathHelpers.IsInsideRoot(resolved, MyFileSystem.ContentPath))
         {
             var stream = MyFileSystem.OpenRead(resolved);
             if (stream != null)
