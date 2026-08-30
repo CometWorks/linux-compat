@@ -67,6 +67,10 @@ build. Format the code with `csharpier` before committing.
 `tests/mod-api/` holds the automated mod API boundary suite (client and
 dedicated server harnesses). See [tests/mod-api/README.md](tests/mod-api/README.md).
 
+`tests/physics-border/` covers the bounded-world broad-phase border cleanup
+through both `MyPhysics.CreateHkWorld` creation paths. See
+[tests/physics-border/README.md](tests/physics-border/README.md).
+
 ## Bug reports
 
 Please start a support thread on the [Pulsar Discord](https://discord.gg/z8ZczP2YZY)
