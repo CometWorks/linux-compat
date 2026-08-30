@@ -44,5 +44,8 @@ public class Plugin : IPlugin
     {
         // Run render-thread continuations on the game thread.
         MainThreadDispatcher.Pump();
+
+        // Diagnostic Havok stepping override (SE_HAVOK_SEQUENTIAL / SE_HAVOK_SINGLETHREAD).
+        HavokSchedulingOverride.Apply();
     }
 }
