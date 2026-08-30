@@ -11,7 +11,7 @@ wrappers in `Shared/Patches/PathHandling/ModApiWrappers/` + the
 
 - `LinuxCompatDiagnostics/` - the test mod (source of truth; deployed to
   `~/.config/SpaceEngineers/Mods/` by the harness). A session component runs
-  ~150 expected-vs-actual probes during world load and writes
+  ~260 expected-vs-actual probes during world load and writes
   `Storage/LinuxCompatDiagnostics_LinuxCompatDiagnostics/LinuxCompatDiagnostics.log`.
 - `run.sh` - client harness: build plugin, deploy mod, clear the
   compiled-mods cache, start the game headless, load the diagnostics world,

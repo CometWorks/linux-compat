@@ -102,6 +102,7 @@ namespace LinuxCompatDiagnostics
                 ProbeCrlfOnDisk();
                 ProbeReadToEnd();
                 ProbeBinaryStorage();
+                ProbeStorageSharing();
                 ProbeModLocation();
                 ProbeModLocationCasePair();
                 ProbeModLocationAbsoluteRoundTrip();

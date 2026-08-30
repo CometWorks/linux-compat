@@ -460,15 +460,7 @@ internal sealed class WrappedUtilities : IMyUtilities
     )
     {
         file = ResolveStorageCase(method, file, callingType);
-        try
-        {
-            return call(file, callingType);
-        }
-        catch (Exception ex)
-        {
-            LogIfThrew(method, file, callingType, ex);
-            throw;
-        }
+        return InvokeTracked(method, file, callingType, () => call(file, callingType));
     }
 
     private void InvokeStorageVoid(
@@ -479,15 +471,16 @@ internal sealed class WrappedUtilities : IMyUtilities
     )
     {
         file = ResolveStorageCase(method, file, callingType);
-        try
-        {
-            call(file, callingType);
-        }
-        catch (Exception ex)
-        {
-            LogIfThrew(method, file, callingType, ex);
-            throw;
-        }
+        InvokeTracked<object>(
+            method,
+            file,
+            callingType,
+            () =>
+            {
+                call(file, callingType);
+                return null;
+            }
+        );
     }
 
     private TResult InvokeStorageNoType<TResult>(
@@ -497,28 +490,102 @@ internal sealed class WrappedUtilities : IMyUtilities
     )
     {
         file = ResolveStorageCase(method, file, null);
-        try
-        {
-            return call(file);
-        }
-        catch (Exception ex)
-        {
-            LogIfThrew(method, file, null, ex);
-            throw;
-        }
+        return InvokeTracked(method, file, null, () => call(file));
     }
 
     private void InvokeStorageVoidNoType(string method, string file, Action<string> call)
     {
         file = ResolveStorageCase(method, file, null);
+        InvokeTracked<object>(
+            method,
+            file,
+            null,
+            () =>
+            {
+                call(file);
+                return null;
+            }
+        );
+    }
+
+    /// <summary>
+    /// Wraps the engine call in the Windows file sharing rules: an open writer
+    /// makes every overlapping open of the same storage file fail, and a
+    /// writer handed to the caller holds its path until it is disposed.
+    /// FileExists needs no handle on Windows, so it is not affected.
+    /// </summary>
+    private TResult InvokeTracked<TResult>(
+        string method,
+        string file,
+        Type callingType,
+        Func<TResult> call
+    )
+    {
+        var fullPath = StorageFullPath(method, file, callingType);
+        var opensWriter = method.StartsWith("Write", StringComparison.Ordinal);
+        if (
+            fullPath != null
+            && (
+                method.StartsWith("Read", StringComparison.Ordinal)
+                || method.StartsWith("Delete", StringComparison.Ordinal)
+            )
+        )
+            StorageSharing.ThrowIfWriterOpen(method, fullPath);
+
+        var lease =
+            opensWriter && fullPath != null ? StorageSharing.AcquireWriter(method, fullPath) : null;
+        var handedOver = false;
         try
         {
-            call(file);
+            var result = call();
+            if (lease != null)
+            {
+                if (result is TextWriter textWriter)
+                {
+                    handedOver = true;
+                    return (TResult)(object)new StorageSharing.TrackedTextWriter(textWriter, lease);
+                }
+                if (result is BinaryWriter binaryWriter)
+                {
+                    handedOver = true;
+                    return (TResult)
+                        (object)new StorageSharing.TrackedBinaryWriter(binaryWriter, lease);
+                }
+            }
+            return result;
         }
         catch (Exception ex)
         {
-            LogIfThrew(method, file, null, ex);
+            LogIfThrew(method, file, callingType, ex);
             throw;
+        }
+        finally
+        {
+            // The engine threw, or returned something that is not a writer:
+            // nothing will ever dispose a decorator, so free the path here.
+            if (lease != null && !handedOver)
+                lease.Release();
+        }
+    }
+
+    /// <summary>
+    /// The full path the engine derives for this member, or null when it
+    /// cannot be derived (no session, or a name the engine rejects anyway) —
+    /// sharing is then not tracked and engine behavior is left alone.
+    /// </summary>
+    private static string StorageFullPath(string method, string file, Type callingType)
+    {
+        if (string.IsNullOrEmpty(file) || file.IndexOfAny(WindowsInvalidFileNameChars) >= 0)
+            return null;
+
+        try
+        {
+            var dir = StorageDirectory(method, callingType);
+            return dir == null ? null : Path.Combine(dir, file);
+        }
+        catch
+        {
+            return null;
         }
     }
 

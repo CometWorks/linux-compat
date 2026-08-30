@@ -558,6 +558,248 @@ namespace LinuxCompatDiagnostics
             );
         }
 
+        /// <summary>
+        /// Windows share modes: while the writer handle handed out by a
+        /// Write*Storage call is open, every other open of the same file fails
+        /// with IOException (FileExists needs no handle and still answers
+        /// true). Without that, a read landing inside the writer's window
+        /// succeeds and returns zero bytes, which SerializeFromXML silently
+        /// turns into null - the defect that crashed the Real* mod family
+        /// during world load. IOException is not on the mod script whitelist,
+        /// so these probes compare the thrown type's name instead of catching
+        /// it.
+        /// </summary>
+        private void ProbeStorageSharing()
+        {
+            Section("Windows file sharing while a storage writer is open");
+            var utils = MyAPIGateway.Utilities;
+            var owner = typeof(LinuxCompatDiagnosticsSession);
+            const string name = "sharing-probe.txt";
+            const string payload = "sharing payload";
+            const string globalName = "LinuxCompatDiagnostics-sharing-probe.txt";
+
+            // ---- Local: the full set of overlapping operations ----
+            TextWriter writer = null;
+            try
+            {
+                writer = utils.WriteFileInLocalStorage(name, owner);
+                writer.Write(payload);
+
+                CheckProbe(
+                    OwnerLinux,
+                    "Local read while writer open",
+                    "IOException",
+                    () =>
+                        ThrownTypeName(() =>
+                        {
+                            using (var r = utils.ReadFileInLocalStorage(name, owner))
+                                return r == null ? null : r.ReadToEnd();
+                        })
+                );
+                CheckProbe(
+                    OwnerLinux,
+                    "Local binary read while writer open",
+                    "IOException",
+                    () =>
+                        ThrownTypeName(() =>
+                        {
+                            using (var r = utils.ReadBinaryFileInLocalStorage(name, owner))
+                                return r == null ? null : HexBytes(r.ReadBytes(4));
+                        })
+                );
+                CheckProbe(
+                    OwnerLinux,
+                    "Local second writer while writer open",
+                    "IOException",
+                    () =>
+                        ThrownTypeName(() =>
+                        {
+                            // Reached only if the platform allowed the second
+                            // handle; close it so the probe leaks nothing.
+                            var second = utils.WriteFileInLocalStorage(name, owner);
+                            second.Dispose();
+                            return "<second writer opened>";
+                        })
+                );
+                CheckProbe(
+                    OwnerLinux,
+                    "Local delete while writer open",
+                    "IOException",
+                    () =>
+                        ThrownTypeName(() =>
+                        {
+                            utils.DeleteFileInLocalStorage(name, owner);
+                            return null;
+                        })
+                );
+                CheckProbe(
+                    OwnerLinux,
+                    "Local exists while writer open",
+                    true,
+                    () => utils.FileExistsInLocalStorage(name, owner)
+                );
+            }
+            finally
+            {
+                if (writer != null)
+                    writer.Dispose();
+            }
+
+            // The path is free again once the writer is disposed, and the
+            // tracking decorator passed the payload through to disk.
+            CheckProbe(
+                OwnerLinux,
+                "Local read after writer closed",
+                payload,
+                () =>
+                {
+                    using (var r = utils.ReadFileInLocalStorage(name, owner))
+                        return r == null ? null : r.ReadToEnd();
+                }
+            );
+            CheckNoThrow(
+                OwnerLinux,
+                "Local delete after writer closed",
+                () => utils.DeleteFileInLocalStorage(name, owner)
+            );
+
+            // ---- World: the scope the crashing mods used ----
+            TextWriter worldWriter = null;
+            try
+            {
+                worldWriter = utils.WriteFileInWorldStorage(name, owner);
+                worldWriter.Write(payload);
+                CheckProbe(
+                    OwnerLinux,
+                    "World read while writer open",
+                    "IOException",
+                    () =>
+                        ThrownTypeName(() =>
+                        {
+                            using (var r = utils.ReadFileInWorldStorage(name, owner))
+                                return r == null ? null : r.ReadToEnd();
+                        })
+                );
+            }
+            finally
+            {
+                if (worldWriter != null)
+                    worldWriter.Dispose();
+            }
+            CheckProbe(
+                OwnerLinux,
+                "World read after writer closed",
+                payload,
+                () =>
+                {
+                    using (var r = utils.ReadFileInWorldStorage(name, owner))
+                        return r == null ? null : r.ReadToEnd();
+                }
+            );
+            CheckNoThrow(
+                OwnerLinux,
+                "World delete after writer closed",
+                () => utils.DeleteFileInWorldStorage(name, owner)
+            );
+
+            // ---- Global ----
+            TextWriter globalWriter = null;
+            try
+            {
+                globalWriter = utils.WriteFileInGlobalStorage(globalName);
+                globalWriter.Write(payload);
+                CheckProbe(
+                    OwnerLinux,
+                    "Global read while writer open",
+                    "IOException",
+                    () =>
+                        ThrownTypeName(() =>
+                        {
+                            using (var r = utils.ReadFileInGlobalStorage(globalName))
+                                return r == null ? null : r.ReadToEnd();
+                        })
+                );
+            }
+            finally
+            {
+                if (globalWriter != null)
+                    globalWriter.Dispose();
+            }
+            CheckProbe(
+                OwnerLinux,
+                "Global read after writer closed",
+                payload,
+                () =>
+                {
+                    using (var r = utils.ReadFileInGlobalStorage(globalName))
+                        return r == null ? null : r.ReadToEnd();
+                }
+            );
+            CheckNoThrow(
+                OwnerLinux,
+                "Global delete after writer closed",
+                () => utils.DeleteFileInGlobalStorage(globalName)
+            );
+
+            // ---- Binary writers hold the same lock and still round-trip ----
+            const string binName = "sharing-probe.bin";
+            byte[] binPayload = { 0x01, 0x02, 0x03, 0x04 };
+            BinaryWriter binWriter = null;
+            try
+            {
+                binWriter = utils.WriteBinaryFileInLocalStorage(binName, owner);
+                binWriter.Write(binPayload);
+                CheckProbe(
+                    OwnerLinux,
+                    "Local binary read while binary writer open",
+                    "IOException",
+                    () =>
+                        ThrownTypeName(() =>
+                        {
+                            using (var r = utils.ReadBinaryFileInLocalStorage(binName, owner))
+                                return r == null ? null : HexBytes(r.ReadBytes(binPayload.Length));
+                        })
+                );
+            }
+            finally
+            {
+                if (binWriter != null)
+                    binWriter.Dispose();
+            }
+            CheckProbe(
+                OwnerLinux,
+                "Local binary read after writer closed",
+                "01 02 03 04",
+                () =>
+                {
+                    using (var r = utils.ReadBinaryFileInLocalStorage(binName, owner))
+                        return r == null ? null : HexBytes(r.ReadBytes(binPayload.Length));
+                }
+            );
+            CheckNoThrow(
+                OwnerLinux,
+                "Local binary delete after writer closed",
+                () => utils.DeleteFileInLocalStorage(binName, owner)
+            );
+        }
+
+        /// <summary>
+        /// Name of the exception type the probe threw, or a marker holding the
+        /// value it returned instead. Keeps exception types the mod script
+        /// whitelist does not expose (IOException) out of this assembly.
+        /// </summary>
+        private static object ThrownTypeName(Func<object> probe)
+        {
+            try
+            {
+                return "<no exception: " + Fmt(probe()) + ">";
+            }
+            catch (Exception ex)
+            {
+                return ex.GetType().Name;
+            }
+        }
+
         private MyObjectBuilder_Checkpoint.ModItem OwnModItem()
         {
             return ModContext != null

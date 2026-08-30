@@ -53,8 +53,12 @@ methods are never patched just to accept mod-shaped paths.
 - **Windows behavior emulation for all API callers**: `WrappedUtilities`
   (`Shared/Patches/PathHandling/ModApiWrappers/`) wraps
   `MyAPIGateway.Utilities` for storage filename validation, CRLF XML
-  serialization, and filesystem casing resolution — behavior, not path
-  mapping.
+  serialization, filesystem casing resolution, and file sharing — behavior,
+  not path mapping. Sharing is `StorageSharing` in the same folder: Linux has
+  no mandatory share modes, so a storage read overlapping an open writer would
+  succeed and return an empty file where Windows raises a sharing violation.
+  It tracks the writers the Mod API hands out and throws the Windows
+  `IOException` for overlapping reads, writes and deletes.
 - **Ingress for shared data**: paths a mod writes into shared mutable data
   (definitions, object builders) cannot be intercepted at a call boundary. They
   are restored by exactly one sanctioned funnel, `PathCache.ResolveAbsolute`
