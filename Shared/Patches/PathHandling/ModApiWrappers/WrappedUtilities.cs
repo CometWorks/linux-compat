@@ -13,9 +13,12 @@ using VRage.Utils;
 namespace ClientPlugin.Patches.PathHandling.ModApiWrappers;
 
 /// <summary>
-/// Translates mod-facing paths and resolves Linux filesystem casing.
-/// Storage calls reject filenames that Windows rejects, preserving their exception shape.
-/// Engine code continues to use the unwrapped concrete API.
+/// Emulates Windows file API behavior for every MyAPIGateway.Utilities caller:
+/// storage calls reject filenames that Windows rejects (preserving their
+/// exception shape), file lookups resolve Linux filesystem casing, and XML
+/// serialization uses CRLF. Path translation is NOT done here — it is injected
+/// into mod code by the compilation rewriter, so plugins calling this API keep
+/// native paths. Engine code continues to use the unwrapped concrete API.
 /// </summary>
 internal sealed class WrappedUtilities : IMyUtilities
 {
@@ -68,34 +71,16 @@ internal sealed class WrappedUtilities : IMyUtilities
     };
 
     private readonly IMyUtilities _inner;
-    private readonly WrappedGamePaths _gamePaths;
-    private WrappedConfigDedicated _configDedicated;
-    private IMyConfigDedicated _configDedicatedSource;
 
     public WrappedUtilities(IMyUtilities inner)
     {
         _inner = inner;
-        _gamePaths = new WrappedGamePaths(inner.GamePaths);
     }
 
-    public IMyGamePaths GamePaths => _gamePaths;
+    // Path mapping happens in rewritten mod code, so these stay native.
+    public IMyGamePaths GamePaths => _inner.GamePaths;
 
-    public IMyConfigDedicated ConfigDedicated
-    {
-        get
-        {
-            // ConfigDedicated can be null or replaced between sessions.
-            var src = _inner.ConfigDedicated;
-            if (src == null)
-                return null;
-            if (!ReferenceEquals(src, _configDedicatedSource))
-            {
-                _configDedicatedSource = src;
-                _configDedicated = new WrappedConfigDedicated(src);
-            }
-            return _configDedicated;
-        }
-    }
+    public IMyConfigDedicated ConfigDedicated => _inner.ConfigDedicated;
 
     public bool IsDedicated => _inner.IsDedicated;
 

@@ -1,7 +1,7 @@
 # Linux compatibility for Space Engineers (version 1)
 
 This plugin contains the compatibility patches required to run the Game on Linux. This plugin is
-applied automatically by Pulsar for Linux right after the `se-dotnet-compat` plugin.
+applied automatically by Pulsar for Linux right after the `dotnet-compat` plugin.
 
 ## Prerequisites
 
@@ -35,21 +35,26 @@ Mod code must believe it runs on Windows while the game's internals use native
 Linux paths. All translation happens at the mod API boundary; internal game
 methods are never patched just to accept mod-shaped paths.
 
-- **Egress (native → Windows) for calls**: the `MyAPIGateway` wrappers
-  (`Shared/Patches/PathHandling/ModApiWrappers/`) translate every path-returning
-  getter with `PathHelpers.ToWindowsPath`. Where mods reach a concrete engine
-  type through a ModAPI interface, a Cecil prepatch injects an explicit
-  interface getter returning the Windows shape while the concrete getter stays
-  native (`ExplicitInterfaceGetterInjector`, used for `IMyModContext.ModPath`,
-  `IMyModContext.ModPathData`, and `IMyModel.AssetName`).
-- **Windows semantics in mod code**: a Roslyn rewriter
-  (`Shared/Rewriter/WindowsSemanticsRewriter.cs`) redirects `System.IO.Path`
-  (including `using static` imports), `Environment.NewLine`, `Stopwatch`,
-  `StringBuilder.AppendLine`, `TextWriter.WriteLine`, and `ModItem.GetPath()` to
+- **Path mapping at mod call sites**: the Roslyn rewriter
+  (`Shared/Rewriter/WindowsSemanticsRewriter.cs`) injects the translation into
+  compiled mod code, so the mapping applies only to mods — plugins and engine
+  code calling the same Mod API members keep native paths. Reads of
+  path-returning members (`IMySession.CurrentPath`/`ThumbPath`,
+  `IMyGamePaths.*`, `IMyConfigDedicated.PremadeCheckpointPath`/`GetFilePath`,
+  `IMyModContext`/`MyModContext.ModPath`/`ModPathData`, `IMyModel.AssetName`,
+  `ModItem.GetPath()`) are wrapped in `WindowsPath.FromGame`; path-accepting
+  arguments and setters (`IMyUtilities` file readers,
+  `IMyConfigDedicated.Load`/`Save`/`PremadeCheckpointPath`, `IMySession.Save`)
+  are wrapped in `WindowsPath.ToGame`.
+- **Windows semantics in mod code**: the same rewriter redirects
+  `System.IO.Path` (including `using static` imports), `Environment.NewLine`,
+  `Stopwatch`, `StringBuilder.AppendLine`, and `TextWriter.WriteLine` to
   Windows-behaving shims during mod compilation.
-- **Ingress (Windows → native) for calls**: every path-accepting mod API method
-  is wrapped and converts with `PathHelpers.FromModPath` before the value
-  reaches the engine.
+- **Windows behavior emulation for all API callers**: `WrappedUtilities`
+  (`Shared/Patches/PathHandling/ModApiWrappers/`) wraps
+  `MyAPIGateway.Utilities` for storage filename validation, CRLF XML
+  serialization, and filesystem casing resolution — behavior, not path
+  mapping.
 - **Ingress for shared data**: paths a mod writes into shared mutable data
   (definitions, object builders) cannot be intercepted at a call boundary. They
   are restored by exactly one sanctioned funnel, `PathCache.ResolveAbsolute`
@@ -60,8 +65,8 @@ methods are never patched just to accept mod-shaped paths.
   flag conversions happening outside the sanctioned funnel.
 
 Issue ownership between the two plugins Pulsar applies: problems caused by
-.NET 10 (they reproduce on Windows too) belong to `se-dotnet-compat`;
-Linux-only problems belong to this repo. `se-dotnet-compat` runs first and also
+.NET 10 (they reproduce on Windows too) belong to `dotnet-compat`;
+Linux-only problems belong to this repo. `dotnet-compat` runs first and also
 rewrites failing mod compilations, replaces the script whitelist bootstrap, and
 sorts `MyFileProviderAggregator.GetFiles`; this plugin's rewriter, shim
 whitelist batch, and `MyFileSystem.GetFiles` sorting operate at different
