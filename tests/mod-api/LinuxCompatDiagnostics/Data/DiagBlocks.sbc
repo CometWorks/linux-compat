@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <CubeBlocks>
+        <!--
+        Both blocks reference the mod's own assets with backslash separators
+        and DELIBERATELY WRONG CASING to exercise the definition/asset
+        pipeline on a case-sensitive filesystem. On-disk names:
+          Models/LinuxCompatDiag/TestCube.mwm
+          Textures/LinuxCompatDiag/TestIcon.dds
+        -->
+        <Definition>
+            <Id>
+                <TypeId>CubeBlock</TypeId>
+                <SubtypeId>LinuxCompatDiagBlock</SubtypeId>
+            </Id>
+            <DisplayName>LinuxCompat Diagnostics Block</DisplayName>
+            <Icon>textures\linuxcompatdiag\TestICON.dds</Icon>
+            <Description>Test block for the LinuxCompat mod API suite.</Description>
+            <CubeSize>Large</CubeSize>
+            <BlockTopology>TriangleMesh</BlockTopology>
+            <Size x="1" y="1" z="1" />
+            <GuiVisible>false</GuiVisible>
+            <Model>models\linuxcompatdiag\TESTCUBE.mwm</Model>
+            <ModelOffset x="0" y="0" z="0" />
+            <Components>
+                <Component Subtype="SteelPlate" Count="1" />
+            </Components>
+            <CriticalComponent Subtype="SteelPlate" Index="0" />
+            <BuildTimeSeconds>1</BuildTimeSeconds>
+            <BlockPairName>LinuxCompatDiagBlock</BlockPairName>
+            <PCU>1</PCU>
+        </Definition>
+        <Definition>
+            <Id>
+                <TypeId>CubeBlock</TypeId>
+                <SubtypeId>LinuxCompatDiagBlockMutable</SubtypeId>
+            </Id>
+            <DisplayName>LinuxCompat Diagnostics Block (Mutable)</DisplayName>
+            <Icon>Textures\LinuxCompatDiag\TestIcon.dds</Icon>
+            <Description>Definition mutated at runtime by the LinuxCompat mod API suite.</Description>
+            <CubeSize>Large</CubeSize>
+            <BlockTopology>TriangleMesh</BlockTopology>
+            <Size x="1" y="1" z="1" />
+            <GuiVisible>false</GuiVisible>
+            <Model>Models\LinuxCompatDiag\TestCube.mwm</Model>
+            <ModelOffset x="0" y="0" z="0" />
+            <Components>
+                <Component Subtype="SteelPlate" Count="1" />
+            </Components>
+            <CriticalComponent Subtype="SteelPlate" Index="0" />
+            <BuildTimeSeconds>1</BuildTimeSeconds>
+            <BlockPairName>LinuxCompatDiagBlockMutable</BlockPairName>
+            <PCU>1</PCU>
+        </Definition>
+    </CubeBlocks>
+</Definitions>
