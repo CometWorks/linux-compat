@@ -373,6 +373,15 @@ public static class WindowsPath
     }
 
     /// <summary>
+    /// Translates a mod-supplied path to the native form used by game internals.
+    /// Rewriter target wrapping path-accepting mod API arguments and setters.
+    /// </summary>
+    public static string ToGame(string path)
+    {
+        return PathHelpers.FromWindowsPath(path);
+    }
+
+    /// <summary>
     /// Rewriter target for the struct method <c>ModItem.GetPath()</c>.
     /// </summary>
     public static string FromGame(VRage.Game.MyObjectBuilder_Checkpoint.ModItem item)

@@ -27,6 +27,8 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
     private const string WindowsStopwatchFqn = "global::ClientPlugin.Rewriter.WindowsStopwatch";
     private const string XmlWriterSettingsFqn = "global::System.Xml.XmlWriterSettings";
 
+    private const string ToGameFqn = "global::ClientPlugin.Rewriter.WindowsPath.ToGame";
+
     // Only rewrite bare Path members the shim actually implements; unknown members
     // keep their original binding rather than turning into compile errors.
     private static readonly HashSet<string> WindowsPathMemberNames = new(
@@ -34,6 +36,56 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
             .GetMembers(BindingFlags.Public | BindingFlags.Static)
             .Select(m => m.Name)
     );
+
+    // Path translation is injected at mod call sites so plugins and engine code
+    // calling the same Mod API members keep receiving native paths.
+
+    // Mod API members returning filesystem paths; reads are wrapped in FromGame.
+    private static readonly Dictionary<string, HashSet<string>> EgressPathMembers = new()
+    {
+        ["global::VRage.Game.ModAPI.IMySession"] = new() { "CurrentPath", "ThumbPath" },
+        ["global::VRage.Game.ModAPI.IMyGamePaths"] = new()
+        {
+            "ContentPath",
+            "ModsPath",
+            "UserDataPath",
+            "SavesPath",
+        },
+        ["global::VRage.Game.ModAPI.IMyConfigDedicated"] = new()
+        {
+            "PremadeCheckpointPath",
+            "GetFilePath",
+        },
+        ["global::VRage.Game.ModAPI.IMyModContext"] = new() { "ModPath", "ModPathData" },
+        // Mods also reach the concrete context through MyDefinitionBase.Context.
+        ["global::VRage.Game.MyModContext"] = new() { "ModPath", "ModPathData" },
+        ["global::VRage.Game.ModAPI.IMyModel"] = new() { "AssetName" },
+    };
+
+    // Mod API calls whose listed parameters carry filesystem paths; those
+    // arguments are wrapped in ToGame.
+    private static readonly Dictionary<
+        (string TypeFqn, string Method),
+        int[]
+    > IngressPathArguments = new()
+    {
+        [("global::VRage.Game.ModAPI.IMyUtilities", "ReadFileInModLocation")] = new[] { 0 },
+        [("global::VRage.Game.ModAPI.IMyUtilities", "ReadBinaryFileInModLocation")] = new[] { 0 },
+        [("global::VRage.Game.ModAPI.IMyUtilities", "FileExistsInModLocation")] = new[] { 0 },
+        [("global::VRage.Game.ModAPI.IMyUtilities", "ReadFileInGameContent")] = new[] { 0 },
+        [("global::VRage.Game.ModAPI.IMyUtilities", "ReadBinaryFileInGameContent")] = new[] { 0 },
+        [("global::VRage.Game.ModAPI.IMyUtilities", "FileExistsInGameContent")] = new[] { 0 },
+        [("global::VRage.Game.ModAPI.IMyConfigDedicated", "Load")] = new[] { 0 },
+        [("global::VRage.Game.ModAPI.IMyConfigDedicated", "Save")] = new[] { 0 },
+        [("global::VRage.Game.ModAPI.IMySession", "Save")] = new[] { 0 },
+    };
+
+    // Mod API property setters accepting filesystem paths; assigned values are
+    // wrapped in ToGame.
+    private static readonly Dictionary<string, HashSet<string>> IngressPathSetters = new()
+    {
+        ["global::VRage.Game.ModAPI.IMyConfigDedicated"] = new() { "PremadeCheckpointPath" },
+    };
 
     private readonly SemanticModel _semanticModel;
 
@@ -81,7 +133,67 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
                 .WithTrailingTrivia(rewritten.GetTrailingTrivia());
         }
 
+        // Mod API path getters; conditional access is wrapped at the enclosing node.
+        if (
+            _semanticModel.GetSymbolInfo(node).Symbol is IPropertySymbol pathProperty
+            && IsEgressPathMember(pathProperty)
+            && !IsAssignmentTarget(node)
+            && !IsOnConditionalAccessSpine(node)
+            && !IsInsideNameOf(node)
+        )
+        {
+            RequiresShimReference = true;
+            return WrapShimCall(FromGameFqn, rewritten);
+        }
+
         return rewritten;
+    }
+
+    private bool IsEgressPathMember(ISymbol symbol)
+    {
+        if (symbol is not IPropertySymbol && symbol is not IMethodSymbol)
+            return false;
+        var containing = symbol.ContainingType;
+        if (containing == null)
+            return false;
+        return EgressPathMembers.TryGetValue(
+                containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                out var members
+            ) && members.Contains(symbol.Name);
+    }
+
+    private static bool IsAssignmentTarget(SyntaxNode node) =>
+        node.Parent is AssignmentExpressionSyntax assignment && assignment.Left == node;
+
+    private static bool IsInsideNameOf(SyntaxNode node)
+    {
+        for (var parent = node.Parent; parent != null; parent = parent.Parent)
+        {
+            if (
+                parent is InvocationExpressionSyntax invocation
+                && invocation.Expression is IdentifierNameSyntax id
+                && id.Identifier.ValueText == "nameof"
+            )
+                return true;
+            if (parent is StatementSyntax || parent is MemberDeclarationSyntax)
+                return false;
+        }
+        return false;
+    }
+
+    private static InvocationExpressionSyntax WrapShimCall(string shimFqn, ExpressionSyntax expr)
+    {
+        return SyntaxFactory
+            .InvocationExpression(
+                SyntaxFactory.ParseExpression(shimFqn),
+                SyntaxFactory.ArgumentList(
+                    SyntaxFactory.SingletonSeparatedList(
+                        SyntaxFactory.Argument(expr.WithoutTrivia())
+                    )
+                )
+            )
+            .WithLeadingTrivia(expr.GetLeadingTrivia())
+            .WithTrailingTrivia(expr.GetTrailingTrivia());
     }
 
     private bool IsEnvironmentNewLine(MemberAccessExpressionSyntax node)
@@ -137,7 +249,78 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
             return replacement;
         }
 
+        // Mod API calls taking path arguments get those arguments restored to
+        // native form; argument wrapping is safe under conditional access too.
+        rewritten = RewriteIngressPathArguments(node, rewritten);
+
+        // Mod API path-returning calls (IMyConfigDedicated.GetFilePath).
+        if (
+            !IsOnConditionalAccessSpine(node)
+            && _semanticModel.GetSymbolInfo(node).Symbol is IMethodSymbol pathMethod
+            && IsEgressPathMember(pathMethod)
+        )
+        {
+            RequiresShimReference = true;
+            return WrapShimCall(FromGameFqn, rewritten);
+        }
+
         return rewritten;
+    }
+
+    private InvocationExpressionSyntax RewriteIngressPathArguments(
+        InvocationExpressionSyntax node,
+        InvocationExpressionSyntax rewritten
+    )
+    {
+        // Bind the original node; parameter positions honor named arguments.
+        if (_semanticModel.GetSymbolInfo(node).Symbol is not IMethodSymbol method)
+            return rewritten;
+        var containing = method.ContainingType;
+        if (containing == null)
+            return rewritten;
+        if (
+            !IngressPathArguments.TryGetValue(
+                (containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), method.Name),
+                out var pathParameters
+            )
+        )
+            return rewritten;
+
+        var replacements = new Dictionary<ArgumentSyntax, ArgumentSyntax>();
+        var arguments = rewritten.ArgumentList.Arguments;
+        for (int i = 0; i < arguments.Count; i++)
+        {
+            var argument = arguments[i];
+            int parameterIndex = i;
+            if (argument.NameColon != null)
+            {
+                parameterIndex = -1;
+                for (int p = 0; p < method.Parameters.Length; p++)
+                {
+                    if (method.Parameters[p].Name == argument.NameColon.Name.Identifier.ValueText)
+                    {
+                        parameterIndex = p;
+                        break;
+                    }
+                }
+            }
+
+            if (System.Array.IndexOf(pathParameters, parameterIndex) >= 0)
+                replacements[argument] = argument.WithExpression(
+                    WrapShimCall(ToGameFqn, argument.Expression)
+                );
+        }
+
+        if (replacements.Count == 0)
+            return rewritten;
+
+        RequiresShimReference = true;
+        return rewritten.WithArgumentList(
+            rewritten.ArgumentList.ReplaceNodes(
+                replacements.Keys,
+                (original, _) => replacements[original]
+            )
+        );
     }
 
     private bool IsStringBuilderAppendLine(InvocationExpressionSyntax node)
@@ -267,8 +450,44 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
     }
 
     /// <summary>
+    /// Restores native form for values mods assign to path-typed Mod API setters.
+    /// </summary>
+    public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
+    {
+        var rewritten = (AssignmentExpressionSyntax)base.VisitAssignmentExpression(node);
+
+        if (!node.IsKind(SyntaxKind.SimpleAssignmentExpression))
+            return rewritten;
+
+        if (
+            _semanticModel.GetSymbolInfo(node.Left).Symbol is IPropertySymbol property
+            && IsIngressPathSetter(property)
+        )
+        {
+            RequiresShimReference = true;
+            return rewritten.WithRight(WrapShimCall(ToGameFqn, rewritten.Right));
+        }
+
+        return rewritten;
+    }
+
+    private bool IsIngressPathSetter(IPropertySymbol property)
+    {
+        var containing = property.ContainingType;
+        if (containing == null)
+            return false;
+        return IngressPathSetters.TryGetValue(
+                containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                out var members
+            ) && members.Contains(property.Name);
+    }
+
+    /// <summary>
     /// Detects nodes whose member-binding tokens are valid only inside an
-    /// enclosing conditional-access expression.
+    /// enclosing conditional-access expression. Contexts like arguments,
+    /// interpolations, and lambdas sever the spine: a node inside them cannot
+    /// carry the enclosing conditional's member bindings, so wrapping it
+    /// in place stays valid.
     /// </summary>
     private static bool IsOnConditionalAccessSpine(SyntaxNode node)
     {
@@ -276,7 +495,15 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         {
             if (parent is ConditionalAccessExpressionSyntax)
                 return true;
-            if (parent is StatementSyntax || parent is MemberDeclarationSyntax)
+            if (
+                parent is ArgumentSyntax
+                || parent is InterpolationSyntax
+                || parent is AnonymousFunctionExpressionSyntax
+                || parent is EqualsValueClauseSyntax
+                || parent is InitializerExpressionSyntax
+                || parent is StatementSyntax
+                || parent is MemberDeclarationSyntax
+            )
                 return false;
         }
         return false;
@@ -324,6 +551,23 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
                 )
                 .WithLeadingTrivia(rewritten.GetLeadingTrivia())
                 .WithTrailingTrivia(rewritten.GetTrailingTrivia());
+        }
+
+        // Wrap outermost conditional chains ending in a Mod API path member;
+        // member bindings must stay inside their conditional, so the whole
+        // chain becomes the FromGame argument (FromGame passes null through).
+        if (node.Parent is not ConditionalAccessExpressionSyntax)
+        {
+            var tail = node.WhenNotNull;
+            while (tail is ConditionalAccessExpressionSyntax inner)
+                tail = inner.WhenNotNull;
+
+            var tailSymbol = _semanticModel.GetSymbolInfo(tail).Symbol;
+            if (tailSymbol != null && IsEgressPathMember(tailSymbol))
+            {
+                RequiresShimReference = true;
+                return WrapShimCall(FromGameFqn, rewritten);
+            }
         }
 
         return rewritten;
