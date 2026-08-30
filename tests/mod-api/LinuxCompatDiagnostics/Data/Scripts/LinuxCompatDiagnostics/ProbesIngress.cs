@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage;
@@ -246,6 +247,122 @@ namespace LinuxCompatDiagnostics
                     catch { }
                 }
             }
+        }
+
+        // ----- security: drive-prefixed ingress -----
+
+        /// <summary>
+        /// Drive-prefixed traversal. Every Windows-shaped path a mod holds comes
+        /// from an egress member, so feeding one back with ".." appended is the
+        /// realistic ingress attack: the boundary untranslates it to a native
+        /// path, and the containment check must still reject it. Unmapped drive
+        /// letters keep their Linux-rooted body (Wine maps Z: to /), which is
+        /// exactly why the root check, not the translation, has to be the gate.
+        /// The round-trip cases in the same section prove the legal direction
+        /// still works: an egress path fed straight back must resolve.
+        /// </summary>
+        private void ProbeIngressTraversalRefused()
+        {
+            Section("security: drive-prefixed ingress paths");
+            var utils = MyAPIGateway.Utilities;
+            var gp = utils.GamePaths;
+            string upBs = UpToRoot.Replace('/', '\\');
+
+            if (gp == null || gp.ContentPath == null)
+            {
+                CheckTrue(
+                    OwnerLinux,
+                    "security: ingress preconditions (ContentPath)",
+                    false,
+                    "<null ContentPath>"
+                );
+            }
+            else
+            {
+                // --- refused: ContentPath as the mod sees it, walked back out.
+                CheckContentRefused(
+                    "ingress egress-ContentPath + root traversal",
+                    gp.ContentPath + "\\" + upBs + "etc\\passwd"
+                );
+                CheckContentRefused(
+                    "ingress egress-ContentPath + sibling escape",
+                    gp.ContentPath + "\\..\\Bin64\\SpaceEngineers.exe"
+                );
+
+                // --- allowed: the same egress value used the way mods use it.
+                CheckContentAllowed(
+                    "ingress egress-ContentPath round trip",
+                    gp.ContentPath + "\\Data\\CubeBlocks\\CubeBlocks_Armor.sbc"
+                );
+                CheckContentAllowed(
+                    "ingress egress-ContentPath round trip (inner traversal)",
+                    gp.ContentPath + "\\Data\\..\\Data\\CubeBlocks\\CubeBlocks_Armor.sbc"
+                );
+            }
+
+            // --- refused: synthetic drives a mod can invent. C:\ is mapped only
+            // under the known prefixes; anything else falls back to a
+            // Linux-rooted body, so these must be refused by the root check
+            // rather than by the translation happening to fail.
+            CheckContentRefused("ingress invented C: path", "C:\\etc\\passwd");
+            CheckContentRefused("ingress invented Z: path", "Z:\\etc\\passwd");
+            CheckContentRefused("ingress invented unmapped drive", "Q:\\etc\\passwd");
+            CheckContentRefused(
+                "ingress invented Windows system path",
+                "C:\\Windows\\System32\\drivers\\etc\\hosts"
+            );
+
+            // Same shapes through the mod-location reader, whose root is the
+            // mod's own folder.
+            var me = OwnModItem();
+            var ctx = ModContext;
+            string modPath = ctx == null ? null : ctx.ModPath;
+            if (modPath == null)
+            {
+                CheckTrue(
+                    OwnerLinux,
+                    "security: ingress preconditions (ModPath)",
+                    false,
+                    "<null ModPath>"
+                );
+            }
+            else
+            {
+                CheckModRefused(
+                    "ingress egress-ModPath + root traversal",
+                    modPath + "\\" + upBs + "etc\\passwd",
+                    me
+                );
+                // A sibling whose name does not extend this mod's own folder
+                // name: refused by the prefix check itself on both platforms.
+                // (A sibling that *does* extend it — "...DiagnosticsEvil" —
+                // passes that check on Windows too; see S5 in the audit. It is
+                // not asserted here because refusing it would diverge from
+                // Windows.)
+                CheckModRefused(
+                    "ingress egress-ModPath + sibling mod escape",
+                    modPath + "\\..\\OtherModFolder\\secret.txt",
+                    me
+                );
+                CheckModAllowed(
+                    "ingress egress-ModPath round trip",
+                    modPath + "\\TestData\\CaseSensitivity\\expected.txt",
+                    "lowercase-content",
+                    me
+                );
+                CheckModAllowed(
+                    "ingress egress-ModPath round trip (wrong case)",
+                    modPath + "\\testdata\\casesensitivity\\EXPECTED.TXT",
+                    "lowercase-content",
+                    me
+                );
+            }
+
+            CheckModRefused("ingress invented Z: path in mod location", "Z:\\etc\\passwd", me);
+
+            // Storage takes bare filenames, so a drive-prefixed name is simply
+            // an invalid filename there — refused by the character check.
+            CheckStorageWriteRefused("ingress drive-prefixed storage name", "Z:\\escape.txt");
         }
     }
 }

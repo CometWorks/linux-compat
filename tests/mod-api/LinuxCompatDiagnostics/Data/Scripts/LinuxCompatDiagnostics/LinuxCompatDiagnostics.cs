@@ -108,6 +108,9 @@ namespace LinuxCompatDiagnostics
                 ProbeModLocationAbsoluteRoundTrip();
                 ProbeGameContent();
                 ProbeGameContentAbsoluteRoundTrip();
+                ProbeContentTraversal();
+                ProbeModLocationTraversal();
+                ProbeStorageTraversal();
                 ProbeSerializeXml();
                 ProbeSerializeBinary();
                 ProbeSessionVariables();
@@ -121,6 +124,7 @@ namespace LinuxCompatDiagnostics
                 ProbeThreadingPrimitives();
                 ProbeTypeIdentity();
                 ProbeDefinitionPipeline();
+                ProbeIngressTraversalRefused();
                 DumpUntestable();
 
                 // Partial flush without terminator: if the game dies before

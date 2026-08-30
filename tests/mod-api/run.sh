@@ -106,7 +106,7 @@ SE_REMOTE_DIR="$SE_REMOTE_DIR" uv run --project "$SE_REMOTE_DIR" python \
     "$SCRIPT_DIR/drive_client.py" "$WORLD_PATH" "$SUITE_LOG" "$SUITE_TIMEOUT"
 DRIVE_RC=$?
 
-# 6. Confirm the run exercised the working-tree plugin build, not a release.
+# 6. Confirm the run exercised the working-tree plugin build, not a shipped one.
 #    Dev-folder builds randomize the assembly name (LinuxCompat_xxxxx).
 GAME_LOG="$SE_APPDATA/SpaceEngineers.log"
 [ -f "$GAME_LOG" ] || GAME_LOG="$(ls -t "$SE_APPDATA"/SpaceEngineers*.log 2>/dev/null | head -1)"
@@ -114,7 +114,7 @@ if [ -f "$GAME_LOG" ]; then
     if grep -qoE 'LinuxCompat_[a-z0-9]+\.[a-z0-9]+' "$GAME_LOG"; then
         echo "verified: dev-folder LinuxCompat assembly loaded ($(grep -oE 'LinuxCompat_[a-z0-9]+\.[a-z0-9]+' "$GAME_LOG" | head -1))"
     else
-        echo "WARNING: no randomized LinuxCompat_* assembly in $GAME_LOG - the run may have used a released plugin build!" >&2
+        echo "WARNING: no randomized LinuxCompat_* assembly in $GAME_LOG - the run may have used a shipped plugin build!" >&2
     fi
 fi
 
@@ -123,6 +123,9 @@ trap - EXIT
 
 [ "$DRIVE_RC" -eq 0 ] || fail "client drive failed (rc=$DRIVE_RC); check $GAME_LOG and ~/.config/Pulsar/Legacy/info.log"
 
-# 7. Parse and report.
+# 7. Parse and report. The security manifest makes the containment probes a
+#    regression test: a probe that stops being reported fails the run even
+#    when nothing FAILs (see parse_results.py --update-security-manifest).
 echo "== results =="
-python3 "$SCRIPT_DIR/parse_results.py" "$SUITE_LOG"
+python3 "$SCRIPT_DIR/parse_results.py" "$SUITE_LOG" \
+    --security-manifest "$SCRIPT_DIR/security-probes.txt"

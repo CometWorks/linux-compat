@@ -647,5 +647,433 @@ namespace LinuxCompatDiagnostics
                 }
             }
         }
+
+        // ----- security: path containment -----
+        //
+        // Every probe below is named "security: ...". parse_results.py keeps a
+        // manifest of these names and fails the run if one stops being
+        // reported, so a probe cannot silently disappear along with the check
+        // it guards. Refusal cases and the matching legal-access cases live
+        // side by side on purpose: a fix that over-tightens containment breaks
+        // the "allowed" half, and one that loosens it breaks the "refused"
+        // half.
+
+        // Deep enough to reach "/" from any install location; GetFullPath
+        // clamps at the filesystem root, so the exact depth does not matter.
+        private const string UpToRoot = "../../../../../../../../../../../../../../../../";
+
+        private const string ArmorSbc = "Data/CubeBlocks/CubeBlocks_Armor.sbc";
+
+        /// <summary>
+        /// Containment of the game-content readers. The engine guards them with
+        /// Path.GetFullPath(Path.Combine(ContentPath, file)).StartsWith(ContentPath),
+        /// so every refusal below also holds on Windows. On Linux the guard is
+        /// easy to lose: the casing resolver returns its input unchanged as soon
+        /// as the path exists, and the kernel resolves ".." itself, so an
+        /// uncanonicalized "&lt;ContentPath&gt;/../../etc/passwd" would both open and
+        /// pass a raw StartsWith test.
+        /// </summary>
+        private void ProbeContentTraversal()
+        {
+            Section("security: game content readers stay under ContentPath");
+
+            // --- refused: escapes to the filesystem root. On Windows the same
+            // strings land on C:\etc\passwd, which does not exist, so the
+            // assertion holds there for the same reason it is written this way.
+            CheckContentRefused("content root traversal", UpToRoot + "etc/passwd");
+            CheckContentRefused(
+                "content root traversal (backslash)",
+                UpToRoot.Replace('/', '\\') + "etc\\passwd"
+            );
+            CheckContentRefused(
+                "content traversal after valid segments",
+                "Data/CubeBlocks/" + UpToRoot + "etc/passwd"
+            );
+            CheckContentRefused("content traversal to /proc", UpToRoot + "proc/self/environ");
+
+            // --- refused: sibling of Content inside the install. The target
+            // exists on both platforms, so this case fails loudly if
+            // containment regresses instead of passing on a missing file.
+            CheckContentRefused("content sibling escape", "../Bin64/SpaceEngineers.exe");
+            CheckContentRefused(
+                "content sibling escape (backslash)",
+                "..\\Bin64\\SpaceEngineers.exe"
+            );
+
+            // --- refused: bare traversal segments, encodings that must not be
+            // decoded, and rooted prefixes that drop ContentPath in Combine.
+            CheckContentRefused("content bare ..", "..");
+            CheckContentRefused("content percent-encoded traversal", "%2e%2e/%2e%2e/etc/passwd");
+            CheckContentRefused("content extended-length prefix", "\\\\?\\C:\\etc\\passwd");
+            CheckContentRefused("content UNC share", "\\\\server\\share\\secret.txt");
+            CheckContentRefused("content absolute native path", "/etc/passwd");
+
+            // --- allowed: the legal-access half. These are the shapes real
+            // mods use; an over-tightened containment check breaks them.
+            CheckContentAllowed("content relative path", ArmorSbc);
+            CheckContentAllowed("content backslash path", "Data\\CubeBlocks\\CubeBlocks_Armor.sbc");
+            CheckContentAllowed("content lowercased path", "data/cubeblocks/cubeblocks_armor.sbc");
+            // ".." that stays inside the root must still resolve: canonicalizing
+            // the containment check must not become "reject any dots".
+            CheckContentAllowed("content inner traversal", "Data/../" + ArmorSbc);
+            CheckContentAllowed("content leading dot segment", "./" + ArmorSbc);
+        }
+
+        /// <summary>
+        /// A path the game-content API must refuse: FileExists is false and both
+        /// readers throw FileNotFoundException, which is the Windows shape.
+        /// </summary>
+        private void CheckContentRefused(string label, string path)
+        {
+            var utils = MyAPIGateway.Utilities;
+            string captured = path;
+            Info("security input (" + label + ")", captured);
+            CheckProbe(
+                OwnerLinux,
+                "security: refused, exists: " + label,
+                false,
+                () => utils.FileExistsInGameContent(captured)
+            );
+            CheckThrows(
+                OwnerLinux,
+                "security: refused, read: " + label,
+                typeof(FileNotFoundException),
+                () =>
+                {
+                    using (var r = utils.ReadFileInGameContent(captured))
+                        r.ReadLine();
+                }
+            );
+            CheckThrows(
+                OwnerLinux,
+                "security: refused, binary read: " + label,
+                typeof(FileNotFoundException),
+                () =>
+                {
+                    using (var r = utils.ReadBinaryFileInGameContent(captured))
+                        r.ReadByte();
+                }
+            );
+        }
+
+        /// <summary>
+        /// A path the game-content API must keep serving: exists is true and the
+        /// readers return the file's real first bytes (BOM + "&lt;?xml").
+        /// </summary>
+        private void CheckContentAllowed(string label, string path)
+        {
+            var utils = MyAPIGateway.Utilities;
+            string captured = path;
+            CheckProbe(
+                OwnerLinux,
+                "security: allowed, exists: " + label,
+                true,
+                () => utils.FileExistsInGameContent(captured)
+            );
+            CheckProbe(
+                OwnerLinux,
+                "security: allowed, read: " + label,
+                "EF BB BF 3C 3F 78 6D 6C",
+                () =>
+                {
+                    using (var r = utils.ReadBinaryFileInGameContent(captured))
+                        return r == null ? null : HexBytes(r.ReadBytes(8));
+                }
+            );
+        }
+
+        /// <summary>
+        /// Containment of the mod-location readers. Their root is the mod's own
+        /// folder and Data/Scripts inside it is additionally protected, so a mod
+        /// cannot read its own (or another mod's) source.
+        /// </summary>
+        private void ProbeModLocationTraversal()
+        {
+            Section("security: mod location readers stay under the mod folder");
+            var me = OwnModItem();
+
+            // --- refused
+            CheckModRefused("mod root traversal", UpToRoot + "etc/passwd", me);
+            CheckModRefused(
+                "mod root traversal (backslash)",
+                UpToRoot.Replace('/', '\\') + "etc\\passwd",
+                me
+            );
+            CheckModRefused(
+                "mod traversal after valid segments",
+                "TestData/" + UpToRoot + "etc/passwd",
+                me
+            );
+            CheckModRefused("mod absolute native path", "/etc/passwd", me);
+            CheckModRefused("mod bare ..", "..", me);
+            CheckModRefused("mod UNC share", "\\\\server\\share\\secret.txt", me);
+            // Data/Scripts is protected by the engine even though it is inside
+            // the mod folder: a mod must not be able to read script source.
+            CheckModRefused(
+                "mod protected Data/Scripts",
+                "Data/Scripts/LinuxCompatDiagnostics/LinuxCompatDiagnostics.cs",
+                me
+            );
+            CheckModRefused(
+                "mod protected Data/Scripts (backslash)",
+                "Data\\Scripts\\LinuxCompatDiagnostics\\ProbesPaths.cs",
+                me
+            );
+
+            // --- allowed
+            CheckModAllowed(
+                "mod relative path",
+                "TestData/CaseSensitivity/expected.txt",
+                "lowercase-content",
+                me
+            );
+            CheckModAllowed(
+                "mod backslash path",
+                "TestData\\CaseSensitivity\\expected.txt",
+                "lowercase-content",
+                me
+            );
+            CheckModAllowed(
+                "mod uppercased path",
+                "TESTDATA/CASESENSITIVITY/EXPECTED.TXT",
+                "lowercase-content",
+                me
+            );
+            CheckModAllowed(
+                "mod inner traversal",
+                "TestData/Subdir/../CaseSensitivity/expected.txt",
+                "lowercase-content",
+                me
+            );
+            CheckModAllowed(
+                "mod nested subdir",
+                "TestData/Subdir/nested.txt",
+                "nested-content",
+                me
+            );
+        }
+
+        private void CheckModRefused(
+            string label,
+            string path,
+            MyObjectBuilder_Checkpoint.ModItem me
+        )
+        {
+            var utils = MyAPIGateway.Utilities;
+            string captured = path;
+            Info("security input (" + label + ")", captured);
+            CheckProbe(
+                OwnerLinux,
+                "security: refused, exists: " + label,
+                false,
+                () => utils.FileExistsInModLocation(captured, me)
+            );
+            CheckThrows(
+                OwnerLinux,
+                "security: refused, read: " + label,
+                typeof(FileNotFoundException),
+                () =>
+                {
+                    using (var r = utils.ReadFileInModLocation(captured, me))
+                        r.ReadLine();
+                }
+            );
+            CheckThrows(
+                OwnerLinux,
+                "security: refused, binary read: " + label,
+                typeof(FileNotFoundException),
+                () =>
+                {
+                    using (var r = utils.ReadBinaryFileInModLocation(captured, me))
+                        r.ReadByte();
+                }
+            );
+        }
+
+        private void CheckModAllowed(
+            string label,
+            string path,
+            string expectedFirstLine,
+            MyObjectBuilder_Checkpoint.ModItem me
+        )
+        {
+            var utils = MyAPIGateway.Utilities;
+            string captured = path;
+            CheckProbe(
+                OwnerLinux,
+                "security: allowed, exists: " + label,
+                true,
+                () => utils.FileExistsInModLocation(captured, me)
+            );
+            CheckProbe(
+                OwnerLinux,
+                "security: allowed, read: " + label,
+                expectedFirstLine,
+                () => ReadFirstLineInModLocation(captured)
+            );
+        }
+
+        /// <summary>
+        /// Containment of the storage APIs — the one place the game really does
+        /// intend a sandbox. Separators are rejected by the engine's fixed
+        /// invalid-character list, so the only traversal shapes left are bare
+        /// dot segments, which its GetFullPath prefix check stops.
+        /// </summary>
+        private void ProbeStorageTraversal()
+        {
+            Section("security: storage filenames stay in the scope folder");
+            var utils = MyAPIGateway.Utilities;
+            var owner = typeof(LinuxCompatDiagnosticsSession);
+
+            // --- refused
+            CheckStorageWriteRefused("storage bare .. (local)", "..");
+            CheckStorageWriteRefused("storage ..\\escape.txt (local)", "..\\escape.txt");
+            CheckStorageWriteRefused("storage ../escape.txt (local)", "../escape.txt");
+            CheckStorageWriteRefused("storage sub/dir/f.txt (local)", "sub/dir/f.txt");
+            CheckStorageWriteRefused("storage absolute path (local)", "/tmp/escape.txt");
+            CheckStorageWriteRefused("storage drive-prefixed path (local)", "C:\\escape.txt");
+
+            CheckThrows(
+                OwnerLinux,
+                "security: refused, write: storage ..\\escape.txt (world)",
+                typeof(FileNotFoundException),
+                () =>
+                {
+                    using (var w = utils.WriteFileInWorldStorage("..\\escape.txt", owner))
+                        w.Write("x");
+                }
+            );
+            CheckThrows(
+                OwnerLinux,
+                "security: refused, write: storage ../escape.txt (global)",
+                typeof(FileNotFoundException),
+                () =>
+                {
+                    using (var w = utils.WriteFileInGlobalStorage("../escape.txt"))
+                        w.Write("x");
+                }
+            );
+            // Nothing may have landed next to the scope folder.
+            CheckProbe(
+                OwnerLinux,
+                "security: refused, aftermath: escape.txt absent from world storage",
+                false,
+                () => utils.FileExistsInWorldStorage("escape.txt", owner)
+            );
+            CheckProbe(
+                OwnerLinux,
+                "security: refused, aftermath: escape.txt absent from local storage",
+                false,
+                () => utils.FileExistsInLocalStorage("escape.txt", owner)
+            );
+
+            // --- allowed: a legal round trip in each of the three scopes.
+            CheckStorageRoundTrip("storage local scope", 0);
+            CheckStorageRoundTrip("storage world scope", 1);
+            CheckStorageRoundTrip("storage global scope", 2);
+
+            // "..." is a legal Linux filename but is normalized away on
+            // Windows, so there is no shared expectation to assert.
+            TryInfo(
+                "security: storage ... (no Windows reference)",
+                () =>
+                {
+                    using (var w = utils.WriteFileInLocalStorage("...", owner))
+                        w.Write("x");
+                    return "<created>";
+                }
+            );
+        }
+
+        private void CheckStorageWriteRefused(string label, string name)
+        {
+            var utils = MyAPIGateway.Utilities;
+            var owner = typeof(LinuxCompatDiagnosticsSession);
+            string captured = name;
+            Info("security input (" + label + ")", captured);
+            CheckThrows(
+                OwnerLinux,
+                "security: refused, write: " + label,
+                typeof(FileNotFoundException),
+                () =>
+                {
+                    using (var w = utils.WriteFileInLocalStorage(captured, owner))
+                        w.Write("x");
+                }
+            );
+            CheckProbe(
+                OwnerLinux,
+                "security: refused, exists: " + label,
+                false,
+                () => utils.FileExistsInLocalStorage(captured, owner)
+            );
+            CheckNoThrow(
+                OwnerLinux,
+                "security: refused, delete is a no-op: " + label,
+                () => utils.DeleteFileInLocalStorage(captured, owner)
+            );
+        }
+
+        /// <summary>
+        /// Write, read back, and delete one file in the given storage scope
+        /// (0 local, 1 world, 2 global) — the access every mod is entitled to.
+        /// </summary>
+        private void CheckStorageRoundTrip(string label, int scope)
+        {
+            var utils = MyAPIGateway.Utilities;
+            var owner = typeof(LinuxCompatDiagnosticsSession);
+            const string name = "SecurityRoundTrip.txt";
+            const string payload = "round-trip-ok";
+
+            CheckNoThrow(
+                OwnerLinux,
+                "security: allowed, write: " + label,
+                () =>
+                {
+                    TextWriter w =
+                        scope == 0 ? utils.WriteFileInLocalStorage(name, owner)
+                        : scope == 1 ? utils.WriteFileInWorldStorage(name, owner)
+                        : utils.WriteFileInGlobalStorage(name);
+                    using (w)
+                        w.Write(payload);
+                }
+            );
+            CheckProbe(
+                OwnerLinux,
+                "security: allowed, exists: " + label,
+                true,
+                () =>
+                    scope == 0 ? utils.FileExistsInLocalStorage(name, owner)
+                    : scope == 1 ? utils.FileExistsInWorldStorage(name, owner)
+                    : utils.FileExistsInGlobalStorage(name)
+            );
+            CheckProbe(
+                OwnerLinux,
+                "security: allowed, read: " + label,
+                payload,
+                () =>
+                {
+                    TextReader r =
+                        scope == 0 ? utils.ReadFileInLocalStorage(name, owner)
+                        : scope == 1 ? utils.ReadFileInWorldStorage(name, owner)
+                        : utils.ReadFileInGlobalStorage(name);
+                    using (r)
+                        return r.ReadToEnd();
+                }
+            );
+            CheckNoThrow(
+                OwnerLinux,
+                "security: allowed, delete: " + label,
+                () =>
+                {
+                    if (scope == 0)
+                        utils.DeleteFileInLocalStorage(name, owner);
+                    else if (scope == 1)
+                        utils.DeleteFileInWorldStorage(name, owner);
+                    else
+                        utils.DeleteFileInGlobalStorage(name);
+                }
+            );
+        }
     }
 }

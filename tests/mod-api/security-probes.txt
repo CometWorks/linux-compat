@@ -1,0 +1,153 @@
+# Security probe manifest for the LinuxCompatDiagnostics suite.
+# Every name below must be reported by a green run; a missing one
+# fails parse_results.py even when no probe FAILs. Regenerate with
+#   parse_results.py <log> --update-security-manifest <this file>
+security: allowed, delete: storage global scope
+security: allowed, delete: storage local scope
+security: allowed, delete: storage world scope
+security: allowed, exists: content backslash path
+security: allowed, exists: content inner traversal
+security: allowed, exists: content leading dot segment
+security: allowed, exists: content lowercased path
+security: allowed, exists: content relative path
+security: allowed, exists: ingress egress-ContentPath round trip
+security: allowed, exists: ingress egress-ContentPath round trip (inner traversal)
+security: allowed, exists: ingress egress-ModPath round trip
+security: allowed, exists: ingress egress-ModPath round trip (wrong case)
+security: allowed, exists: mod backslash path
+security: allowed, exists: mod inner traversal
+security: allowed, exists: mod nested subdir
+security: allowed, exists: mod relative path
+security: allowed, exists: mod uppercased path
+security: allowed, exists: storage global scope
+security: allowed, exists: storage local scope
+security: allowed, exists: storage world scope
+security: allowed, read: content backslash path
+security: allowed, read: content inner traversal
+security: allowed, read: content leading dot segment
+security: allowed, read: content lowercased path
+security: allowed, read: content relative path
+security: allowed, read: ingress egress-ContentPath round trip
+security: allowed, read: ingress egress-ContentPath round trip (inner traversal)
+security: allowed, read: ingress egress-ModPath round trip
+security: allowed, read: ingress egress-ModPath round trip (wrong case)
+security: allowed, read: mod backslash path
+security: allowed, read: mod inner traversal
+security: allowed, read: mod nested subdir
+security: allowed, read: mod relative path
+security: allowed, read: mod uppercased path
+security: allowed, read: storage global scope
+security: allowed, read: storage local scope
+security: allowed, read: storage world scope
+security: allowed, write: storage global scope
+security: allowed, write: storage local scope
+security: allowed, write: storage world scope
+security: refused, aftermath: escape.txt absent from local storage
+security: refused, aftermath: escape.txt absent from world storage
+security: refused, binary read: content UNC share
+security: refused, binary read: content absolute native path
+security: refused, binary read: content bare ..
+security: refused, binary read: content extended-length prefix
+security: refused, binary read: content percent-encoded traversal
+security: refused, binary read: content root traversal
+security: refused, binary read: content root traversal (backslash)
+security: refused, binary read: content sibling escape
+security: refused, binary read: content sibling escape (backslash)
+security: refused, binary read: content traversal after valid segments
+security: refused, binary read: content traversal to /proc
+security: refused, binary read: ingress egress-ContentPath + root traversal
+security: refused, binary read: ingress egress-ContentPath + sibling escape
+security: refused, binary read: ingress egress-ModPath + root traversal
+security: refused, binary read: ingress egress-ModPath + sibling mod escape
+security: refused, binary read: ingress invented C: path
+security: refused, binary read: ingress invented Windows system path
+security: refused, binary read: ingress invented Z: path
+security: refused, binary read: ingress invented Z: path in mod location
+security: refused, binary read: ingress invented unmapped drive
+security: refused, binary read: mod UNC share
+security: refused, binary read: mod absolute native path
+security: refused, binary read: mod bare ..
+security: refused, binary read: mod protected Data/Scripts
+security: refused, binary read: mod protected Data/Scripts (backslash)
+security: refused, binary read: mod root traversal
+security: refused, binary read: mod root traversal (backslash)
+security: refused, binary read: mod traversal after valid segments
+security: refused, delete is a no-op: ingress drive-prefixed storage name
+security: refused, delete is a no-op: storage ../escape.txt (local)
+security: refused, delete is a no-op: storage ..\escape.txt (local)
+security: refused, delete is a no-op: storage absolute path (local)
+security: refused, delete is a no-op: storage bare .. (local)
+security: refused, delete is a no-op: storage drive-prefixed path (local)
+security: refused, delete is a no-op: storage sub/dir/f.txt (local)
+security: refused, exists: content UNC share
+security: refused, exists: content absolute native path
+security: refused, exists: content bare ..
+security: refused, exists: content extended-length prefix
+security: refused, exists: content percent-encoded traversal
+security: refused, exists: content root traversal
+security: refused, exists: content root traversal (backslash)
+security: refused, exists: content sibling escape
+security: refused, exists: content sibling escape (backslash)
+security: refused, exists: content traversal after valid segments
+security: refused, exists: content traversal to /proc
+security: refused, exists: ingress drive-prefixed storage name
+security: refused, exists: ingress egress-ContentPath + root traversal
+security: refused, exists: ingress egress-ContentPath + sibling escape
+security: refused, exists: ingress egress-ModPath + root traversal
+security: refused, exists: ingress egress-ModPath + sibling mod escape
+security: refused, exists: ingress invented C: path
+security: refused, exists: ingress invented Windows system path
+security: refused, exists: ingress invented Z: path
+security: refused, exists: ingress invented Z: path in mod location
+security: refused, exists: ingress invented unmapped drive
+security: refused, exists: mod UNC share
+security: refused, exists: mod absolute native path
+security: refused, exists: mod bare ..
+security: refused, exists: mod protected Data/Scripts
+security: refused, exists: mod protected Data/Scripts (backslash)
+security: refused, exists: mod root traversal
+security: refused, exists: mod root traversal (backslash)
+security: refused, exists: mod traversal after valid segments
+security: refused, exists: storage ../escape.txt (local)
+security: refused, exists: storage ..\escape.txt (local)
+security: refused, exists: storage absolute path (local)
+security: refused, exists: storage bare .. (local)
+security: refused, exists: storage drive-prefixed path (local)
+security: refused, exists: storage sub/dir/f.txt (local)
+security: refused, read: content UNC share
+security: refused, read: content absolute native path
+security: refused, read: content bare ..
+security: refused, read: content extended-length prefix
+security: refused, read: content percent-encoded traversal
+security: refused, read: content root traversal
+security: refused, read: content root traversal (backslash)
+security: refused, read: content sibling escape
+security: refused, read: content sibling escape (backslash)
+security: refused, read: content traversal after valid segments
+security: refused, read: content traversal to /proc
+security: refused, read: ingress egress-ContentPath + root traversal
+security: refused, read: ingress egress-ContentPath + sibling escape
+security: refused, read: ingress egress-ModPath + root traversal
+security: refused, read: ingress egress-ModPath + sibling mod escape
+security: refused, read: ingress invented C: path
+security: refused, read: ingress invented Windows system path
+security: refused, read: ingress invented Z: path
+security: refused, read: ingress invented Z: path in mod location
+security: refused, read: ingress invented unmapped drive
+security: refused, read: mod UNC share
+security: refused, read: mod absolute native path
+security: refused, read: mod bare ..
+security: refused, read: mod protected Data/Scripts
+security: refused, read: mod protected Data/Scripts (backslash)
+security: refused, read: mod root traversal
+security: refused, read: mod root traversal (backslash)
+security: refused, read: mod traversal after valid segments
+security: refused, write: ingress drive-prefixed storage name
+security: refused, write: storage ../escape.txt (global)
+security: refused, write: storage ../escape.txt (local)
+security: refused, write: storage ..\escape.txt (local)
+security: refused, write: storage ..\escape.txt (world)
+security: refused, write: storage absolute path (local)
+security: refused, write: storage bare .. (local)
+security: refused, write: storage drive-prefixed path (local)
+security: refused, write: storage sub/dir/f.txt (local)
