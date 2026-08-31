@@ -524,21 +524,31 @@ internal sealed class WrappedUtilities : IMyUtilities
     {
         var fullPath = StorageFullPath(method, file, callingType);
         var opensWriter = method.StartsWith("Write", StringComparison.Ordinal);
-        if (
+        var checksWriter =
             fullPath != null
             && (
                 method.StartsWith("Read", StringComparison.Ordinal)
                 || method.StartsWith("Delete", StringComparison.Ordinal)
-            )
-        )
-            StorageSharing.ThrowIfWriterOpen(method, fullPath);
+            );
 
-        var lease =
-            opensWriter && fullPath != null ? StorageSharing.AcquireWriter(method, fullPath) : null;
+        StorageSharing.Lease lease = null;
         var handedOver = false;
         try
         {
-            var result = call();
+            // The sharing decision and the engine's open have to be one step.
+            // Apart, a writer can register and create the file after the check
+            // has passed, leaving the read to succeed on a file that exists but
+            // is still empty — the interleaving Windows cannot produce, because
+            // there the two happen inside a single CreateFile call.
+            var result = StorageSharing.WithOpenGate(() =>
+            {
+                if (checksWriter)
+                    StorageSharing.ThrowIfWriterOpen(method, fullPath);
+                if (opensWriter && fullPath != null)
+                    lease = StorageSharing.AcquireWriter(method, fullPath);
+                return call();
+            });
+
             if (lease != null)
             {
                 if (result is TextWriter textWriter)
