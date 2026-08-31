@@ -44,6 +44,27 @@ internal static class StorageSharing
         StringComparer.OrdinalIgnoreCase
     );
 
+    // Windows settles the share mode inside the same CreateFile call that hands
+    // out the handle, so no other open can be interleaved between the two.
+    // Split into a dictionary lookup and a separate engine call they can be: a
+    // writer landing in that gap creates the file after the reader has already
+    // checked, and the read then succeeds on the zero-byte file the writer has
+    // not filled yet — the very outcome this class exists to prevent. The gate
+    // restores that indivisibility. It is held across the open alone, never
+    // across the file's contents.
+    private static readonly object OpenGate = new();
+
+    /// <summary>
+    /// Runs a sharing decision and the open it guards as one indivisible step.
+    /// Whatever is passed here must do no more than open the file: the caller
+    /// reads or writes its contents afterwards, outside the gate.
+    /// </summary>
+    internal static T WithOpenGate<T>(Func<T> openWithSharingCheck)
+    {
+        lock (OpenGate)
+            return openWithSharingCheck();
+    }
+
     /// <summary>
     /// Registers a writer about to be opened for the given path. Throws the
     /// Windows sharing violation when another writer is already open, which is
