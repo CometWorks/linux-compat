@@ -274,6 +274,17 @@ public static class PathCache
         var path = PathHelpers.Normalize(absolutePath);
         // Linux does not consider drive-prefixed mod paths rooted.
         path = PathTranslation.Untranslate(path);
+
+        // Path.Combine(ContentPath, "C:\\...") embeds the synthetic path on Linux.
+        var contentRoot = s_contentRoot;
+        if (contentRoot != null && PrefixMatches(path, contentRoot))
+        {
+            var relative = path.Substring(contentRoot.Length).TrimStart('/');
+            var untranslated = PathTranslation.Untranslate(relative);
+            if (!ReferenceEquals(untranslated, relative))
+                path = untranslated;
+        }
+
         if (!Path.IsPathRooted(path))
             return path;
 
