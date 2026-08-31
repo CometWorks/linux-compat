@@ -3,8 +3,10 @@ using Sandbox.ModAPI;
 
 namespace ClientPlugin.Patches.PathHandling.ModApiWrappers;
 
-// Wrap mod API aliases after initialization without changing engine statics.
-// Type checks keep repeated session initialization idempotent.
+// Wrap the utilities alias after initialization without changing engine statics.
+// Path MAPPING lives in the mod compilation rewriter; this wrapper only keeps
+// Windows-behavior emulation (storage filename validation, CRLF XML, casing).
+// The type check keeps repeated session initialization idempotent.
 [HarmonyPatch(typeof(MyModAPIHelper), nameof(MyModAPIHelper.Initialize))]
 [HarmonyPatchCategory("Finish")]
 static class ModApiWrapperInstallPatch
@@ -13,8 +15,5 @@ static class ModApiWrapperInstallPatch
     {
         if (MyAPIGateway.Utilities != null && MyAPIGateway.Utilities is not WrappedUtilities)
             MyAPIGateway.Utilities = new WrappedUtilities(MyAPIGateway.Utilities);
-
-        if (MyAPIGateway.Session != null && MyAPIGateway.Session is not WrappedSession)
-            MyAPIGateway.Session = new WrappedSession(MyAPIGateway.Session);
     }
 }

@@ -22,14 +22,12 @@ public static class Preloader
 #if MAGNETAR
         "SpaceEngineers.Game.dll",
         "VRage.Dedicated.dll",
-        "VRage.Game.dll",
         "VRage.Library.dll",
         "VRage.Platform.Windows.dll",
         "VRage.Steam.dll",
 #else
         "SpaceEngineers.Game.dll",
         "VRage.Audio.dll",
-        "VRage.Game.dll",
         "VRage.Library.dll",
         "VRage.Platform.Windows.dll",
         "VRage.Steam.dll",
@@ -63,9 +61,6 @@ public static class Preloader
                 PatchSharpDX(asmDef);
                 break;
 #endif
-            case "VRage.Game":
-                ClientPlugin.Patches.PathHandling.MyModContextPrepatch.Prepatch(asmDef);
-                break;
             case "VRage.Library":
                 ClientPlugin.Patches.PathHandling.MyFileSystemOpenPrepatch.Prepatch(asmDef);
                 break;

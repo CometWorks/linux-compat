@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
+using Sandbox.Game.World;
 using Sandbox.ModAPI.Interfaces;
 using VRage.FileSystem;
 using VRage.Game;
@@ -13,9 +14,15 @@ using VRage.Utils;
 namespace ClientPlugin.Patches.PathHandling.ModApiWrappers;
 
 /// <summary>
-/// Translates mod-facing paths and resolves Linux filesystem casing.
-/// Storage calls reject filenames that Windows rejects, preserving their exception shape.
-/// Engine code continues to use the unwrapped concrete API.
+/// Emulates Windows file API behavior for every MyAPIGateway.Utilities caller:
+/// file lookups (mod location, game content, and storage) resolve Linux
+/// filesystem casing, and XML serialization uses CRLF. Filenames Windows
+/// rejects keep the engine's own Windows exception shape (Write/Read throw
+/// FileNotFoundException, FileExists returns false, Delete no-ops) because
+/// the engine validates against the same fixed character list on all
+/// platforms. Path translation is NOT done here — it is injected
+/// into mod code by the compilation rewriter, so plugins calling this API keep
+/// native paths. Engine code continues to use the unwrapped concrete API.
 /// </summary>
 internal sealed class WrappedUtilities : IMyUtilities
 {
@@ -68,34 +75,16 @@ internal sealed class WrappedUtilities : IMyUtilities
     };
 
     private readonly IMyUtilities _inner;
-    private readonly WrappedGamePaths _gamePaths;
-    private WrappedConfigDedicated _configDedicated;
-    private IMyConfigDedicated _configDedicatedSource;
 
     public WrappedUtilities(IMyUtilities inner)
     {
         _inner = inner;
-        _gamePaths = new WrappedGamePaths(inner.GamePaths);
     }
 
-    public IMyGamePaths GamePaths => _gamePaths;
+    // Path mapping happens in rewritten mod code, so these stay native.
+    public IMyGamePaths GamePaths => _inner.GamePaths;
 
-    public IMyConfigDedicated ConfigDedicated
-    {
-        get
-        {
-            // ConfigDedicated can be null or replaced between sessions.
-            var src = _inner.ConfigDedicated;
-            if (src == null)
-                return null;
-            if (!ReferenceEquals(src, _configDedicatedSource))
-            {
-                _configDedicatedSource = src;
-                _configDedicated = new WrappedConfigDedicated(src);
-            }
-            return _configDedicated;
-        }
-    }
+    public IMyConfigDedicated ConfigDedicated => _inner.ConfigDedicated;
 
     public bool IsDedicated => _inner.IsDedicated;
 
@@ -104,7 +93,7 @@ internal sealed class WrappedUtilities : IMyUtilities
         if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
             throw new FileNotFoundException();
 
-        file = PathHelpers.Normalize(file);
+        file = PathHelpers.FromWindowsPath(file);
         var modPath = modItem.GetPath();
         var fullPath = Path.GetFullPath(Path.Combine(modPath, file));
         if (fullPath.StartsWith(modPath))
@@ -129,9 +118,9 @@ internal sealed class WrappedUtilities : IMyUtilities
         if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
             throw new FileNotFoundException();
 
-        file = PathHelpers.Normalize(file);
+        file = PathHelpers.FromWindowsPath(file);
         var resolved = PathHelpers.ResolveContentFilePath(file, MyFileSystem.ContentPath);
-        if (resolved.StartsWith(MyFileSystem.ContentPath))
+        if (PathHelpers.IsInsideRoot(resolved, MyFileSystem.ContentPath))
         {
             var stream = MyFileSystem.OpenRead(resolved);
             if (stream != null)
@@ -145,7 +134,7 @@ internal sealed class WrappedUtilities : IMyUtilities
         if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
             return false;
 
-        file = PathHelpers.Normalize(file);
+        file = PathHelpers.FromWindowsPath(file);
         var modPath = modItem.GetPath();
         var fullPath = Path.GetFullPath(Path.Combine(modPath, file));
         if (!fullPath.StartsWith(modPath))
@@ -164,21 +153,63 @@ internal sealed class WrappedUtilities : IMyUtilities
         if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
             return false;
 
-        file = PathHelpers.Normalize(file);
+        file = PathHelpers.FromWindowsPath(file);
         var resolved = PathHelpers.ResolveContentFilePath(file, MyFileSystem.ContentPath);
-        return resolved.StartsWith(MyFileSystem.ContentPath) && File.Exists(resolved);
+        return PathHelpers.IsInsideRoot(resolved, MyFileSystem.ContentPath)
+            && File.Exists(resolved);
     }
 
     public BinaryReader ReadBinaryFileInModLocation(
         string file,
         MyObjectBuilder_Checkpoint.ModItem modItem
-    ) => _inner.ReadBinaryFileInModLocation(PathHelpers.Normalize(file), modItem);
+    )
+    {
+        // Mirrors ReadFileInModLocation: resolve casing here instead of
+        // forwarding to the engine, which requires exact on-disk casing.
+        if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
+            throw new FileNotFoundException();
 
-    public BinaryReader ReadBinaryFileInGameContent(string file) =>
-        _inner.ReadBinaryFileInGameContent(PathHelpers.Normalize(file));
+        file = PathHelpers.FromWindowsPath(file);
+        var modPath = modItem.GetPath();
+        var fullPath = Path.GetFullPath(Path.Combine(modPath, file));
+        if (fullPath.StartsWith(modPath))
+        {
+            var protectedDir = Path.Combine(modPath, "Data", "Scripts");
+            if (fullPath.StartsWith(protectedDir))
+                throw new FileNotFoundException(
+                    "Access to protected location '" + protectedDir + "' not allowed.",
+                    fullPath
+                );
 
-    // Linux permits filename characters that Windows storage APIs reject.
-    // Validate before delegation and preserve engine exceptions for valid names.
+            var resolved = CaseInsensitivePathResolver.Resolve(file, modPath);
+            var stream = MyFileSystem.OpenRead(resolved);
+            if (stream != null)
+                return new BinaryReader(stream);
+        }
+        throw new FileNotFoundException();
+    }
+
+    public BinaryReader ReadBinaryFileInGameContent(string file)
+    {
+        // Mirrors ReadFileInGameContent for the same casing reasons.
+        if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
+            throw new FileNotFoundException();
+
+        file = PathHelpers.FromWindowsPath(file);
+        var resolved = PathHelpers.ResolveContentFilePath(file, MyFileSystem.ContentPath);
+        if (PathHelpers.IsInsideRoot(resolved, MyFileSystem.ContentPath))
+        {
+            var stream = MyFileSystem.OpenRead(resolved);
+            if (stream != null)
+                return new BinaryReader(stream);
+        }
+        throw new FileNotFoundException();
+    }
+
+    // Storage filenames resolve Linux filesystem casing before delegation;
+    // the engine's own fixed invalid-character checks already produce the
+    // Windows exception shape (Write/Read throw, Exists is false, Delete
+    // no-ops), so no extra validation happens here.
 
     public bool FileExistsInLocalStorage(string file, Type callingType) =>
         InvokeStorage(
@@ -429,16 +460,8 @@ internal sealed class WrappedUtilities : IMyUtilities
         Func<string, Type, TResult> call
     )
     {
-        ValidateFilenameOrThrow(file);
-        try
-        {
-            return call(file, callingType);
-        }
-        catch (Exception ex)
-        {
-            LogIfThrew(method, file, callingType, ex);
-            throw;
-        }
+        file = ResolveStorageCase(method, file, callingType);
+        return InvokeTracked(method, file, callingType, () => call(file, callingType));
     }
 
     private void InvokeStorageVoid(
@@ -448,16 +471,17 @@ internal sealed class WrappedUtilities : IMyUtilities
         Action<string, Type> call
     )
     {
-        ValidateFilenameOrThrow(file);
-        try
-        {
-            call(file, callingType);
-        }
-        catch (Exception ex)
-        {
-            LogIfThrew(method, file, callingType, ex);
-            throw;
-        }
+        file = ResolveStorageCase(method, file, callingType);
+        InvokeTracked<object>(
+            method,
+            file,
+            callingType,
+            () =>
+            {
+                call(file, callingType);
+                return null;
+            }
+        );
     }
 
     private TResult InvokeStorageNoType<TResult>(
@@ -466,41 +490,172 @@ internal sealed class WrappedUtilities : IMyUtilities
         Func<string, TResult> call
     )
     {
-        ValidateFilenameOrThrow(file);
-        try
-        {
-            return call(file);
-        }
-        catch (Exception ex)
-        {
-            LogIfThrew(method, file, null, ex);
-            throw;
-        }
+        file = ResolveStorageCase(method, file, null);
+        return InvokeTracked(method, file, null, () => call(file));
     }
 
     private void InvokeStorageVoidNoType(string method, string file, Action<string> call)
     {
-        ValidateFilenameOrThrow(file);
+        file = ResolveStorageCase(method, file, null);
+        InvokeTracked<object>(
+            method,
+            file,
+            null,
+            () =>
+            {
+                call(file);
+                return null;
+            }
+        );
+    }
+
+    /// <summary>
+    /// Wraps the engine call in the Windows file sharing rules: an open writer
+    /// makes every overlapping open of the same storage file fail, and a
+    /// writer handed to the caller holds its path until it is disposed.
+    /// FileExists needs no handle on Windows, so it is not affected.
+    /// </summary>
+    private TResult InvokeTracked<TResult>(
+        string method,
+        string file,
+        Type callingType,
+        Func<TResult> call
+    )
+    {
+        var fullPath = StorageFullPath(method, file, callingType);
+        var opensWriter = method.StartsWith("Write", StringComparison.Ordinal);
+        if (
+            fullPath != null
+            && (
+                method.StartsWith("Read", StringComparison.Ordinal)
+                || method.StartsWith("Delete", StringComparison.Ordinal)
+            )
+        )
+            StorageSharing.ThrowIfWriterOpen(method, fullPath);
+
+        var lease =
+            opensWriter && fullPath != null ? StorageSharing.AcquireWriter(method, fullPath) : null;
+        var handedOver = false;
         try
         {
-            call(file);
+            var result = call();
+            if (lease != null)
+            {
+                if (result is TextWriter textWriter)
+                {
+                    handedOver = true;
+                    return (TResult)(object)new StorageSharing.TrackedTextWriter(textWriter, lease);
+                }
+                if (result is BinaryWriter binaryWriter)
+                {
+                    handedOver = true;
+                    return (TResult)
+                        (object)new StorageSharing.TrackedBinaryWriter(binaryWriter, lease);
+                }
+            }
+            return result;
         }
         catch (Exception ex)
         {
-            LogIfThrew(method, file, null, ex);
+            LogIfThrew(method, file, callingType, ex);
             throw;
+        }
+        finally
+        {
+            // The engine threw, or returned something that is not a writer:
+            // nothing will ever dispose a decorator, so free the path here.
+            if (lease != null && !handedOver)
+                lease.Release();
         }
     }
 
     /// <summary>
-    /// Rejects filenames Windows rejects with the same <see cref="FileNotFoundException"/> shape.
+    /// The full path the engine derives for this member, or null when it
+    /// cannot be derived (no session, or a name the engine rejects anyway) —
+    /// sharing is then not tracked and engine behavior is left alone.
     /// </summary>
-    private static void ValidateFilenameOrThrow(string file)
+    private static string StorageFullPath(string method, string file, Type callingType)
+    {
+        if (string.IsNullOrEmpty(file) || file.IndexOfAny(WindowsInvalidFileNameChars) >= 0)
+            return null;
+
+        try
+        {
+            var dir = StorageDirectory(method, callingType);
+            return dir == null ? null : Path.Combine(dir, file);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Windows storage lookups are case-insensitive: when the exact filename
+    /// is missing from the target storage directory, substitute an existing
+    /// file that differs only in case. Names the engine rejects (separators,
+    /// wildcards, control characters) pass through unchanged so its fixed
+    /// invalid-character checks keep their Windows exception shape.
+    /// </summary>
+    private static string ResolveStorageCase(string method, string file, Type callingType)
     {
         if (string.IsNullOrEmpty(file))
-            return;
+            return file;
         if (file.IndexOfAny(WindowsInvalidFileNameChars) >= 0)
-            throw new FileNotFoundException();
+            return file;
+
+        string dir = StorageDirectory(method, callingType);
+        if (dir == null || File.Exists(Path.Combine(dir, file)) || !Directory.Exists(dir))
+            return file;
+
+        foreach (var candidate in Directory.EnumerateFiles(dir))
+        {
+            var name = Path.GetFileName(candidate);
+            if (string.Equals(name, file, StringComparison.OrdinalIgnoreCase))
+                return name;
+        }
+        return file;
+    }
+
+    /// <summary>
+    /// The storage directory the engine derives for the given member; the
+    /// domain is encoded in the member name (Local/World/Global suffix).
+    /// </summary>
+    private static string StorageDirectory(string method, Type callingType)
+    {
+        try
+        {
+            if (method.EndsWith("InGlobalStorage"))
+                return Path.Combine(MyFileSystem.UserDataPath, "Storage");
+            if (method.EndsWith("InLocalStorage"))
+                return Path.Combine(
+                    MyFileSystem.UserDataPath,
+                    "Storage",
+                    StorageScopeName(callingType)
+                );
+            if (method.EndsWith("InWorldStorage"))
+            {
+                var savePath = MySession.Static?.WorldSavePath;
+                return savePath == null
+                    ? null
+                    : Path.Combine(savePath, "Storage", StorageScopeName(callingType));
+            }
+        }
+        catch
+        {
+            // Unresolvable directory: skip resolution, keep engine behavior.
+        }
+        return null;
+    }
+
+    /// <summary>Matches the engine's per-assembly storage scope (module scope name without a .dll extension).</summary>
+    private static string StorageScopeName(Type callingType)
+    {
+        var name = callingType.Assembly.ManifestModule.ScopeName;
+        const string ext = ".dll";
+        if (name.EndsWith(ext, StringComparison.InvariantCultureIgnoreCase))
+            name = name.Substring(0, name.Length - ext.Length);
+        return name;
     }
 
     private static void LogIfThrew(string method, string file, Type callingType, Exception ex)
