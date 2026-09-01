@@ -274,6 +274,19 @@ public static class PathCache
         var path = PathHelpers.Normalize(absolutePath);
         // Linux does not consider drive-prefixed mod paths rooted.
         path = PathTranslation.Untranslate(path);
+
+        // Mods append relative names to the synthetic Windows mod path (C:\...) and store the
+        // result in shared definitions. Linux does not consider that rooted, so the game combines
+        // it with ContentPath, yielding "<content>/C:/...". Strip the prefix and untranslate.
+        var contentRoot = s_contentRoot;
+        if (contentRoot != null && PrefixMatches(path, contentRoot))
+        {
+            var relative = path.Substring(contentRoot.Length).TrimStart('/');
+            var untranslated = PathTranslation.Untranslate(relative);
+            if (!ReferenceEquals(untranslated, relative))
+                path = untranslated;
+        }
+
         if (!Path.IsPathRooted(path))
             return path;
 
