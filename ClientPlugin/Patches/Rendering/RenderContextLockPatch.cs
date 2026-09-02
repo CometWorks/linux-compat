@@ -2,6 +2,7 @@ using HarmonyLib;
 using SharpDX.Direct3D11;
 using VRage;
 using VRage.Platform.Windows.Render;
+using VRage.Utils;
 using VRageRender;
 
 namespace ClientPlugin.Patches.Rendering;
@@ -18,7 +19,17 @@ static class RenderContextLockPatch
 {
     static void Postfix()
     {
-        using var multithread = MyPlatformRender.DeviceInstance.QueryInterface<Multithread>();
+        // The interface is optional by spec. Missing it must not abort device
+        // creation, which would exit the game.
+        using var multithread =
+            MyPlatformRender.DeviceInstance?.QueryInterfaceOrNull<Multithread>();
+        if (multithread == null)
+        {
+            MyLog.Default.WriteLineAndConsole(
+                "[LinuxCompat] WARNING: ID3D11Multithread is not available; render context lock not enabled"
+            );
+            return;
+        }
         multithread.SetMultithreadProtected(true);
     }
 }
