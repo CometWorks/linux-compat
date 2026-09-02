@@ -1,6 +1,5 @@
 using ClientPlugin.Patches.PlatformGuards;
 using HarmonyLib;
-using SharpDX.Direct3D11;
 using VRage;
 using VRage.Platform.Windows.Render;
 using VRageRender;
@@ -68,12 +67,7 @@ internal static class ModeChangeForwarder
 [HarmonyPatchCategory("Finish")]
 static class MyWindowsRenderCreateRenderDevicePatch
 {
-    static void Postfix(MyRenderDeviceSettings? settings)
-    {
-        using var multithread = MyPlatformRender.DeviceInstance.QueryInterface<Multithread>();
-        multithread.SetMultithreadProtected(true);
-        ModeChangeForwarder.Forward(settings);
-    }
+    static void Postfix(MyRenderDeviceSettings? settings) => ModeChangeForwarder.Forward(settings);
 }
 
 [HarmonyPatch(typeof(MyWindowsRender), nameof(MyWindowsRender.ApplyRenderSettings))]
