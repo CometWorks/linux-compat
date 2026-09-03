@@ -1,4 +1,5 @@
 using System;
+using ClientPlugin.Compatibility;
 using HarmonyLib;
 using VRage;
 using VRage.Library.Utils;
@@ -41,5 +42,16 @@ static class GameRenderComponentStartPatch
         };
 
         return false;
+    }
+}
+
+// Keep hidden Wayland Vulkan surfaces bufferless until ShowAndFocus configures the toplevel.
+[HarmonyPatch(typeof(MyRenderProxy), nameof(MyRenderProxy.Present))]
+[HarmonyPatchCategory("Finish")]
+static class MyRenderProxyPresentPatch
+{
+    static bool Prefix()
+    {
+        return SdlInput2Provider.Instance?.PresentEnabled ?? true;
     }
 }

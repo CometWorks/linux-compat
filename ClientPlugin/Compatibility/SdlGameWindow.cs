@@ -60,6 +60,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     private int m_mouseWheel;
     private bool m_isVisible = true;
     private bool m_isActive = true;
+    private bool m_presentEnabled;
     private bool m_mouseCapture;
     private bool m_showCursor = true;
     private bool m_mouseOutsideWindow;
@@ -149,10 +150,12 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     internal IntPtr Handle { get; private set; }
 
-    public bool DrawEnabled => m_isVisible;
+    public bool DrawEnabled => m_isVisible && PresentEnabled;
     public bool IsWindowed => m_appliedWindowMode == MyWindowModeEnum.Window;
     public bool IsActive => m_isActive;
     public Vector2I ClientSize => m_clientSize;
+
+    internal bool PresentEnabled => Volatile.Read(ref m_presentEnabled);
 
     // Physical drawable size used for the DXVK backbuffer on HiDPI displays.
     internal Vector2I ClientSizePixels => m_clientSizePixels;
@@ -327,6 +330,9 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         if (!SdlRenderThread.IsInitialized)
             throw new PlatformNotSupportedException("SDL3 video initialization failed.");
 
+        // Wayland must not attach a buffer until Pulsar shows and configures the hidden window.
+        m_presentEnabled = !SdlRenderThread.IsWayland;
+
         if (width > 0 && height > 0)
             m_clientSize = new Vector2I(width, height);
 
@@ -356,28 +362,6 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         SDL_StartTextInput(Handle);
         UpdateMouseModeOnRenderThread();
 
-        // Wayland must configure the toplevel before DXVK attaches its first buffer.
-        if (SdlRenderThread.IsWayland)
-        {
-            SDL_ShowWindow(Handle);
-            SDL_SyncWindow(Handle);
-
-            // The compositor assigns the output scale when the surface is mapped.
-            // Reapply persisted pixels using that output's actual density.
-            if (
-                Sandbox.MySandboxGame.Config?.WindowMode == MyWindowModeEnum.Window
-                && PluginWindowConfig.TryGetWindowedSize(out int savedW, out int savedH)
-            )
-            {
-                Vector2I restoredSize = PixelsToWindowSize(savedW, savedH);
-                SDL_SetWindowSize(Handle, restoredSize.X, restoredSize.Y);
-                SDL_SyncWindow(Handle);
-            }
-
-            // Preserve SDL_WINDOW_HIDDEN until the game or Pulsar calls ShowAndFocus.
-            SDL_HideWindow(Handle);
-            SDL_SyncWindow(Handle);
-        }
         RefreshWindowMetrics();
         if (IsValidWindowedSize(m_clientSize.X, m_clientSize.Y))
             m_savedWindowedSize = m_clientSize;
@@ -819,6 +803,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     {
         m_isVisible = false;
         m_isActive = false;
+        Volatile.Write(ref m_presentEnabled, false);
         FlushPendingConfigSave(force: true);
         SdlRenderThread.Invoke(() =>
         {
@@ -847,17 +832,40 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         m_isActive = true;
 
         // FIFO dispatch applies the requested mode before showing the window.
-        SdlRenderThread.Invoke(() =>
+        var shown = SdlRenderThread.Invoke(() =>
         {
-            if (Handle != IntPtr.Zero)
-                SDL_ShowWindow(Handle);
+            if (Handle == IntPtr.Zero || !SDL_ShowWindow(Handle))
+                return false;
+            if (!SdlRenderThread.IsWayland)
+                return true;
+            if (!SDL_SyncWindow(Handle))
+                return false;
+
+            // The compositor assigns the output scale while configuring the toplevel.
+            if (
+                Sandbox.MySandboxGame.Config?.WindowMode == MyWindowModeEnum.Window
+                && PluginWindowConfig.TryGetWindowedSize(out int savedW, out int savedH)
+            )
+            {
+                Vector2I restoredSize = PixelsToWindowSize(savedW, savedH);
+                SDL_SetWindowSize(Handle, restoredSize.X, restoredSize.Y);
+                return SDL_SyncWindow(Handle);
+            }
+
+            return true;
         });
+        Volatile.Write(ref m_presentEnabled, shown);
+        if (!shown)
+            Console.WriteLine(
+                "[LinuxCompat] SDL3 game window failed to show; presentation remains disabled"
+            );
     }
 
     public void Hide()
     {
         m_isVisible = false;
         m_isActive = false;
+        Volatile.Write(ref m_presentEnabled, false);
         SdlRenderThread.Dispatch(() =>
         {
             if (Handle != IntPtr.Zero)
