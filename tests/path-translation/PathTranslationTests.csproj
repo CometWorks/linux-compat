@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>13</LangVersion>
+        <Nullable>disable</Nullable>
+        <RootNamespace>PathTranslationTests</RootNamespace>
+        <AssemblyName>PathTranslationTests</AssemblyName>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+        <!-- Standalone harness: not part of LinuxCompat.sln. The Directory.Build.props next to
+             this file shadows the repository root's, keeping the plugin's Steam/game path
+             detection out of the test build. -->
+        <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- The code under test, compiled verbatim from the plugin sources. -->
+        <Compile Include="../../Shared/Patches/PathHandling/PathTranslation.cs" Link="PathTranslation.cs" />
+        <Compile Include="IngressTraceStub.cs" />
+        <Compile Include="MyFileSystemStub.cs" />
+        <Compile Include="Program.cs" />
+    </ItemGroup>
+
+</Project>
