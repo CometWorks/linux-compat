@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using VRage.FileSystem;
 
 namespace ClientPlugin.Patches.PathHandling;
 
@@ -43,25 +44,33 @@ public static class PathTranslation
 
         var home = Environment.GetEnvironmentVariable("HOME");
         if (string.IsNullOrEmpty(home))
+            home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (string.IsNullOrEmpty(home))
             home = "/home/" + user;
         home = home.TrimEnd('/');
 
         var homeBs = home.Replace('/', '\\');
 
-        var winSE = WindowsGameInstallPath;
         // Keep the real Linux user out of mod-visible paths.
         const string winUserSE = @"C:\users\steamuser\AppData\Roaming\SpaceEngineers";
         const string winUserHome = @"C:\users\steamuser";
         const string winTempDir = @"C:\users\steamuser\AppData\Local\Temp";
 
-        var list = new List<Mapping>
+        var list = new List<Mapping>();
+
+        // The install root the game itself runs from; every game-derived path is spelled
+        // relative to it, so no other install location can appear.
+        var gameRoot = MyFileSystem.RootPath;
+        if (!string.IsNullOrEmpty(gameRoot))
         {
-            new(homeBs + @"\.steam\steam\steamapps\common\SpaceEngineers", winSE),
-            new(homeBs + @"\.steam\debian-installation\steamapps\common\SpaceEngineers", winSE),
-            new(homeBs + @"\.config\SpaceEngineers", winUserSE),
-            new(@"\tmp", winTempDir),
-            new(homeBs, winUserHome),
-        };
+            gameRoot = gameRoot.TrimEnd('/', '\\');
+            if (gameRoot.Length > 0)
+                list.Add(new(gameRoot.Replace('/', '\\'), WindowsGameInstallPath));
+        }
+
+        list.Add(new(homeBs + @"\.config\SpaceEngineers", winUserSE));
+        list.Add(new(@"\tmp", winTempDir));
+        list.Add(new(homeBs, winUserHome));
 
         list.Sort((a, b) => b.KeyNoDrive.Length - a.KeyNoDrive.Length);
         s_mappings = list.ToArray();
