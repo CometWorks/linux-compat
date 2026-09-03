@@ -6,6 +6,8 @@ using ClientPlugin.Audio;
 using ClientPlugin.Compatibility;
 using FFmpeg.AutoGen;
 using SharpDX.Multimedia;
+using VRage.FileSystem;
+using VRage.Utils;
 
 namespace VRage.Audio;
 
@@ -64,7 +66,24 @@ internal static unsafe class MySdlAudioInterop
         EnsureInitialized();
         if (!File.Exists(path))
         {
-            throw new FileNotFoundException("Audio file was not found.", path);
+            // Mod audio can sit inside a _legacy.bin workshop archive, where the
+            // path has no filesystem representation; only the game's virtual
+            // filesystem (MyZipFileProvider) can open such members.
+            byte[] virtualData = TryReadVirtualFile(path);
+            if (virtualData == null)
+            {
+                throw new FileNotFoundException("Audio file was not found.", path);
+            }
+            byte[] decoded = MyFfmpegAudioInterop.LoadAudioBytes(
+                virtualData,
+                path,
+                out waveFormat
+            );
+            MyLog.Default?.WriteLine(
+                $"[LinuxCompat] Loaded audio through the virtual file system: '{path}' "
+                    + $"({virtualData.Length} bytes -> {decoded.Length} PCM bytes)"
+            );
+            return decoded;
         }
         string extension = Path.GetExtension(path);
         // Some mods ship xWMA data in files named .wav, which SDL_LoadWAV rejects
@@ -76,6 +95,20 @@ internal static unsafe class MySdlAudioInterop
             return LoadWavFile(path, out waveFormat);
         }
         return MyFfmpegAudioInterop.LoadAudioFile(path, out waveFormat);
+    }
+
+    private static byte[] TryReadVirtualFile(string path)
+    {
+        using Stream stream = MyFileSystem.OpenRead(path);
+        if (stream == null)
+        {
+            return null;
+        }
+        using MemoryStream buffer = new MemoryStream(
+            stream.CanSeek ? checked((int)stream.Length) : 0
+        );
+        stream.CopyTo(buffer);
+        return buffer.ToArray();
     }
 
     private static bool IsRiffWave(string path)
@@ -235,6 +268,23 @@ internal static unsafe class MyFfmpegAudioInterop
 {
     private static readonly int Eagain = ffmpeg.AVERROR(11);
 
+    private static readonly int Einval = ffmpeg.AVERROR(22);
+
+    private const int AvioBufferSize = 65536;
+
+    // FFmpeg holds raw function pointers to these delegates for the lifetime of
+    // the AVIOContext; the static references keep the GC from collecting them.
+    private static readonly avio_alloc_context_read_packet ReadPacketCallback = ReadPacket;
+
+    private static readonly avio_alloc_context_seek SeekCallback = Seek;
+
+    private sealed class MemoryReaderState
+    {
+        public byte[] Data;
+
+        public int Position;
+    }
+
     public static byte[] LoadAudioFile(string path, out WaveFormat waveFormat)
     {
         AVFormatContext* formatContext = null;
@@ -244,56 +294,177 @@ internal static unsafe class MyFfmpegAudioInterop
         );
         try
         {
-            ThrowIfError(
-                ffmpeg.avformat_find_stream_info(formatContext, null),
-                $"read stream info for '{path}'"
-            );
-            AVCodec* codec = null;
-            int streamIndex = ffmpeg.av_find_best_stream(
-                formatContext,
-                AVMediaType.AVMEDIA_TYPE_AUDIO,
-                -1,
-                -1,
-                &codec,
-                0
-            );
-            ThrowIfError(streamIndex, $"find audio stream in '{path}'");
-            AVCodecContext* codecContext = ffmpeg.avcodec_alloc_context3(codec);
-            if (codecContext == null)
-            {
-                throw new InvalidOperationException(
-                    $"FFmpeg failed to allocate codec context for '{path}'."
-                );
-            }
-            try
-            {
-                ThrowIfError(
-                    ffmpeg.avcodec_parameters_to_context(
-                        codecContext,
-                        formatContext->streams[streamIndex]->codecpar
-                    ),
-                    $"copy codec parameters for '{path}'"
-                );
-                ThrowIfError(
-                    ffmpeg.avcodec_open2(codecContext, codec, null),
-                    $"open decoder for '{path}'"
-                );
-                return DecodeAudioStream(
-                    path,
-                    formatContext,
-                    streamIndex,
-                    codecContext,
-                    out waveFormat
-                );
-            }
-            finally
-            {
-                ffmpeg.avcodec_free_context(&codecContext);
-            }
+            return DecodeOpenedInput(formatContext, path, out waveFormat);
         }
         finally
         {
             ffmpeg.avformat_close_input(&formatContext);
+        }
+    }
+
+    public static byte[] LoadAudioBytes(byte[] data, string path, out WaveFormat waveFormat)
+    {
+        FfmpegBindings.EnsureInitialized();
+        var state = new MemoryReaderState { Data = data };
+        var stateHandle = GCHandle.Alloc(state);
+        AVIOContext* avio = null;
+        try
+        {
+            byte* avioBuffer = (byte*)ffmpeg.av_malloc(AvioBufferSize);
+            if (avioBuffer == null)
+            {
+                throw new InvalidOperationException(
+                    $"FFmpeg failed to allocate an I/O buffer for '{path}'."
+                );
+            }
+            avio = ffmpeg.avio_alloc_context(
+                avioBuffer,
+                AvioBufferSize,
+                0,
+                (void*)GCHandle.ToIntPtr(stateHandle),
+                ReadPacketCallback,
+                null,
+                SeekCallback
+            );
+            if (avio == null)
+            {
+                ffmpeg.av_free(avioBuffer);
+                throw new InvalidOperationException(
+                    $"FFmpeg failed to allocate an I/O context for '{path}'."
+                );
+            }
+            AVFormatContext* formatContext = ffmpeg.avformat_alloc_context();
+            if (formatContext == null)
+            {
+                throw new InvalidOperationException(
+                    $"FFmpeg failed to allocate a format context for '{path}'."
+                );
+            }
+            formatContext->pb = avio;
+            // The caller owns a custom AVIOContext; keep close_input off it.
+            formatContext->flags |= ffmpeg.AVFMT_FLAG_CUSTOM_IO;
+            // On failure avformat_open_input frees the format context itself.
+            ThrowIfError(
+                ffmpeg.avformat_open_input(&formatContext, path, null, null),
+                $"open in-memory audio '{path}'"
+            );
+            try
+            {
+                return DecodeOpenedInput(formatContext, path, out waveFormat);
+            }
+            finally
+            {
+                ffmpeg.avformat_close_input(&formatContext);
+            }
+        }
+        finally
+        {
+            if (avio != null)
+            {
+                // FFmpeg may have replaced the buffer allocated above.
+                ffmpeg.av_freep(&avio->buffer);
+                ffmpeg.avio_context_free(&avio);
+            }
+            stateHandle.Free();
+        }
+    }
+
+    private static int ReadPacket(void* opaque, byte* buffer, int bufferSize)
+    {
+        try
+        {
+            var state = (MemoryReaderState)GCHandle.FromIntPtr((IntPtr)opaque).Target;
+            int remaining = state.Data.Length - state.Position;
+            if (remaining <= 0)
+            {
+                return ffmpeg.AVERROR_EOF;
+            }
+            int count = Math.Min(remaining, bufferSize);
+            Marshal.Copy(state.Data, state.Position, (IntPtr)buffer, count);
+            state.Position += count;
+            return count;
+        }
+        catch
+        {
+            // Exceptions must not unwind into native FFmpeg frames.
+            return Einval;
+        }
+    }
+
+    private static long Seek(void* opaque, long offset, int whence)
+    {
+        try
+        {
+            var state = (MemoryReaderState)GCHandle.FromIntPtr((IntPtr)opaque).Target;
+            if (whence == ffmpeg.AVSEEK_SIZE)
+            {
+                return state.Data.Length;
+            }
+            long target = (whence & ~ffmpeg.AVSEEK_FORCE) switch
+            {
+                0 => offset, // SEEK_SET
+                1 => state.Position + offset, // SEEK_CUR
+                2 => state.Data.Length + offset, // SEEK_END
+                _ => -1,
+            };
+            if (target < 0 || target > state.Data.Length)
+            {
+                return Einval;
+            }
+            state.Position = (int)target;
+            return target;
+        }
+        catch
+        {
+            return Einval;
+        }
+    }
+
+    private static byte[] DecodeOpenedInput(
+        AVFormatContext* formatContext,
+        string path,
+        out WaveFormat waveFormat
+    )
+    {
+        ThrowIfError(
+            ffmpeg.avformat_find_stream_info(formatContext, null),
+            $"read stream info for '{path}'"
+        );
+        AVCodec* codec = null;
+        int streamIndex = ffmpeg.av_find_best_stream(
+            formatContext,
+            AVMediaType.AVMEDIA_TYPE_AUDIO,
+            -1,
+            -1,
+            &codec,
+            0
+        );
+        ThrowIfError(streamIndex, $"find audio stream in '{path}'");
+        AVCodecContext* codecContext = ffmpeg.avcodec_alloc_context3(codec);
+        if (codecContext == null)
+        {
+            throw new InvalidOperationException(
+                $"FFmpeg failed to allocate codec context for '{path}'."
+            );
+        }
+        try
+        {
+            ThrowIfError(
+                ffmpeg.avcodec_parameters_to_context(
+                    codecContext,
+                    formatContext->streams[streamIndex]->codecpar
+                ),
+                $"copy codec parameters for '{path}'"
+            );
+            ThrowIfError(
+                ffmpeg.avcodec_open2(codecContext, codec, null),
+                $"open decoder for '{path}'"
+            );
+            return DecodeAudioStream(path, formatContext, streamIndex, codecContext, out waveFormat);
+        }
+        finally
+        {
+            ffmpeg.avcodec_free_context(&codecContext);
         }
     }
 
