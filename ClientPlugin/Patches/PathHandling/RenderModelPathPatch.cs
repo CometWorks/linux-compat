@@ -6,6 +6,18 @@ using VRage.Render11.GeometryStage2.StaticGroup;
 namespace ClientPlugin.Patches.PathHandling;
 
 // Canonical paths keep renderer instance reloads and model data string-identical.
+//
+// MyModelFactory dedups models by MyMwmUtils.GetFullMwmFilepath, which on Linux
+// resolves separators and casing against the disk, but the dummy-to-real swap after an
+// async load matches instances by the exact string the load was started with. Two
+// spellings of one file then share a factory entry while only instances of the first
+// spelling get the real model; the rest keep the invisible loading dummy forever.
+// Mapping every ingress path to the factory's own key makes both strings equal.
+//
+// Seen with the vicinity preload from a Windows server: it sends the models of fat
+// blocks near the player as "Models\Cubes\...", while mod definitions that reuse a
+// vanilla model hold the normalized "Models/Cubes/..." on this client. Blocks created
+// before the preload finishes stay invisible.
 static class RenderModelPathCanonicalizer
 {
     public static void Canonicalize(ref string path)
@@ -21,6 +33,8 @@ static class RenderModelPathCanonicalizer
         {
             path = PathTranslation.Untranslate(path.Replace('\\', '/'));
         }
+
+        path = MyMwmUtils.GetFullMwmFilepath(path);
     }
 }
 
