@@ -14,7 +14,7 @@ using VRageRender;
 
 namespace ClientPlugin.Compatibility;
 
-internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, IMyImeProcessor
+internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 {
     private const string Lib = "libSDL3.so";
 
@@ -65,9 +65,8 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
     private int m_mouseWheel;
     private bool m_isVisible = true;
     private bool m_isActive = true;
-    private bool m_textControlFocused;
     private bool m_textInputActive;
-    private IVRageGuiScreen m_imeScreen;
+    private int m_textInputPollCountdown;
     private bool m_presentEnabled;
     private bool m_mouseCapture;
     private bool m_showCursor = true;
@@ -827,7 +826,6 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
         FlushPendingConfigSave(force: true);
         SdlRenderThread.Invoke(() =>
         {
-            UpdateTextInput();
             SdlRenderThread.EventHandler -= HandleEvent;
             SdlRenderThread.MouseSnapshotCallback = null;
             DestroyNativeWindow();
@@ -843,65 +841,30 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
     public void UpdateMainThread()
     {
         FlushPendingConfigSave();
-    }
-
-    bool IMyImeProcessor.IsComposing => false;
-
-    void IMyImeProcessor.Activate(IMyImeActiveControl textElement) => SetTextControlFocused(true);
-
-    void IMyImeProcessor.Deactivate() => SetTextControlFocused(false);
-
-    void IMyImeProcessor.RegisterActiveScreen(IVRageGuiScreen screen) => SetImeScreen(screen);
-
-    void IMyImeProcessor.UnregisterActiveScreen(IVRageGuiScreen screen)
-    {
-        if (ReferenceEquals(m_imeScreen, screen))
-            SetImeScreen(null);
-    }
-
-    void IMyImeProcessor.RecaptureTopScreen(IVRageGuiScreen screenWithFocus) =>
-        SetImeScreen(screenWithFocus);
-
-    void IMyImeProcessor.ProcessInvoke() { }
-
-    void IMyImeProcessor.CaretRepositionReaction() { }
-
-    private void SetImeScreen(IVRageGuiScreen screen)
-    {
-        if (ReferenceEquals(m_imeScreen, screen))
+        if (m_textInputPollCountdown-- > 0)
             return;
+        m_textInputPollCountdown = 9;
 
-        m_imeScreen = screen;
-        SetTextControlFocused(
-            screen != null && MyScreenManager.FocusedControl is IMyImeActiveControl
-        );
-    }
-
-    private void SetTextControlFocused(bool focused)
-    {
-        SdlRenderThread.Dispatch(() =>
-        {
-            m_textControlFocused = focused;
-            UpdateTextInput();
-        });
-    }
-
-    private void UpdateTextInput()
-    {
         // SDL text input enables the compositor's input method. Keep it off
-        // whenever gameplay, another window, or a hidden game window has focus.
-        bool needsTextInput = m_textControlFocused && m_isVisible && m_isActive;
+        // during gameplay so physical keys reach the game as key events.
+        bool needsTextInput =
+            m_isVisible
+            && Volatile.Read(ref m_isActive)
+            && MyScreenManager.FocusedControl is IMyImeActiveControl;
         if (needsTextInput == m_textInputActive)
             return;
 
-        if (Handle == IntPtr.Zero)
-            return;
-
-        if (needsTextInput)
-            SDL_StartTextInput(Handle);
-        else
-            SDL_StopTextInput(Handle);
         m_textInputActive = needsTextInput;
+        SdlRenderThread.Dispatch(() =>
+        {
+            if (Handle == IntPtr.Zero)
+                return;
+
+            if (needsTextInput)
+                SDL_StartTextInput(Handle);
+            else
+                SDL_StopTextInput(Handle);
+        });
     }
 
     public void SetCursor(Stream stream) { }
@@ -916,7 +879,6 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
         {
             if (Handle == IntPtr.Zero || !SDL_ShowWindow(Handle))
                 return false;
-            UpdateTextInput();
             if (!SdlRenderThread.IsWayland)
                 return true;
             if (!SDL_SyncWindow(Handle))
@@ -949,7 +911,6 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
         Volatile.Write(ref m_presentEnabled, false);
         SdlRenderThread.Dispatch(() =>
         {
-            UpdateTextInput();
             if (Handle != IntPtr.Zero)
                 SDL_HideWindow(Handle);
         });
@@ -1122,12 +1083,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
                 break;
             case SDL_EVENT_WINDOW_FOCUS_GAINED:
                 m_isActive = true;
-                UpdateTextInput();
                 RecenterCursorIfOutsideWindow();
                 break;
             case SDL_EVENT_WINDOW_FOCUS_LOST:
                 m_isActive = false;
-                UpdateTextInput();
                 break;
             case SDL_EVENT_WINDOW_MOUSE_ENTER:
                 lock (m_bufferLock)
