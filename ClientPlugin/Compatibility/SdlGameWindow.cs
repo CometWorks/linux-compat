@@ -66,6 +66,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     private bool m_isVisible = true;
     private bool m_isActive = true;
     private bool m_textInputActive;
+    private int m_textInputPollCountdown;
     private bool m_presentEnabled;
     private bool m_mouseCapture;
     private bool m_showCursor = true;
@@ -840,6 +841,9 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     public void UpdateMainThread()
     {
         FlushPendingConfigSave();
+        if (m_textInputPollCountdown-- > 0)
+            return;
+        m_textInputPollCountdown = 9;
 
         // SDL text input enables the compositor's input method. Keep it off
         // during gameplay so physical keys reach the game as key events.
