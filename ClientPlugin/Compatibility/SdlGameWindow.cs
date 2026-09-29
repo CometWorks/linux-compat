@@ -14,7 +14,7 @@ using VRageRender;
 
 namespace ClientPlugin.Compatibility;
 
-internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
+internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, IMyImeProcessor
 {
     private const string Lib = "libSDL3.so";
 
@@ -66,6 +66,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     private bool m_isVisible = true;
     private bool m_isActive = true;
     private bool m_textInputActive;
+    private IVRageGuiScreen m_imeScreen;
     private bool m_presentEnabled;
     private bool m_mouseCapture;
     private bool m_showCursor = true;
@@ -840,13 +841,42 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     public void UpdateMainThread()
     {
         FlushPendingConfigSave();
+    }
 
-        // SDL text input enables the compositor's input method. Keep it off
-        // during gameplay so physical keys reach the game as key events.
-        bool needsTextInput =
-            m_isVisible
-            && Volatile.Read(ref m_isActive)
-            && MyScreenManager.FocusedControl is IMyImeActiveControl;
+    bool IMyImeProcessor.IsComposing => false;
+
+    void IMyImeProcessor.Activate(IMyImeActiveControl textElement) => SetTextInputActive(true);
+
+    void IMyImeProcessor.Deactivate() => SetTextInputActive(false);
+
+    void IMyImeProcessor.RegisterActiveScreen(IVRageGuiScreen screen) => SetImeScreen(screen);
+
+    void IMyImeProcessor.UnregisterActiveScreen(IVRageGuiScreen screen)
+    {
+        if (ReferenceEquals(m_imeScreen, screen))
+            SetImeScreen(null);
+    }
+
+    void IMyImeProcessor.RecaptureTopScreen(IVRageGuiScreen screenWithFocus) =>
+        SetImeScreen(screenWithFocus);
+
+    void IMyImeProcessor.ProcessInvoke() { }
+
+    void IMyImeProcessor.CaretRepositionReaction() { }
+
+    private void SetImeScreen(IVRageGuiScreen screen)
+    {
+        if (ReferenceEquals(m_imeScreen, screen))
+            return;
+
+        m_imeScreen = screen;
+        SetTextInputActive(MyScreenManager.FocusedControl is IMyImeActiveControl);
+    }
+
+    private void SetTextInputActive(bool needsTextInput)
+    {
+        // SDL text input enables the compositor's input method. Follow the
+        // game's text-control focus callbacks instead of enabling it in gameplay.
         if (needsTextInput == m_textInputActive)
             return;
 

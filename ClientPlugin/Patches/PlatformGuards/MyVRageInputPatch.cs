@@ -20,6 +20,17 @@ static class MyVRagePlatformInput2Patch
     }
 }
 
+[HarmonyPatch(typeof(MyVRagePlatform), "get_ImeProcessor")]
+[HarmonyPatchCategory("Finish")]
+static class MyVRagePlatformImeProcessorPatch
+{
+    static bool Prefix(ref IMyImeProcessor __result)
+    {
+        __result = SdlInput2Provider.Instance;
+        return false;
+    }
+}
+
 static class SdlInput2Provider
 {
     // The SDL3 game window, when rendering. Stays null under PULSAR_NO_RENDER,
