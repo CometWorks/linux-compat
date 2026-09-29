@@ -65,6 +65,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
     private int m_mouseWheel;
     private bool m_isVisible = true;
     private bool m_isActive = true;
+    private bool m_textControlFocused;
     private bool m_textInputActive;
     private IVRageGuiScreen m_imeScreen;
     private bool m_presentEnabled;
@@ -826,6 +827,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
         FlushPendingConfigSave(force: true);
         SdlRenderThread.Invoke(() =>
         {
+            UpdateTextInput();
             SdlRenderThread.EventHandler -= HandleEvent;
             SdlRenderThread.MouseSnapshotCallback = null;
             DestroyNativeWindow();
@@ -845,9 +847,9 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
 
     bool IMyImeProcessor.IsComposing => false;
 
-    void IMyImeProcessor.Activate(IMyImeActiveControl textElement) => SetTextInputActive(true);
+    void IMyImeProcessor.Activate(IMyImeActiveControl textElement) => SetTextControlFocused(true);
 
-    void IMyImeProcessor.Deactivate() => SetTextInputActive(false);
+    void IMyImeProcessor.Deactivate() => SetTextControlFocused(false);
 
     void IMyImeProcessor.RegisterActiveScreen(IVRageGuiScreen screen) => SetImeScreen(screen);
 
@@ -870,27 +872,36 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
             return;
 
         m_imeScreen = screen;
-        SetTextInputActive(MyScreenManager.FocusedControl is IMyImeActiveControl);
+        SetTextControlFocused(
+            screen != null && MyScreenManager.FocusedControl is IMyImeActiveControl
+        );
     }
 
-    private void SetTextInputActive(bool needsTextInput)
+    private void SetTextControlFocused(bool focused)
     {
-        // SDL text input enables the compositor's input method. Follow the
-        // game's text-control focus callbacks instead of enabling it in gameplay.
+        SdlRenderThread.Dispatch(() =>
+        {
+            m_textControlFocused = focused;
+            UpdateTextInput();
+        });
+    }
+
+    private void UpdateTextInput()
+    {
+        // SDL text input enables the compositor's input method. Keep it off
+        // whenever gameplay, another window, or a hidden game window has focus.
+        bool needsTextInput = m_textControlFocused && m_isVisible && m_isActive;
         if (needsTextInput == m_textInputActive)
             return;
 
-        m_textInputActive = needsTextInput;
-        SdlRenderThread.Dispatch(() =>
-        {
-            if (Handle == IntPtr.Zero)
-                return;
+        if (Handle == IntPtr.Zero)
+            return;
 
-            if (needsTextInput)
-                SDL_StartTextInput(Handle);
-            else
-                SDL_StopTextInput(Handle);
-        });
+        if (needsTextInput)
+            SDL_StartTextInput(Handle);
+        else
+            SDL_StopTextInput(Handle);
+        m_textInputActive = needsTextInput;
     }
 
     public void SetCursor(Stream stream) { }
@@ -905,6 +916,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
         {
             if (Handle == IntPtr.Zero || !SDL_ShowWindow(Handle))
                 return false;
+            UpdateTextInput();
             if (!SdlRenderThread.IsWayland)
                 return true;
             if (!SDL_SyncWindow(Handle))
@@ -937,6 +949,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
         Volatile.Write(ref m_presentEnabled, false);
         SdlRenderThread.Dispatch(() =>
         {
+            UpdateTextInput();
             if (Handle != IntPtr.Zero)
                 SDL_HideWindow(Handle);
         });
@@ -1109,10 +1122,12 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2, I
                 break;
             case SDL_EVENT_WINDOW_FOCUS_GAINED:
                 m_isActive = true;
+                UpdateTextInput();
                 RecenterCursorIfOutsideWindow();
                 break;
             case SDL_EVENT_WINDOW_FOCUS_LOST:
                 m_isActive = false;
+                UpdateTextInput();
                 break;
             case SDL_EVENT_WINDOW_MOUSE_ENTER:
                 lock (m_bufferLock)
