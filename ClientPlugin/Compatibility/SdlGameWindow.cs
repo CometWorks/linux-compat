@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using ClientPlugin.Patches.WindowManagement;
+using Sandbox.Graphics.GUI;
 using Steamworks;
 using VRage;
 using VRage.Input;
@@ -64,6 +65,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     private int m_mouseWheel;
     private bool m_isVisible = true;
     private bool m_isActive = true;
+    private bool m_textInputActive;
     private bool m_presentEnabled;
     private bool m_mouseCapture;
     private bool m_showCursor = true;
@@ -376,7 +378,6 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             SDL_SetWindowPosition(Handle, initialX.Value, initialY.Value);
             m_savedWindowedPosition = new Vector2I(initialX.Value, initialY.Value);
         }
-        SDL_StartTextInput(Handle);
         UpdateMouseModeOnRenderThread();
 
         RefreshWindowMetrics();
@@ -839,6 +840,27 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     public void UpdateMainThread()
     {
         FlushPendingConfigSave();
+
+        // SDL text input enables the compositor's input method. Keep it off
+        // during gameplay so physical keys reach the game as key events.
+        bool needsTextInput =
+            m_isVisible
+            && Volatile.Read(ref m_isActive)
+            && MyScreenManager.FocusedControl is IMyImeActiveControl;
+        if (needsTextInput == m_textInputActive)
+            return;
+
+        m_textInputActive = needsTextInput;
+        SdlRenderThread.Dispatch(() =>
+        {
+            if (Handle == IntPtr.Zero)
+                return;
+
+            if (needsTextInput)
+                SDL_StartTextInput(Handle);
+            else
+                SDL_StopTextInput(Handle);
+        });
     }
 
     public void SetCursor(Stream stream) { }
@@ -1523,6 +1545,10 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     [DllImport(Lib, EntryPoint = "SDL_StartTextInput")]
     [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool SDL_StartTextInput(IntPtr window);
+
+    [DllImport(Lib, EntryPoint = "SDL_StopTextInput")]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static extern bool SDL_StopTextInput(IntPtr window);
 
     [DllImport(Lib, EntryPoint = "SDL_GetMouseState")]
     private static extern uint SDL_GetMouseState(out float x, out float y);
