@@ -1122,7 +1122,9 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 break;
             case SDL_EVENT_KEY_DOWN:
             case SDL_EVENT_KEY_UP:
-                var key = MapKeycode(sdlEvent.Keyboard.Key);
+                var key = SdlPhysicalKeys.Map(sdlEvent.Keyboard.Scancode);
+                if (key == MyKeys.None)
+                    key = MapKeycode(sdlEvent.Keyboard.Key);
                 SetKeyState(key, sdlEvent.Type == SDL_EVENT_KEY_DOWN);
                 ApplyModifierAliases();
                 // SDL3's SDL_EVENT_TEXT_INPUT only delivers printable characters,
