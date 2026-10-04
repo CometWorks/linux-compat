@@ -7,7 +7,7 @@
         <!-- Folder containing SpaceEngineersDedicated.exe -->
         <DS64></DS64>
 
-        <!-- Plugin loader folders for automatic deployment -->
+        <!-- Plugin loader folders to deploy into after each build (empty = no deployment) -->
         <Pulsar></Pulsar>
         <Magnetar></Magnetar>
 

@@ -12,17 +12,15 @@ them, copy its first `PropertyGroup` into `Directory.Build.props.user`
 fill in your paths.
 
 `Bin64` and `DS64` are auto-detected from Steam if left empty. `Pulsar` and
-`Magnetar` enable the post-build deployment into those plugin loader folders:
+`Magnetar` are never auto-detected. Leave them empty and load the working copy
+through a loader development source; a deployed copy shows up as a separate
+local plugin and can shadow the published one. Setting them, in the `.user`
+file or on the command line, enables the post-build deployment into those
+plugin loader folders:
 
 ```bash
-dotnet build LinuxCompat.sln -c Debug
+dotnet build LinuxCompat.sln -c Debug -p:Pulsar=$HOME/.config/Pulsar
 ```
-
-```bash
-dotnet build LinuxCompat.sln -c Debug -p:Pulsar= -p:Magnetar=
-```
-
-The second form builds without deploying.
 
 `Shared/` compiles into both `ClientPlugin` and `ServerPlugin`, so verify that
 both build. Format the code with `csharpier` before committing.
