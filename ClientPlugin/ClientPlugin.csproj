@@ -242,7 +242,7 @@
         <Error Condition="!Exists('$(Steamworks)/Steamworks.NET.dll')" Text="Specify Steamworks path!" />
         <Warning Condition="!Exists('$(Dependencies)')" Text="Plugin will fail at runtime without linux-dependencies!" />
         <Warning Condition="!Exists('$(Wrappers)')" Text="Plugin will fail at runtime without linux-native-wrappers!" />
-        <Warning Condition="'$(Pulsar)' == ''" Text="Skipping deployment due to unset Pulsar folder!" />
+        <Message Condition="'$(Pulsar)' == ''" Text="Pulsar is not set, the plugin will not be deployed." />
     </Target>
 
     <Target Name="DeployPlugin" AfterTargets="Build" Condition="'$(Pulsar)' != ''">
