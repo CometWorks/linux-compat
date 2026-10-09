@@ -179,3 +179,14 @@ launcher sets before any plugin runs, so the plugin knows nothing about Steam
 or where the game was installed. Matching accepts paths with or without the
 synthetic drive prefix, and the mapping is asymmetric, so both directions are
 tested in [tests/path-translation](../tests/path-translation/README.md).
+
+### Definition load order, `WindowsStringOrder`
+
+The game loads its definition files in the order `String.CompareTo` sorts their
+paths. That compare is culture-sensitive: Windows uses NLS and .NET on Linux uses
+ICU, which order punctuation differently (`LCDTextures_Economy.sbc` before
+`LCDTextures.sbc` on Linux, after it on Windows). The load order numbers things
+that cross the network by index, LCD images for one, so every peer has to load in
+the same order. `MyDefinitionManagerGetDefinitionBuildersPatch` re-sorts the files
+with `WindowsStringOrder`, an emulation of NLS word sort checked against Wine in
+[tests/definition-file-order](../tests/definition-file-order/README.md).
