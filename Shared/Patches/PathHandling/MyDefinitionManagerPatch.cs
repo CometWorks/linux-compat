@@ -105,6 +105,20 @@ static class MyDefinitionManagerLoadDefinitionsPatch
     }
 }
 
+// The definition files load in the order of their paths, sorted with String.CompareTo.
+// On Linux that compares with ICU, which orders punctuation unlike Windows: it loads
+// LCDTextures.sbc after LCDTextures_Economy.sbc. The load order numbers the LCD
+// images, and a selected image travels to the server as that number, so a Windows
+// server or player saw another image than the one picked (DIS-0001). Sort the way
+// Windows does instead.
+[HarmonyPatch(typeof(MyDefinitionManager), "GetDefinitionBuilders")]
+[HarmonyPatchCategory("Finish")]
+static class MyDefinitionManagerGetDefinitionBuildersPatch
+{
+    static void Postfix(List<Tuple<MyObjectBuilder_Definitions, string>> __result) =>
+        __result?.Sort((x, y) => WindowsStringOrder.ComparePaths(x.Item2, y.Item2));
+}
+
 // TransparentMaterials.sbc stores backslashes that Linux Path does not treat as separators.
 // Rewrite filename extraction without changing the public Texture value exposed to mods.
 [HarmonyPatch(typeof(MyDefinitionManager))]

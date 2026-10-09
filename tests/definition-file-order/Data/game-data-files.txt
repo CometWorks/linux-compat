@@ -1,0 +1,887 @@
+C:\SE\Content\Data\AIBehavior.sbc
+C:\SE\Content\Data\AmmoMagazines.sbc
+C:\SE\Content\Data\Ammos.sbc
+C:\SE\Content\Data\AnimationControllers\AC_Astronaut.sbc
+C:\SE\Content\Data\AnimationControllers\AC_Astronaut_Female.sbc
+C:\SE\Content\Data\AnimationControllers\AC_Debug.sbc
+C:\SE\Content\Data\AnimationControllers\AC_Spider.sbc
+C:\SE\Content\Data\AnimationControllers\AC_Wolf.sbc
+C:\SE\Content\Data\Animations.sbc
+C:\SE\Content\Data\Animations_Spider.sbc
+C:\SE\Content\Data\AssetModifiers\ArmorModifiers.sbc
+C:\SE\Content\Data\AssetModifiers\AssetModifiers.sbc
+C:\SE\Content\Data\AsteroidGenerators.sbc
+C:\SE\Content\Data\Audio.sbc
+C:\SE\Content\Data\Audio_gui.sbc
+C:\SE\Content\Data\Audio_music.sbc
+C:\SE\Content\Data\Audio_player.sbc
+C:\SE\Content\Data\Audio_shipSounds.sbc
+C:\SE\Content\Data\Audio_Weather.sbc
+C:\SE\Content\Data\AudioEffects.sbc
+C:\SE\Content\Data\BlockCategories.sbc
+C:\SE\Content\Data\BlockTags.sbc
+C:\SE\Content\Data\BlockVariantGroups.sbc
+C:\SE\Content\Data\BlueprintClasses.sbc
+C:\SE\Content\Data\BlueprintClasses_Food.sbc
+C:\SE\Content\Data\Blueprints.sbc
+C:\SE\Content\Data\Blueprints\Mission02_large_A.sbc
+C:\SE\Content\Data\Blueprints\Mission02_large_B.sbc
+C:\SE\Content\Data\Blueprints\Mission02_large_C.sbc
+C:\SE\Content\Data\Blueprints\Mission02_small_A.sbc
+C:\SE\Content\Data\Blueprints\Mission02_small_B.sbc
+C:\SE\Content\Data\Blueprints\Mission02_small_C.sbc
+C:\SE\Content\Data\Blueprints_Food.sbc
+C:\SE\Content\Data\Bots.sbc
+C:\SE\Content\Data\Characters.sbc
+C:\SE\Content\Data\Characters_Npc.sbc
+C:\SE\Content\Data\Components.sbc
+C:\SE\Content\Data\Configuration.sbc
+C:\SE\Content\Data\ContainerTypes.sbc
+C:\SE\Content\Data\ContractTypes_Economy.sbc
+C:\SE\Content\Data\ControllerSchemeGenericJoystick.sbc
+C:\SE\Content\Data\ControllerSchemes.sbc
+C:\SE\Content\Data\CubeBlocks\BlockPositions.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_ApexSurvivalPack.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Armor.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Armor_2.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Armor_3.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_ArmorPanels.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Automation.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Communications.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_ContactPack.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Control.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_CoreSystemsPack.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_DecorativePack.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_DecorativePack2.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_DecorativePack3.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Doors.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Economy.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Economy2Pack.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_EconomyDeluxe.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Energy.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Extras.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Fieldwork.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Frostbite.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Gravity.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_GridAIPack.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_IndustrialPack.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Interiors.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_LCDPanels.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Lights.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Logistics.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Mechanical.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Medical.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Production.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_ProsperityPack.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Prototech.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_ScrapRacePack.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_SignalsPack.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_SparksOfTheFuturePack.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Structural.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Symbols.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Thrusters.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Tools.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Utility.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Warfare1.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Warfare2.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Weapons.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Wheels.sbc
+C:\SE\Content\Data\CubeBlocks\CubeBlocks_Windows.sbc
+C:\SE\Content\Data\CubeBlocks\Testing.sbc
+C:\SE\Content\Data\Curves.sbc
+C:\SE\Content\Data\DebrisModels.sbc
+C:\SE\Content\Data\DebugEnvironmnentItemClasses.sbc
+C:\SE\Content\Data\DebugMenuSearchCache.sbc
+C:\SE\Content\Data\Decals.sbc
+C:\SE\Content\Data\Decals_trails.sbc
+C:\SE\Content\Data\DefinitionsToPreload.sbc
+C:\SE\Content\Data\DroneBehaviors.sbc
+C:\SE\Content\Data\DropContainers.sbc
+C:\SE\Content\Data\Edges.sbc
+C:\SE\Content\Data\EmissiveColors.sbc
+C:\SE\Content\Data\Emotes.sbc
+C:\SE\Content\Data\EntityComponents.sbc
+C:\SE\Content\Data\EntityContainers.sbc
+C:\SE\Content\Data\Environment.sbc
+C:\SE\Content\Data\Environment\EnvironmentModules.sbc
+C:\SE\Content\Data\Environment\PhysicalModelCollections.sbc
+C:\SE\Content\Data\Environment\PhysicalModels_Bushes.sbc
+C:\SE\Content\Data\Environment\PhysicalModels_Trees.sbc
+C:\SE\Content\Data\Environment\VoxelMapCollections.sbc
+C:\SE\Content\Data\EnvironmentItemClasses.sbc
+C:\SE\Content\Data\ExhaustEffects.sbc
+C:\SE\Content\Data\FactionIconTextures.sbc
+C:\SE\Content\Data\FactionNames.sbc
+C:\SE\Content\Data\Factions.sbc
+C:\SE\Content\Data\FactionStationAdverts.sbc
+C:\SE\Content\Data\FactionTypes.sbc
+C:\SE\Content\Data\flares.sbc
+C:\SE\Content\Data\Fonts.sbc
+C:\SE\Content\Data\Game\BankingSystem.sbc
+C:\SE\Content\Data\Game\DLCs.sbc
+C:\SE\Content\Data\Game\Game.sbc
+C:\SE\Content\Data\Game\SessionComponents.sbc
+C:\SE\Content\Data\Game\SessionComponents_AntiCheat.sbc
+C:\SE\Content\Data\Game\SessionComponents_Economy.sbc
+C:\SE\Content\Data\GasProperties.sbc
+C:\SE\Content\Data\GlobalEvents.sbc
+C:\SE\Content\Data\GoodAIControlHandTools.sbc
+C:\SE\Content\Data\GoodBot.sbc
+C:\SE\Content\Data\GuiTextures.sbc
+C:\SE\Content\Data\HandItems.sbc
+C:\SE\Content\Data\Hud\Default.sbc
+C:\SE\Content\Data\LCDTextures.sbc
+C:\SE\Content\Data\LCDTextures_Economy.sbc
+C:\SE\Content\Data\LCDTextures_Emotes.sbc
+C:\SE\Content\Data\LCDTextures_FrozenPack.sbc
+C:\SE\Content\Data\LCDTextures_HeavyIndustry.sbc
+C:\SE\Content\Data\LCDTextures_SoF.sbc
+C:\SE\Content\Data\MainMenuInventoryScenes.sbc
+C:\SE\Content\Data\MaterialProperties.sbc
+C:\SE\Content\Data\OffensiveWords.sbc
+C:\SE\Content\Data\Particles_B.sbc
+C:\SE\Content\Data\Particles_Weather.sbc
+C:\SE\Content\Data\PhysicalItems.sbc
+C:\SE\Content\Data\PhysicalItems_Food.sbc
+C:\SE\Content\Data\PhysicalMaterials.sbc
+C:\SE\Content\Data\PirateAntennas.sbc
+C:\SE\Content\Data\PlanetGeneratorDefinitions.sbc
+C:\SE\Content\Data\PlanetGeneratorDefinitions_ModExamples.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C00_Builder_Hauler.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C01_Builder_MUP.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C02_Builder_MobileShipyard.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C03_Builder_TugDrone.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C10_Mining_Carriage.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C11_Mining_Puller.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C12_Mining_Armed_Tender.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C13_Mining_SurveyDrone.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C20_Trade_PrivateSail.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C21_Trade_ConsignmentDrone.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C22_Trade_Merchant.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C23_Trade_SolarBarge.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C30_Military_Escort.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C32_Military_MissileFrigate.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C33_Military_Enforcer.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C34_Military_Munitions_Drone.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C40_Pirate_Vulture.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C41_Pirate_Carriage.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C42_Pirate_SalvageCarrier.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C43_Pirate_ScoutDrone.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C51_Derelict_Shuttle.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C52_Derelict_ObserverDrone.sbc
+C:\SE\Content\Data\Prefabs\CargoShips\C55_Derelict_CommercialHopper.sbc
+C:\SE\Content\Data\Prefabs\Drones\DA_Bastion.sbc
+C:\SE\Content\Data\Prefabs\Drones\DA_BullyBot.sbc
+C:\SE\Content\Data\Prefabs\Drones\DA_TripropAssaultDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DA_TwinTailedShiv.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Adjudicator.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Assault_Support.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_AutomatedGunShip.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Avenger.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Builder_CoilDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Builder_HullBreaker.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Builder_SentryDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_BumbleMissile.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_DemoDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Enforcer.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Factorum_RailDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_FactorumSpyDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Gunboat.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Gunboat_B.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Harbinger.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Military_GunnerDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Military_Missile2.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_MilitaryHeavyDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_MilitaryMissile.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Miner_DrifterDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_MiniMuleDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Mining_ForemanDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Mining_MiningDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_OldContainer.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_OldDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_OldSupplyModule.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_PerimeterDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Pirate_Bandit.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Pirate_Bruiser_A.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Pirate_Bruiser_R.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Pirate_Scavenger.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Pirate_Scimitar.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Pirate_ShakedownDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_PirateBeaconDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_PirateCorsair.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_PrivateerDrone.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Sentinel.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_SnubShipAutocannon.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_SnubShipGatling.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_SolarOrbiter_Patrolling.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Trade_SolarDefender.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_Trade_SolarOrbiter.sbc
+C:\SE\Content\Data\Prefabs\Drones\DS_TwinrailDrone.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Bounty\Bounty_AutomatedPatrolCraft.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Bounty\Bounty_D2Hauler.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Bounty\Bounty_MilitaryEnforcer.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Bounty\Bounty_MilitaryMissileFrigate.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Bounty\Bounty_PirateBulwarkHauler.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Bounty\Bounty_PirateHaulframe.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Bounty\Bounty_PirateHeavyTowship.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Bounty\Bounty_RogueWarden1.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Bounty\Bounty_RogueWarden2.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Bounty\Bounty_RookGunship.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Bounty\Bounty_SnubShipLeader.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_L_1.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_L_2.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_L_3.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_L_4.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_L_5.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_L_6.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_L_7.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_M_1.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_M_2.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_M_3.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_M_4.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_M_5.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_M_6.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_S_1.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_S_2.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_S_3.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_S_4.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_S_5.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_XL_1.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_XL_2.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_XL_3.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\HaulingContainers\HaulContainer_XL_4.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_Beacon.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_Beacon2.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_Comm.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_EscapePod.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_FuelTank.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_Lab.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_Mine.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_Observatory.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_OxygenFarm.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_OxygenModule.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_PerimeterGun.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_Satellite.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_Satellite2.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Repair\Repair_Surveyor.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_AbandonedFarm.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_AeroShuttle.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_BombSkiff.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_CargoFerry.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_EscapePod.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_FreighterAft.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_FreighterBridge.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_HydroProbe.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_IonShuttle.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_MoonHopper.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_OldProspector.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_PatrolCraft.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_RescueRover.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_RookGunship.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_Satellite.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_SmallHomestead.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Planetary_SmallTransport.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_AeroShuttle.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_Agripost.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_B980Wreck.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_BombSkiff.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_CargoFerry.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_EscapePod.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_FreighterBridge.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_HabModule.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_HydroProbe.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_IonShuttle.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_JackdawMk2.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_MoonHopper.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_OldProspector.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_PatrolCraft.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_RhinoMiner.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_RookGunship.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_Satellite.sbc
+C:\SE\Content\Data\Prefabs\Economy\Missions\Salvage\Salvage_Space_SmallTransport.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Missile_LM3LateralMissile.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Rover_LunarScoutMk2.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Rover_LunarScoutMk6.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Rover_OR7Graveler.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_AmbassadorExplorer.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_B60BulkFreighter.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_B980Hauler.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_BuddyMiner.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_CivicHauler.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_CR2Shrike.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_H01Prospector.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_H01Sapper.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_H04Advanced.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_H1IndustrialCorvette.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_H2BulwarkHauler.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_HaulFrameC.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_HaulFrameJ.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_HeavyModuleFreighter.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_HF3NarrowframeFreighter.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_HorizonForge.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_HullBreaker.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_Jackdaw.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_JClassCourier.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_KiteMiner.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_LightSupplyCraft.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_LunarArk.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_MiniMerchant.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_Pirate_CR2Shrike.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_Pirate_HaulFrameJ.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_Pirate_HullBreaker.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_Pirate_JClassCourier.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_Pirate_MiniMerchant.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_Pirate_RookGunship.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_R3StartSkiff.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_RhinoMiner.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_RookGunship.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_RST6Salvador.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_SnubShip.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_TIon.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_TurtleMiner.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_TwinRailDrone.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_WardenStrikeCraft.sbc
+C:\SE\Content\Data\Prefabs\Economy\Sales\Eco_Ship_WaylineSutler.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_Outpost_10.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_Outpost_11.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_Outpost_11_Pirate.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_Outpost_12.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_Outpost_12_Pirate.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_Outpost_13.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_Outpost_13_Pirate.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_Outpost_14.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_SpaceStation_10.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_SpaceStation_11.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_SpaceStation_11_Pirate.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_SpaceStation_12.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_SpaceStation_13.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_SpaceStation_14.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_SpaceStation_14_Pirate.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_SpaceStation_15.sbc
+C:\SE\Content\Data\Prefabs\Economy\Stations\Economy_SpaceStation_15_Pirate.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_Ambush.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_AmbushB.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_BioResearch.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_BioResearchB.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_DroneDepotA.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_DroneDepotB.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_FactorumWarship.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_FactorumWarshipB.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_FactorumWarshipC.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_FactorumWarshipD.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_HighProfileTransport.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_HighProfileTransportB.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_ListeningPost.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_ListeningPostB.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_ListeningPostC.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_LogisticsFacility.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_LogisticsFacilityB.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_StorageFacility.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GE_StorageFacilityB.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\DS_M2_Barrage.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_Debris_Ambush.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_Debris_Tube.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_DroneRelayA.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_DroneRelayB.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_DroneRelayC.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_FactorumGunPlatform_A.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_FactorumGunPlatform_B.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_FactorumGunPlatform_C.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_FreightPlateA.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_FreightPlateB.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_Mine.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_Reclaimer.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_SmallShipyard.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_SmallShipyard_Empty.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_ZoneSubStationA.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_ZoneSubStationB.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_ZoneSubStationC.sbc
+C:\SE\Content\Data\Prefabs\GlobalEncounters\GlobalSubEncounters\HighProfileEscort.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\(DL._Inc)_Defender_Drone_MK_I.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\(DL._Inc)_Defender_Drone_Mk_II.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\(DL._Inc)_Grinder_Drone_Mk_I.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\(DL._Inc)_Grinder_Drone_Mk_II.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\(DL._Inc)_Mining_Drone_MK_I.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\(DL._Inc)_Mining_Drone_Mk_II.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\(DL._Inc)_Welder_Drone_Mk_I.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\(DL._Inc)_Welder_Drone_Mk_II.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\[O-S-L-E]_Enforcer.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Ablator.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\AlienEasyStation.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\AlienLander.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Arke_Supply_Ship.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Armed_Transport_Charon.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\ASM-2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Assailant_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Atmospheric_Miner_mk.2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\AtmosphericLander.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Barb_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Base1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Base4.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\BaseEasyStart1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\BaseLoneSurvivor.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Buggy.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Bumblebee.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Camera_Creep_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Cargo_Buddy_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\CargoShip.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Carrier_[Infinity].sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\CarrierShipProjector.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Civil_Station.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Combatant mk.1_13 Weapons Ready.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Commercial_Salvager.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Computer_Part_Factory_(No_Mods).sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\ConstructionShip.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Constructor_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\ContainerSpaceSmall1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Deterrent_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Dread_Hulk_Nefarious_[A2-9604-p].sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Drifting_Pursuant_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Drill_Ship_Moon_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Drillbot_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\DSF3_Duchessa.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\EarthEasyStation.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\EasyStartPirate.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\EasyStartSpacePirate.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Missions\Escort B-980.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Missions\Escort Freighter.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Missions\Escort HydroTanker.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Missions\Escort Mining1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Missions\Escort Mining2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Missions\Escort Trade1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Missions\Escort Trade2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Missions\Escort Trade3.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Missions\Escort TT-420.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Aggressive Miner.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Atmo Constructor.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\ATV-Survivor.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\B-60 Bulk Freighter.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\B-980 Hauler.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Blue Ambassador Explorer.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Buddy Miner.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Burstfire Bomber.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Cargo Shuttle.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Civic Hauler.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Cursor.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Fighter2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Gerbil Miner.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\H-01 Prospector.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\H-01 Sapper.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Hydro Scout Rover.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Ion Constructor.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Ion Light Scout.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Ion Tug Ship.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\J-Class Courier.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Kite Miner.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\LCC-3 Freighter.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Lunar Scout mk.2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Lunar Scout mk.4.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\MinerSmallShip.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\MiniMerchant.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\PV-4 Buggy.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Red Cruiser.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Rescue Rover 1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\RespawnShip.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Scout Miner.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Solar Scout.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\T-Ion Fade.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\TT-15 Freighter.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\TT-420 Freighter.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\Turtle Miner.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Sales\U-92 Patrol Craft.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_MiningStation_1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_MiningStation_2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_MiningStation_3.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_OrbitalStation_1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_OrbitalStation_2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_OrbitalStation_3.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_OrbitalStation_4.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_OrbitalStation_5.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_OrbitalStation_6.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_OrbitalStation_7.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_Outpost_1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_Outpost_2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_Outpost_3.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_Outpost_4.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_Outpost_5.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_Outpost_6.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_Outpost_7.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_Outpost_8.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_Outpost_9.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_SpaceStation_1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_SpaceStation_2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_SpaceStation_3.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_SpaceStation_4.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Economy\Stations\Economy_SpaceStation_5.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Ambasador A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Ambasador B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Blue frame.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Citadel Station.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Corvette A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Corvette B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Debris A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Debris B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Droneyard.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Ghoul Corvette A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Ghoul Corvette B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Ghoul Corvette C.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Habitat Pods.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Haunted Section.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter HEC Debris A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter HEC Debris B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Hermit Station.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Homing beacon.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Hydro Tanker.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Imp A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Imp B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Industrial Ship A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Industrial Ship B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Mercenary Wreckage.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Mercenary.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Minefield.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Minelayer.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Mining Outpost.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Mining Vessel.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter MushStation A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter MushStation B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Pilgrim A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Pilgrim B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Pirate Raider.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Ponos-F1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Prometheus A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Prometheus B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Red A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Red B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter RespawnShip.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter RoidStation.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter RS-1217 Transporter A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter RS-1217 Transporter B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Safehouse station.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Salvage station.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Section-F.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Severed Bow.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Shuttle.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Skyheart A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Skyheart B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Stealth pirate station.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Stingray II A.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Stingray II B.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Encounter Vulture vessel.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Enforcer_mk.2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Explorer.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Fighter.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Fleeting_Rival_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\GLU_Jaguar_B-1,_light_Interceptor.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\GLU_Mule_A-1,_light_Freighter.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\GM2-411_Combat_Destroyer.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Grindbot_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Hostile Miner.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Hydrogen_Test_Drone.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\IMDC_Cerberus_Destroyer_Mk.3.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\IMDC_Defense_Platform_NPC.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\IMDC_Vulture_Fighter_Bomber.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Informant_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Kestral-Class_Assault_Fighter.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Large_Ship_1360.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\LargeShipBlue.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\LargeShipRed.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\LargeShipRedBuilding.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\LargeShipRedCrashed.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\LargeShipRedQS1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\LargeShipUnderConstruction.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Light patrol drone.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Longsword_Mk._9S.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\MarsEasyStation.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\MarsLander.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Medium-Sized_Explorer_Christine.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Military1_Legacy.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Military2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Military3.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Mining1Legacy.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Mining2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Mining3.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\MoonEasyStation.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\NewLargeShipPrefab.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\NewLargeShipPrefabSurvival.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\NewSmallShipPrefab.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\NewSmallShipPrefabSurvival.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\NewStationPrefab.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\NewStationPrefabSurvival.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Old Mining Drone.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Ore_Detection_Station_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\PatrolBot.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Penguin_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Pirate_Base_Large_mk.2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Pirate_Base_Medium_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\PirateBase.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Pitbull_Bomber.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Plataforma_1000.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Platform_417.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Platform_5546.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Platform_6572.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Platform_6674.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Platform_7912.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Platform_8820.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Platform_9178.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Platform4328.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\PractiseShip.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Projector_large_ship.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Projector_small_ship.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\ProtectoBot.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\PZK_Coockie_monster_hull.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\R.U.S.T._Freighter.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Raefftech_Base_Ship_(outdated).sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Raider Drone.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Raiding_Outpost_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Raiding_Station_-_Scourge.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\RAVEN.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Raven_MkII.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Renaissance.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\RespawnMoonPod.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\RespawnPlanetPod.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\RespawnSpacePod.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Salvage Drone.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Seeker Mine.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\SF-45.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Small Ship 5418.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Small_Grid_1642.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Small_Ship_5727.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\SmallShip_SingleBlock.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Snub Fighter.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Space_Mine_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Spaceport_Terminal.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\SpawnShipAssembler.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\SpawnShipDrill.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\SpawnShipEscapePod.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\SpawnShipRefineryAssembler.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Spiteful_Aggressor_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Starfury_MkII.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\STARTERSHIP.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Stash-satellite.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Station_8315622.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Stinging_Adversary_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\SuicideShip.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\The Pilgrims Curiosity.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Thief_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\'Tick'_Ore_Scow_and_'Mite'_Mining_Drone.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\TLF-28a_(LSF_CargoShip_Mod).sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Trade1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Trade2.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Trade3.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Trader1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Trainspark.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Tusk_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Ubumboo_(for_Exploration).sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\V2-Gunboat.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\VehicleProjector.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Volunder_exploration_ship.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Vulture Drone.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Weapon_Platform_Gatling_mk.1.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\Xedus_Ophiniam_class_Attack_Frigate.sbc
+C:\SE\Content\Data\Prefabs\LegacyContent\YellowDrone.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P1_SupplyPost.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P1_SupplyPost_Moon.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P10_MilitaryBarracks.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P10_MilitaryBarracks_Moon.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P11_VanguardOutpost.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P11_VanguardOutpost_Moon.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P12_MilitaryWatchtower.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P12_MilitaryWatchtower_Moon.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P13_PirateRelayPost.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P13_PirateRelayPostFrozen.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P14_FrozenSalvageYard.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P14_SalvageYard.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P15_PirateStronghold.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P15_PirateStrongholdFrozen.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P16_FrozenRover.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P17_RustedRover.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P18_FrozenShuttle.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P19_RustedShuttle.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P2_StorageDepot.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P2_StorageDepot_Moon.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P20_FrozenExplorer.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P21_RustedExplorer.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P22_FrozenColonyShip.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P23_RustedColonyShip.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P24_Alien1.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P25_Alien2.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P26_HaulerWreck.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P26_HaulerWreckFrozen.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P27_TradeRunnerWreck.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P28_LogisticsPost.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P29_WreckedHopper.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P3_ManufacturingFacility.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P3_ManufacturingFacility_Moon.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P30_AbandonedFarmstead.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P4_ProcessingPlant.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P4_ProcessingPlant_Moon.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P5_ProspectingStation.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P5_ProspectingStation_Moon.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P6_OreProcessingFacility.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P6_OreProcessingFacility_Moon.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P7_FieldResearchOutpost.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P7_FieldResearchOutpost_Moon.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P8_ShippingPlatform.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P8_ShippingPlatform_Moon.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P9_RegionalHeadquarters.sbc
+C:\SE\Content\Data\Prefabs\PlanetaryEncounters\P9_RegionalHeadquarters_Moon.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE01_FactorumRelaySatellite.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE02_Hullbreaker.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE03_PirateOutpost.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE04_SafehouseStation.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE05_StagingStation.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE06_ScienceShuttle.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE07_PirateSmuggler.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE08_LostTradeRunner.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE09_PirateCutter.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE10_Privateer.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE11_SolarBargeWreck.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE12_D2HaulerWreck.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE13_WreckedHauler.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE14_StratoFreighterWreck.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE15_PrivateSailWreck.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE16_CorvetteWreck.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE17_FracturedStation.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE18_AutonomousGunShip.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE19_PirateDepot.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE20_MoonmothShuttle.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE21_AssemblyBarge.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE22_Modules_A.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE22_Modules_B.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE22_Modules_C.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE23_BioRoid.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE24_PirateHideout.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE25_DistressedVessel.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE26_Mercenary2.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE27_OldRelayAntenna.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE28_PirateBeacon.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE29_OldSalvager.sbc
+C:\SE\Content\Data\Prefabs\RandomEncounters\RE30_CrazedMiner.sbc
+C:\SE\Content\Data\Prefabs\Respawn\RespawnRover.sbc
+C:\SE\Content\Data\Prefabs\Respawn\RespawnSpace.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\DeadDrop\DoM_Blue01.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\DeadDrop\DoM_Blue02.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\DeadDrop\DoM_Blue03.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\DeadDrop\DoM_Blue04.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\DeadDrop\DoM_Red01.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\DeadDrop\DoM_Red02.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\DeadDrop\DoM_Red03.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\DeadDrop\DoM_Red04.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Frostbite\CoolBox.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Frostbite\Frostbite Bombing Drone Mk2.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Frostbite\GatlingDrone.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Frostbite\GatlingTurret Drone.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Frostbite\Large Control Drone.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Frostbite\Large Suport Drone.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Frostbite\Mining Drone.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Frostbite\MULE Drone.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Frostbite\Scout Drone.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Frostbite\SmartMissile Drone.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Frostbite\SpiderDrone.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Monolith.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Argentavis_mk.1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Blue Drone MK1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Blue Drone MK2.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\BossDroneL 1RL.2GT.1MT.2IT.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\DroneL 1RL.1GG.2IT.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\DroneS 1GG_1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\DroneS 1GG_2.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\DroneS 1GG_3.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\DroneS 1MT.2GG.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\DroneS 2GG.1GT.1RL.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\DroneS 2GG.1GT.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\DroneS 2GG.2GT.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\DroneS Drill.Warhead.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Dyad_mk.1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Eradicator_mk.1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Escord Drone.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Imperator_mk.1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Incisor_mk.1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Insinuator_mk.1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Instigator_mk.1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\King_Molar_mk.1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Molar_mk.1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Red Drone MK1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Spur_mk.1.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\NeverSurrender\Tusk.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Scrap\Scrap_Blank.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Scrap\Scrap_Buggy.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Scrap\Scrap_Car.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Scrap\Scrap_Hatch.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Scrap\Scrap_Rod.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Scrap\Scrap_Truck.sbc
+C:\SE\Content\Data\Prefabs\Scenarios\Scrap\ScrapRaceGarage.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-1.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-10.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-11.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-12.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-13.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-14.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-15.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-16.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-17.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-18.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-19.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-2.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-20.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-21.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-22.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-23.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-24.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-25.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-26.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-3.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-4.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-5.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-6.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-7.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-8.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\Container_MK-9.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-1.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-10.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-11.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-12.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-13.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-14.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-15.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-2.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-3.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-4.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-5.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-6.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-7.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-8.sbc
+C:\SE\Content\Data\Prefabs\UnknownSignals\LargeContainer_Mk-9.sbc
+C:\SE\Content\Data\QuickStarts.sbc
+C:\SE\Content\Data\RadialMenu.sbc
+C:\SE\Content\Data\Reputation\ReputationSettings.sbc
+C:\SE\Content\Data\ResearchBlocks.sbc
+C:\SE\Content\Data\ResearchGroups.sbc
+C:\SE\Content\Data\ResourceDistributionGroups.sbc
+C:\SE\Content\Data\RespawnShips.sbc
+C:\SE\Content\Data\SafeZoneTextures_Economy.sbc
+C:\SE\Content\Data\ScenarioCategories.sbc
+C:\SE\Content\Data\ShadowTextureSets.sbc
+C:\SE\Content\Data\ShipSoundGroups.sbc
+C:\SE\Content\Data\SoundCategories.sbc
+C:\SE\Content\Data\SpawnGroups_CargoShips.sbc
+C:\SE\Content\Data\SpawnGroups_Contracts.sbc
+C:\SE\Content\Data\SpawnGroups_Drones.sbc
+C:\SE\Content\Data\SpawnGroups_GlobalEncounters.sbc
+C:\SE\Content\Data\SpawnGroups_Misc.sbc
+C:\SE\Content\Data\SpawnGroups_PlanetaryEncounters.sbc
+C:\SE\Content\Data\SpawnGroups_RandomEncounters.sbc
+C:\SE\Content\Data\Stations_Economy.sbc
+C:\SE\Content\Data\Stats.sbc
+C:\SE\Content\Data\Stories.sbc
+C:\SE\Content\Data\TargetGroups.sbc
+C:\SE\Content\Data\ToolbarItems.sbc
+C:\SE\Content\Data\TransparentMaterials.sbc
+C:\SE\Content\Data\TreesMedium.sbc
+C:\SE\Content\Data\VoxelMapStorages.sbc
+C:\SE\Content\Data\VoxelMaterialChanges.sbc
+C:\SE\Content\Data\VoxelMaterials_asteroids.sbc
+C:\SE\Content\Data\VoxelMaterials_planetary.sbc
+C:\SE\Content\Data\Weapons.sbc
+C:\SE\Content\Data\WeatherEffects.sbc
+C:\SE\Content\Data\WheelModels.sbc

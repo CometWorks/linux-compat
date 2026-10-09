@@ -1,0 +1,1009 @@
+Data\(THYA) Shield HUD Graphics Pack 1%.sbc
+Data\6WSTAngledGear.sbc
+Data\A2_nanite_CubeBlocks.sbc
+Data\AC Groups.sbc
+Data\AiEnabled_Audio.sbc
+Data\ALL_BlockVariantGroups.sbc
+Data\Ammo\Blueprints_Missile50mm.sbc
+Data\Ammo\MineMag.sbc
+Data\AmmoMagazines.sbc
+Data\AmmoMagazines_Shared.sbc
+Data\Ammos_ReAce_Kratos.sbc
+Data\AnimationControllers\AC_Spider.sbc
+Data\AnimationControllers\k_sw_chiss_engineer_i.sbc
+Data\AntennaSpawner.sbc
+Data\Arbiter\ArbiterBlockVariantGroups.sbc
+Data\Aridus_Voxels.sbc
+Data\Armaments\OPC_CA_Cubeblocks Colorable.sbc
+Data\Armor Panels\CubeBlocks 2x1x1 Angle 45 Degree.sbc
+Data\Armor Panels\CubeBlocks Slope 1x1x1 Armor Panel.sbc
+Data\Armor Panels\CubeBlocks Square 2x2x1 Armor Panel.sbc
+Data\Aryx_AWE_Audio.sbc
+Data\Aryx_AWE_EmissivePrefabs.sbc
+Data\AryxLynxonEpsteinDrives_Audio.sbc
+Data\AryxLynxonEpsteinDrives_ParticleEffects.sbc
+Data\AssemblerBlueprint.sbc
+Data\ATA 02 Venus.sbc
+Data\ATA 05..Europa.sbc
+Data\ATA 06...Tethys.sbc
+Data\ATA 07..Ariel.sbc
+Data\ATASolarSystemElements.sbc
+Data\Audio Subtype ID files\ABOMINATION-Raiding-Argentavis-Audio.sbc
+Data\Audio Subtype ID files\ABOMINATION-Worm-Audio.sbc
+Data\Audio\ArtilleryAudio.sbc
+Data\Audio\Audio_SMAC.sbc
+Data\Audio\Fart.sbc
+Data\Audio\GFA_TIEFighter_LaserCannons.sbc
+Data\Audio\JumpGateAudio_Stargate.sbc
+Data\Audio\MES-Audio.sbc
+Data\Audio\TravelEffects_Audio.sbc
+Data\Audio_CIS_I.sbc
+Data\Audio_GatesDHDs.sbc
+Data\Audio_Komorebi.sbc
+Data\audio_railgun.sbc
+Data\Audio_Supergate.sbc
+Data\Autopilot Profiles\MERC-Strike-Autopilot.sbc
+Data\Autopilot Profiles\SPRT-Strike-Autopilot.sbc
+Data\AutoPilot\STC_AP.sbc
+Data\BalCorp_Audio_music.sbc
+Data\BasicSafeZone_EntityContainers.sbc
+Data\Behavior\Behavior-Escort.sbc
+Data\Behavior\Boss\Behaviors-Boss.sbc
+Data\Behavior\Drones\Behavior-AssaultDrone.sbc
+Data\Behavior\Station.sbc
+Data\Behavior\Trigger\CargoShip\PlayerClose.sbc
+Data\Behavior\Trigger\CargoShip\WeaponAvailability.sbc
+Data\Behavior\Trigger\Interactions\Parallax.sbc
+Data\Behavior\Triggers\Boss\BossAutopilotSwitch.sbc
+Data\Behavior\Triggers\CargoShip\CargoShipDamage.sbc
+Data\Behavior\Triggers\CargoShip\PassiveSwitch.sbc
+Data\Behavior\Triggers\CargoShip\ReturnToSpeed.sbc
+Data\Behavior\Triggers\Debug\ZTEstPopulateStoresTest.sbc
+Data\Behavior\Triggers\Drone\Assault\SG\NewTargetSG.sbc
+Data\Behavior\Triggers\Drone\Patrol\AggressionSwitchPatrol.sbc
+Data\Behavior\Triggers\Escort\RequestEscortSlot.sbc
+Data\Behavior\Triggers\Interactions\InconShipPresence.sbc
+Data\Behavior\Triggers\Merchant\InitMerchantStores.sbc
+Data\Behavior\Triggers\Patrol\UnStatic.sbc
+Data\Behavior\Triggers\Station\CargoShipArrival.sbc
+Data\Behavior\Triggers\Station\SpawnPatrol.sbc
+Data\Behaviors\(Level 1) Passive Behaviors\TXVE-Dreadnaught-Passive-Damaged-Behavior.sbc
+Data\Behaviors\(Level 1) Passive Behaviors\TXVE-Probe-Unit-Atmo-Passive-Behavior.sbc
+Data\Behaviors\(Level 1) Passive Behaviors\TXVE-Teridax-Class-Destroyer-Passive-Damaged-Behavior.sbc
+Data\Behaviors\(Level 2) Lightly Aggressive Behaviors\TXVE-Makuta-Class-Cruiser-Lightly-Aggressive-Behavior.sbc
+Data\Behaviors\(Level 2) Lightly Aggressive Behaviors\TXVE-Teridax-Class-Destroyer-Lightly-Aggressive-Behavior.sbc
+Data\Behaviors\(Level 3) Moderately Aggressive Behaviors\TXVE-Makuta-Class-Cruiser-Moderately-Aggressive-Behavior.sbc
+Data\Behaviors\(Level 3) Moderately Aggressive Behaviors\TXVE-Teridax-Class-Destroyer-Moderately-Aggressive-Behavior.sbc
+Data\Behaviors\(Level 4) Highly Aggressive Behaviors\TXVE-Makuta-Class-Cruiser-Highly-Aggressive-Behavior.sbc
+Data\Behaviors\(Level 4) Highly Aggressive Behaviors\TXVE-Teridax-Class-Destroyer-Highly-Aggressive-Behavior.sbc
+Data\Behaviors\(Level 5) Armageddon Behaviors\TXVE-Makuta-Class-Cruiser-Armageddon-Behavior.sbc
+Data\Behaviors\(Level 5) Armageddon Behaviors\TXVE-Teridax-Class-Destroyer-Armageddon-Behavior.sbc
+Data\Behaviors\_Common\ContextAndTriggerEvents\MSB_Context_Triggers_Damage.sbc
+Data\Behaviors\ABOMINATION-Flea-Behavior.sbc
+Data\Behaviors\ABOMINATION-Trident-Superfortress-Behavior.sbc
+Data\Behaviors\Autopilot\Autopilot_Dropship.sbc
+Data\Behaviors\Autopilot\Autopilot_Patrol.sbc
+Data\behaviors\BE_Drone_1.sbc
+Data\behaviors\BE_Vengeance3.sbc
+Data\Behaviors\CombatTypes\Drone\Distance.sbc
+Data\Behaviors\CombatTypes\Fighter\Compromised.sbc
+Data\Behaviors\CombatTypes\Nautical\_Nautical.sbc
+Data\Behaviors\Interactions\TradeRequest.sbc
+Data\Behaviors\LECC-HDU-Series-Freighter-Upryam.sbc
+Data\Behaviors\LECC-Mining-Station-Frockhammer-Behavior.sbc
+Data\Behaviors\MERC-Osiris-Assault-Corvette-MK3-Behavior.sbc
+Data\Behaviors\MERC-X-Falcon-Interceptor-Behavior.sbc
+Data\Behaviors\MODS Communication Satellite Behavior.sbc
+Data\Behaviors\MODS Floating Bunker Behavior.sbc
+Data\Behaviors\MODS Locust Behavior.sbc
+Data\Behaviors\MODS Pyramid Base Behavior.sbc
+Data\Behaviors\MODS Satellite Defense Drone Behavior.sbc
+Data\Behaviors\MODS Surveying Base Behavior.sbc
+Data\Behaviors\MODS-Weapon-Depot-Behavior.sbc
+Data\Behaviors\OIPC-Valiant-Gunboat-Behavior.sbc
+Data\Behaviors\Roles\Dynamic\Patrol\_Patrol.sbc
+Data\Behaviors\SPRT-Drifting-Pursuant-MK2-Behavior.sbc
+Data\Behaviors\SPRT-Raiding-Outpost-MK2-Horsefly-Behavior.sbc
+Data\Behaviors\SPRT-Stinging-Adversary-MK2-Horsefly-Behavior.sbc
+Data\Behaviors\Systems\System_Dialogue_CombatType.sbc
+Data\Behaviors\Systems\System_Environment.sbc
+Data\Behaviors\THEI-842-S-Prison-Ship-Behavior.sbc
+Data\Behaviors\THIE-631-Elephant-Fueling-and-Recharging-Depot-Behavior.sbc
+Data\Behaviors\THIE-UNC-Dover-Supertanker-Behavior.sbc
+Data\Behaviors\WLYC-Pegasus-Trading-Station-Behavior.sbc
+Data\Behaviors\WLYC-Vortex-Energy-Solutions-MK2-Behavior.sbc
+Data\BinocularsHanditems.sbc
+Data\BlockCategories_Energy.sbc
+Data\BlockCategories_HandItems.sbc
+Data\BlockCategories_PassageIntersections.sbc
+Data\BlockCategories_Vanilla.sbc
+Data\BlockPositions_WGD.sbc
+Data\Blocks\CubeBlocks_NPCEnergy.sbc
+Data\Blocks\CubeBlocks_Remotes.sbc
+Data\Blocks_Train.sbc
+Data\BlockVariantGroups_Imp.sbc
+Data\BlockVariantGroups_ReinforcedConcrete.sbc
+Data\BlueprintClassEntries.sbc
+Data\BlueprintClasses_Assemblers_Salvage.sbc
+Data\BlueprintClasses_Decorative_Blocks.sbc
+Data\BlueprintClasses_IO.sbc
+Data\BlueprintClasses_Wheel7x7.sbc
+Data\Blueprints_CIS_Resources.sbc
+Data\Blueprints_Hidden.sbc
+Data\Blueprints_IO.sbc
+Data\Blueprints_SalvageSystem_Rebel.sbc
+Data\Blueprints-Improved.sbc
+Data\Bridge_Seats_BlockVariantGroups.sbc
+Data\C+C_BlockCategories.sbc
+Data\Captains_Chair_BlockCategories.sbc
+Data\Categories_HoverEngine.sbc
+Data\CDCubeBlocks_LargeShip_Mirrored Blocks.sbc
+Data\Ceres.sbc
+Data\Chat Profiles\MERC-Helios-Enemy-Detected-Chat.sbc
+Data\ChristmasLights_BlueprintClasses.sbc
+Data\components.sbc
+Data\Components_Energy.sbc
+Data\Components_Sith_SW.sbc
+Data\ContainerTypes.sbc
+Data\Core_BlockCategories.sbc
+Data\Core_CubeBlocks_Reactor.sbc
+Data\Core_EntityContainer.sbc
+Data\Core_Ore_Blueprints.sbc
+Data\Core_Warp_Core_Audio.sbc
+Data\Corum.sbc
+Data\Cube Blocks\Missiles.sbc
+Data\CubeBlocks Hangar Door.sbc
+Data\CubeBlocks\3WLandingGearMain.sbc
+Data\CubeBlocks\3x3_XLBeamBlock.sbc
+Data\CubeBlocks\3x3_XLBeamBlockSlope2x1Base.sbc
+Data\CubeBlocks\3x3_XLCornerSplit2x1x1Base.sbc
+Data\CubeBlocks\3x3_XLExtendedWindowCorner.sbc
+Data\CubeBlocks\3x3_XLHalfCornerBlock.sbc
+Data\CubeBlocks\3x3_XLHalfSlopeInv.Corner.sbc
+Data\CubeBlocks\3x3_XLLargeBlockInsetWallCorner.sbc
+Data\CubeBlocks\3x3_XLLargeCoverWall.sbc
+Data\CubeBlocks\3x3_XLRaisedSlopedCorner.sbc
+Data\CubeBlocks\3x3_XLSlope2x1x1Base.sbc
+Data\CubeBlocks\3x3_XLSlopeTransitionBaseMirrored.sbc
+Data\CubeBlocks\3x3_XLTruss.sbc
+Data\CubeBlocks\3x3_XLTrussPillarDecoyOffset.sbc
+Data\CubeBlocks\3x3_XLTrussPillarTransition.sbc
+Data\CubeBlocks\3x3_XLViewport2.sbc
+Data\CubeBlocks\AblativeProjector.sbc
+Data\CubeBlocks\AkiadInteriorFlameTurret_CubeBlocks.sbc
+Data\CubeBlocks\AQD_Concrete_2.sbc
+Data\CubeBlocks\AQD_ConveyorX.sbc
+Data\CubeBlocks\AQD_LG_GyroUpgrade.sbc
+Data\CubeBlocks\AQD_LG_Tarp_3x3_Slope.sbc
+Data\CubeBlocks\AQD_Slope3x1.sbc
+Data\CubeBlocks\AQD_Slope4x1_CornerSplit.sbc
+Data\CubeBlocks\AQD_Slope5x1_Transition.sbc
+Data\CubeBlocks\BlockCategories.sbc
+Data\CubeBlocks\CubeBlocks_ApexSurvivalPack.sbc
+Data\CubeBlocks\CubeBlocks_Cerambete.sbc
+Data\CubeBlocks\CubeBlocks_CoreSystemsPack.sbc
+Data\CubeBlocks\CubeBlocks_Economy2Pack.sbc
+Data\CubeBlocks\CubeBlocks_Glass_Wall.sbc
+Data\CubeBlocks\Cubeblocks_IronMaiden.sbc
+Data\CubeBlocks\CubeBlocks_Medical.sbc
+Data\CubeBlocks\Cubeblocks_SGThunderBolt.sbc
+Data\CubeBlocks\CubeBlocks_Thrusters.sbc
+Data\CubeBlocks\CubeBlocks_Utility.sbc
+Data\CubeBlocks\CubeBlocks_WheelsRebel.sbc
+Data\CubeBlocks\Disruptor_Cannon_CubeBlocks.sbc
+Data\CubeBlocks\Emitters.sbc
+Data\CubeBlocks\GFA_LG_Holo_Rebels.sbc
+Data\CubeBlocks\GFA_LG_IMP_BridgeWindow_Slope2x1.sbc
+Data\CubeBlocks\GFA_LG_IMP_HangarPylon.sbc
+Data\CubeBlocks\GFA_LG_IMP_InteriorWall2_Half_Inv.sbc
+Data\CubeBlocks\GFA_LG_TIEFighter_DockingTube_Door.sbc
+Data\CubeBlocks\GFA_SG_TIEFighter_Cockpit.sbc
+Data\CubeBlocks\GFA_SG_TIEFighter_Thruster.sbc
+Data\CubeBlocks\Half Slope Corner Transition.sbc
+Data\CubeBlocks\Heavy Inv HSC Top Transition Mir.sbc
+Data\CubeBlocks\Heavy Inv Small HSC Transition.sbc
+Data\CubeBlocks\Inv Half Slope Corner Top Transition.sbc
+Data\CubeBlocks\JumpGateCapacitor_CubeBlock.sbc
+Data\CubeBlocks\KilerrbeeModularMissileTurret_CubeBlocks.sbc
+Data\CubeBlocks\Large\Fusion Drive.sbc
+Data\CubeBlocks\Large\LargeTripleThrusterHeatNoShroud.sbc
+Data\CubeBlocks\Large\RCS2Slope.sbc
+Data\CubeBlocks\LCDs_CubeBlocks_Armored.sbc
+Data\CubeBlocks\LG_15x3_XLSlope.sbc
+Data\CubeBlocks\LG_15x5_XLSlope_InvCorner.sbc
+Data\CubeBlocks\LG_20x5_XLSlope_TransitionMirror.sbc
+Data\CubeBlocks\LG_3x3_XLSmallFlatAtmosphericThrust.sbc
+Data\CubeBlocks\LG_9x3_XLSlope_InvCorner.sbc
+Data\CubeBlocks\LG_9x9_XLLargeModularThruster.sbc
+Data\CubeBlocks\LG_XL1x3x3LightArmor2x1SlopeSideTipPanel.sbc
+Data\CubeBlocks\LG_XL1x3x3PlainLightArmor2x1SlopedSideBasePanelInverted.sbc
+Data\CubeBlocks\LG_XL1x5x5LightArmorHalfPanel.sbc
+Data\CubeBlocks\MCRNRadarSystem.sbc
+Data\CubeBlocks\MexPexTacticalMissileTurret_CubeBlocks.sbc
+Data\CubeBlocks\obsolete\AQD_Corner_Split.sbc
+Data\CubeBlocks\obsolete\AQD_Plate_2x1Base.sbc
+Data\CubeBlocks\obsolete\AQD_Slab_Corner.sbc
+Data\CubeBlocks\obsolete\AQD_Slab_SlopeTransition.sbc
+Data\CubeBlocks\OmniArcRing.sbc
+Data\CubeBlocks\overwrite\CubeBlocks_Logistics.sbc
+Data\CubeBlocks\Phasers_Weapons.sbc
+Data\CubeBlocks\Pulley_Base_TINY.sbc
+Data\CubeBlocks\SG_12x3_XLSlope.sbc
+Data\CubeBlocks\SG_15x3_XLSlope_InvCorner.sbc
+Data\CubeBlocks\SG_15x5_XLSlope_TransitionMirror.sbc
+Data\CubeBlocks\SG_25x5_XLSlope_Corner.sbc
+Data\CubeBlocks\SG_3x3_XLSmallHydrogenThrust.sbc
+Data\CubeBlocks\SG_9x3_XLSlope_TransitionMirror.sbc
+Data\CubeBlocks\SG_9x9_XLPrototechThruster.sbc
+Data\CubeBlocks\SG_Pulley_Base.sbc
+Data\CubeBlocks\SG_XL1x3x3LightArmorSlopedPanel.sbc
+Data\CubeBlocks\SG_XL1x3x3PlainLightArmorPanel.sbc
+Data\CubeBlocks\Small Half Slope Corner Top Transition.sbc
+Data\CubeBlocks\Small\RcsSmallSlope.sbc
+Data\CubeBlocks\Small\Small3x3Thruster.sbc
+Data\CubeBlocks\Stargate_Universe.sbc
+Data\CubeBlocks\Straight Track 15.sbc
+Data\CubeBlocks\TransparentMaterials_WindowTriangularInside.sbc
+Data\CubeBlocks\TSOCorRndCryoTA.sbc
+Data\CubeBlocks\UNNLightRailgunTurret.sbc
+Data\CubeBlocks\XL1x5x5LightArmor2x1SlopedSideBaseSlab.sbc
+Data\CubeBlocks\XL1x5x5LightArmorSlab.sbc
+Data\CubeBlocks\XL1x5x5PlainLightArmor2x1SlopedSideBaseSlab.sbc
+Data\CubeBlocks\XL1x5x5PlainLightArmorSlab.sbc
+Data\CubeBlocks\XLBridgeWindow3x1FullWindowSlope.sbc
+Data\CubeBlocks\XLBridgeWindow3x3FaceInvertedWithFloorSingleLower.sbc
+Data\CubeBlocks\XLBridgeWindow3x3FullWindowFace.sbc
+Data\CubeBlocks\XLBridgeWindow3x3SlopeSide.sbc
+Data\CubeBlocks_Antenna.sbc
+Data\CubeBlocks_Automation.sbc
+Data\Cubeblocks_Bed.sbc
+Data\CubeBlocks_CargoContainerMedium.sbc
+Data\CubeBlocks_CIS_Vulture.sbc
+Data\CubeBlocks_Conveyors.sbc
+Data\CubeBlocks_DecorativePack3.sbc
+Data\CubeBlocks_DLC\CubeBlocks_DecorativePack2.sbc
+Data\CubeBlocks_DLC\CubeBlocks_ProsperityPack.sbc
+Data\CubeBlocks_Drive.sbc
+Data\CubeBlocks_EDPRailingGates.sbc
+Data\CubeBlocks_EventHorizon.sbc
+Data\CubeBlocks_FlatThrusters.sbc
+Data\CubeBlocks_GravityGenerators.sbc
+Data\CubeBlocks_HoverEngine_Model_V1_Armored_Full.sbc
+Data\CubeBlocks_HydrogenThruster.sbc
+Data\CubeBlocks_Imperial_Engines.sbc
+Data\CubeBlocks_Imperial_PowerSupplies.sbc
+Data\CubeBlocks_IndustrialDoor_Small.sbc
+Data\Cubeblocks_IO\CubeBlocks_AluminumBlock.sbc
+Data\Cubeblocks_IO\CubeBlocks_Misc.sbc
+Data\Cubeblocks_IO\CubeBlocks_Tools.sbc
+Data\CubeBlocks_IPV1Patrolcraft.sbc
+Data\CubeBlocks_Ladders.sbc
+Data\CubeBlocks_LCDAdSign_1x1.sbc
+Data\Cubeblocks_Lockers.sbc
+Data\CubeBlocks_Main Inverted Corners.sbc
+Data\CubeBlocks_Modules.sbc
+Data\CubeBlocks_NewRepublic_Medical.sbc
+Data\CubeBlocks_NewRepublic_YWing.sbc
+Data\CubeBlocks_PassageBlock.sbc
+Data\CubeBlocks_PassageIntersections_Passage.sbc
+Data\CubeBlocks_railgun.sbc
+Data\CubeBlocks_ReAce_Kratos.sbc
+Data\CubeBlocks_Rebellion_FixedMounts_SE.sbc
+Data\CubeBlocks_Rebellion_Turrets_HothStyle.sbc
+Data\CubeBlocks_RoundedArmorBlocks.sbc
+Data\CubeBlocks_Sith_Barracks.sbc
+Data\CubeBlocks_Sith_Interceptor.sbc
+Data\CubeBlocks_Sniper_Rifle.sbc
+Data\CubeBlocks_StarViper.sbc
+Data\CubeBlocks_Thruster_Atmospheric.sbc
+Data\CubeBlocks_TIE_Bomber.sbc
+Data\CubeBlocks_TIE_Reborn_Avenger.sbc
+Data\CubeBlocks_TIE_Reborn_Interceptor.sbc
+Data\CubeBlocks_UpgradeModules.sbc
+Data\CubeBlocks_Vanilla\CubeBlocks_Extras.sbc
+Data\CubeBlocks_Vanilla\CubeBlocks_Lights.sbc
+Data\CubeBlocks_Vanilla\CubeBlocks_Structural.sbc
+Data\CubeBlocks_VCZ_MultifloorElevator.sbc
+Data\CubeBlocks_WGD.sbc
+Data\CubeBlocks2.sbc
+Data\CustomParticles_GasGiantRingCheap.sbc
+Data\CustomParticles_SunSmoke5.sbc
+Data\Deflector_BlueprintClasses.sbc
+Data\DialogueBanks\Chat.sbc
+Data\Duct_BlockVariantGroups.sbc
+Data\ElachiDoors_BlockCategories.sbc
+Data\EmissiveColors_SharedGeneric.sbc
+Data\Encounters\Behaviors\Behavior-SmallShip.sbc
+Data\Encounters\Behaviors\Dynamic\Escort\GFA_MG_Escort_Fighter.sbc
+Data\Encounters\Behaviors\Dynamic\Patrol\GFA_MG_PatrolArea_Gunship.sbc
+Data\Encounters\Behaviors\Faction\GFA_MG_BotProfiles.sbc
+Data\Encounters\Behaviors\Static\Planetary\Cache\GFA_MG_Wrecked_CargoDrop_Planetary.sbc
+Data\Encounters\Behaviors\Static\Planetary\Small\GFA_MG_Damaged_CROC.sbc
+Data\Encounters\Behaviors\Static\Planetary\Small\GFA_MG_Wrecked_ClaimMarker.sbc
+Data\Encounters\Behaviors\Static\Planetary\Small\YV-929 Armed Transport\GFA_MG_Damaged_YV929.sbc
+Data\Encounters\Behaviors\Static\Space\Cache\GFA_MG_Container.sbc
+Data\Encounters\Behaviors\Static\Space\Small\GFA_MG_Caltrop.sbc
+Data\Encounters\Common\ContainerTypes\GFA_ContainerTypes_AdvancedIngots.sbc
+Data\Encounters\Common\GFA_Replenishment.sbc
+Data\Encounters\Prefabs\(NPC-ORK) Dakka Jet.sbc
+Data\Encounters\Prefabs\(NPC-ORK) Mekboss Station.sbc
+Data\Encounters\Prefabs\(NPC-ORK) WAAAGH Tower.sbc
+Data\Encounters\Prefabs\Dynamic\[MES-MG]YV-865 Aurore-Class[Gunship].sbc
+Data\Encounters\Prefabs\Static\[MES-MG]Communications Satellite.sbc
+Data\Encounters\Prefabs\Static\[MES-MG]Survey Marker[Planetary].sbc
+Data\Encounters\Prefabs\Static\Wrecked\[MES-MG]YV-865 Aurore-Class[Gunship Wreck 1].sbc
+Data\Encounters\Prefabs\Static\Wrecked\[MES-MG]YV-929 Armed Transport[Wreck 2].sbc
+Data\Encounters\Systems\System_Reputation.sbc
+Data\Encounters\Triggers\DamagedRetreatMedium.sbc
+Data\Encounters\Triggers\NewTarget.sbc
+Data\Encounters\Triggers\RetreatPlayerNear.sbc
+Data\EntityComponents.sbc
+Data\EntityComponents_Energy.sbc
+Data\EntityContainers_Cargo.sbc
+Data\EntityContainers_ReAce_Kratos.sbc
+Data\Environment\PhysicalModels_BushesAlvaniaDoctor.sbc
+Data\Europa_E.sbc
+Data\ExpanseDecor_Blueprints.sbc
+Data\ExpanseDecor_EmissivePresets.sbc
+Data\Factions.sbc
+Data\Fans.sbc
+Data\Firearms\OPC_CF_Astronaut_Female.sbc
+Data\Firearms\OPC_CF_PhysicalItems.sbc
+Data\FreightContractType.sbc
+Data\Ganymede.sbc
+Data\Gear_005_1_1_1_Spur8_8.sbc
+Data\Gear_005_5_5_1_40t_Top.sbc
+Data\Gear_030_5_5_1_40t_Top.sbc
+Data\GlobalEvents.sbc
+Data\Guids.sbc
+Data\Heavy_Armor_Block_Replacement_CubeBlocks.sbc
+Data\Hud\Default.sbc
+Data\IconWorkAround.sbc
+Data\IOTA.Meteory_Fire_Space.sbc
+Data\Jaffa armor.sbc
+Data\Large\CubeBlocks_Face.sbc
+Data\LCDs_ResearchBlocks.sbc
+Data\LCDTextures_LandingComputer.sbc
+Data\LG_2x1.sbc
+Data\MA_Lights_BlockCategories.sbc
+Data\MA_PoleParts_BlockCategories.sbc
+Data\Mars_E.sbc
+Data\mds_blueprints.sbc
+Data\mds_transparentmaterials.sbc
+Data\Media\Media-banner.sbc
+Data\Missiles.sbc
+Data\Moving Items thru Small Tubes\AmmoMagazines.sbc
+Data\MWI\Ammos\AmmoMagazines_20mm.sbc
+Data\MWI\Ammos\AmmoMagazines_420mm.sbc
+Data\MWI\Ammos\Blueprints_240mm.sbc
+Data\MWI\Ammos\Blueprints_460mm.sbc
+Data\MWI\Audio\Audio_MK1_Battery.sbc
+Data\MWI\CubeBlocks_Coil.sbc
+Data\MWI\CubeBlocks_X_3.sbc
+Data\MWI\Weapons_Coil.sbc
+Data\MWI\Weapons_X_3.sbc
+Data\NPC Behavior\NPC Behavior.sbc
+Data\NPC Outposts.sbc
+Data\NPC Prefabs\[NPC Large Wreck] Odin Front.sbc
+Data\NPC Prefabs\[NPC Outpost] FOB small.sbc
+Data\NPC Prefabs\[NPC Wreck] B-2 Kaiman.sbc
+Data\NPC Prefabs\[NPC Wreck] Crusader front.sbc
+Data\NPC Prefabs\[NPC Wreck] Guardian.sbc
+Data\NPC Prefabs\[NPC Wreck] Liberty .sbc
+Data\NPC Prefabs\[NPC Wreck] Mantis MK2P3.sbc
+Data\NPC Prefabs\[NPC Wreck] Mule.sbc
+Data\NPC Prefabs\[NPC Wreck] S-1000 Antaios Back.sbc
+Data\NPC Prefabs\[NPC Wreck] S-40 Prospero.sbc
+Data\NPC Prefabs\[NPC Wreck] Sentinel.sbc
+Data\NPC Prefabs\[NPC Wreck] Thornback Ray.sbc
+Data\NPC Prefabs\[NPC Wreck] Widowmaker.sbc
+Data\NullParticle.sbc
+Data\OmniBeam.sbc
+Data\OPC_Astronaut_Female.sbc
+Data\OPC_CP_Cubeblocks.sbc
+Data\OPC_CP_Groups.sbc
+Data\OPC_Particles.sbc
+Data\Other\LCDTextures.sbc
+Data\Particle Effects\Aether\AetherFlame LgLb Circle.sbc
+Data\Particle Effects\BloodSportFlames\BloodSportFlame 400.sbc
+Data\Particle Effects\BloodSportFlames\BloodSportFlame Epstein.sbc
+Data\Particle Effects\BloodSportFlames\BloodSportFlame R5.sbc
+Data\Particle Effects\BloodSportFlames\BloodSportFlame SCIRCOCCO.sbc
+Data\Particle Effects\BlueShiftFlames\1 BlueShiftFlame Epstein.sbc
+Data\Particle Effects\BlueShiftFlames\8 BlueShiftFlame SCIRCOCCO.sbc
+Data\Particle Effects\BlueShiftFlames\BlueShiftFlame 50.sbc
+Data\Particle Effects\BlueShiftFlames\BlueShiftFlame R5.sbc
+Data\Particle Effects\BlueShiftFlames\BlueShiftFlame SgSb.sbc
+Data\Particle Effects\EridanusFlames\EridanusFlame 100.sbc
+Data\Particle Effects\EridanusFlames\EridanusFlame 550.sbc
+Data\Particle Effects\EridanusFlames\EridanusFlame Mega.sbc
+Data\Particle Effects\EridanusFlames\EridanusFlame RCSs.sbc
+Data\Particle Effects\EridanusFlames\EridanusFlame SILVERSMITH.sbc
+Data\Particle Effects\Hawking\HawkingFlame LgLb SciFi.sbc
+Data\Particle Effects\HydrogenFlames\HydrogenFlames 350.sbc
+Data\Particle Effects\HydrogenFlames\HydrogenFlames DRUMMER.sbc
+Data\Particle Effects\HydrogenFlames\HydrogenFlames QUADRA.sbc
+Data\Particle Effects\HydrogenFlames\HydrogenFlames RZB.sbc
+Data\Particle Effects\HydrogenFlames\HydrogenFlames ZAC.sbc
+Data\Particle Effects\HyperRX\HyperRXFlame 50.sbc
+Data\Particle Effects\HyperRX\HyperRXFlame LgLb.sbc
+Data\Particle Effects\HyperRX\HyperRXFlame RAIDER.sbc
+Data\Particle Effects\HyperRX\HyperRXFlame SgLb.sbc
+Data\Particle Effects\Idle (Capital)\IdleFlame PTS.sbc
+Data\Particle Effects\ManuveringFlames\ManuveringThurster 200.sbc
+Data\Particle Effects\ManuveringFlames\ManuveringThurster 600.sbc
+Data\Particle Effects\ManuveringFlames\ManuveringThurster MUNR.sbc
+Data\Particle Effects\ManuveringFlames\ManuveringThurster ROCI.sbc
+Data\Particle Effects\ManuveringFlames\ManuveringThurster T3.sbc
+Data\Particle Effects\OPC_Signature\Test 50.sbc
+Data\Particle Effects\RainBowFlames\RainbowFlames 350.sbc
+Data\Particle Effects\RainBowFlames\RainbowFlames DRUMMER.sbc
+Data\Particle Effects\RainBowFlames\RainbowFlames QUADRA.sbc
+Data\Particle Effects\RainBowFlames\RainbowFlames RZB.sbc
+Data\Particle Effects\RainBowFlames\ThunderDomeFlame DRUMMER.sbc
+Data\Particle Effects\RainBowFlames\ThunderDomeFlame ROCI.sbc
+Data\Particle Effects\ThunderDomeFlames\ThunderDomeFlame 200.sbc
+Data\Particle Effects\ThunderDomeFlames\ThunderDomeFlame 600.sbc
+Data\Particle Effects\ThunderDomeFlames\ThunderDomeFlame RZB.sbc
+Data\Particle\ThrusterSmoke_Full.sbc
+Data\Particle_Entry.sbc
+Data\ParticleEffect\Ammo-30mm.sbc
+Data\ParticleEffect\FartSmoke.sbc
+Data\ParticleEffect\LaserHit.sbc
+Data\ParticleEffect\MuzzleParticles.sbc
+Data\Particles\Animations\Catapult\Failed\IOTA.Catapult.NodeParticleFailed.CatapultFuzz.sbc
+Data\Particles\Animations\MagicSigil\IOTA.MagicSigil.Runes.Entropy13.sbc
+Data\Particles\Animations\PulseJump\IOTA.PulseJump.NodeParticleJumped.sbc
+Data\Particles\Animations\Tesseract\IOTA.Tesseract.DriveParticle.sbc
+Data\Particles\Animations\Warp\IOTA.Warp.NodeParticleJumping.NodeGlow.sbc
+Data\Particles\chromaticexplode.sbc
+Data\Particles\CtanNightAura.sbc
+Data\Particles\CustomParticles_AsteroidsRing3.sbc
+Data\Particles\CustomParticles_CloudRing3.sbc
+Data\Particles\CustomParticles_CosmicJetDouble.sbc
+Data\Particles\CustomParticles_DebrisRing1.sbc
+Data\Particles\CustomParticles_Lightning.sbc
+Data\Particles\CustomParticles_SunDevour.sbc
+Data\Particles\Effects\IOTA.JumpGateLink.ColorableConnectionEffectMiddle.sbc
+Data\Particles\EWP_EMPExplosion.sbc
+Data\Particles\EWP_TorpedoExplosion.sbc
+Data\Particles\Flak_Explosion.sbc
+Data\Particles\KopeshRailgun_Prefire.sbc
+Data\Particles\MissileExplosion.sbc
+Data\Particles\Mk3_Hit_Explosion.sbc
+Data\Particles\MuzzleCannonMedium.sbc
+Data\Particles\MyMissileExplosion_medium.sbc
+Data\Particles\NecronHit.sbc
+Data\Particles\portalparticle.sbc
+Data\Particles\THESUNMUZZLE.sbc
+Data\Particles\Weather\CustomParticles_PlanetWeather_Rain.sbc
+Data\Particles\Weather\CustomParticles_SpaceWeatherCloud.sbc
+Data\Particles_B.sbc
+Data\Particles_Imperial.sbc
+Data\Particles_Qun.sbc
+Data\Particles_TradeLanes_Rings_Disengage.sbc
+Data\ParticleWeldpad.sbc
+Data\PhysicalItems_Economy.sbc
+Data\PhysicalItems_Imperial_Tools.sbc
+Data\PhysicalItems_StargateComponents.sbc
+Data\PhysicalModelCollections_Qun.sbc
+Data\PhysicalModels_TealW.sbc
+Data\PirateAntennas.sbc
+Data\Planet_Desolo.sbc
+Data\Planet_TealW.sbc
+Data\PlanetAnteros.sbc
+Data\PlanetDover.sbc
+Data\PlanetGeneratorDefinitions_Bastian.sbc
+Data\PlanetGeneratorDefinitions_Mando.sbc
+Data\PlanetLavuc.sbc
+Data\PlanetQun.sbc
+Data\PlanetSilona.sbc
+Data\Prefab Freight\Freight 2x2x5-B.sbc
+Data\Prefab Freight\Freight 3x3x5-E.sbc
+Data\Prefab Freight\Freight 3x5x12-B.sbc
+Data\Prefab Freight\Freight 4x4x8.sbc
+Data\Prefab Freight\Freight 5x5x13-E.sbc
+Data\Prefab SEWACS\SEWACS-EXTREME-RISK.sbc
+Data\Prefab Spacestation\Freight Contract Space Station-E.sbc
+Data\Prefab\Supply Package.sbc
+Data\Prefabs\(NPC-CPC) Fighter Cockpit Replacer.sbc
+Data\Prefabs\(NPC-CPC) Hive Ship.sbc
+Data\Prefabs\(NPC-CPC) Hunter Drone Mk.II.sbc
+Data\Prefabs\(NPC-CPC) Provocateur Drone.sbc
+Data\Prefabs\(NPC-CPC) Siege Drone.sbc
+Data\Prefabs\(NPC-CPC) Tesla Drone.sbc
+Data\Prefabs\A9 Vigilance Interceptor.sbc
+Data\Prefabs\ABOMINATION-Huntsman.sbc
+Data\Prefabs\ABOMINATION-Tunnel-Rat.sbc
+Data\Prefabs\Active Encounters\Neutral_Solar_Power_Plant_S.sbc
+Data\Prefabs\Active Encounters\The_Artifact_Research_Station.sbc
+Data\Prefabs\Alpha\STC - Ferengi Transport.sbc
+Data\Prefabs\Amphion (AMPH)\Amphion_Polyp_Small_Outpost.sbc
+Data\Prefabs\Ancient Destiny.sbc
+Data\Prefabs\Atmospheric Pirates\Cursor_Fighter_Pirate.sbc
+Data\Prefabs\Atmospheric Pirates\Shockwave_Heavy_Fighter_Pirate.sbc
+Data\Prefabs\Beacons\EEM_Navigational_Beacon.sbc
+Data\Prefabs\Beta\STC - Vorcha.sbc
+Data\Prefabs\Blacksun Scalp.sbc
+Data\Prefabs\Cargo\AS2-Container-Drill.sbc
+Data\Prefabs\Cargo\AS2-LootCrate-Single.sbc
+Data\Prefabs\Cargo\AS2-Pallet-LG-3.sbc
+Data\Prefabs\Cargoships (CIVL)\Atlas_Heavy_Freighter.sbc
+Data\Prefabs\Cargoships (CIVL)\Commercial_Salvager_NPC.sbc
+Data\Prefabs\Cargoships (CIVL)\Grasshopper.sbc
+Data\Prefabs\Cargoships (CIVL)\ISS_Fornax.sbc
+Data\Prefabs\Cargoships (CIVL)\PI-NI.sbc
+Data\Prefabs\Cargoships (CIVL)\Small_Freighter_Husky_S.sbc
+Data\Prefabs\Cargoships (CIVL)\Tempest_Exploration_Ship.sbc
+Data\Prefabs\Cargoships (CIVL)\Vandraren.sbc
+Data\Prefabs\CAVES-Big-Cave-14.sbc
+Data\Prefabs\CAVES-Big-Cave-8.sbc
+Data\Prefabs\CAVES-Medium-Cave-12.sbc
+Data\Prefabs\CAVES-Medium-Cave-5.sbc
+Data\Prefabs\CAVES-Small-Cave-11.sbc
+Data\Prefabs\CAVES-Small-Cave-6.sbc
+Data\Prefabs\centerofmass_sm.sbc
+Data\Prefabs\ConsoleWaterPrefab.sbc
+Data\Prefabs\Debris\Dead_Station_4_signal.sbc
+Data\Prefabs\Debris\High-Tech_Factory_Infected_self-destruct.sbc
+Data\Prefabs\Debris\Wreckage_1.sbc
+Data\Prefabs\Defensive\AS2-Defensive-Gatling.sbc
+Data\Prefabs\Delta\STC - Borg Cube.sbc
+Data\Prefabs\Droid Carrier Sith'ari.sbc
+Data\Prefabs\Dwellings\AS2-CrewHut.sbc
+Data\Prefabs\Dwellings\AS2-Shelter-1.sbc
+Data\Prefabs\Event Horizon.sbc
+Data\Prefabs\Federation\Reliant.sbc
+Data\Prefabs\Gamma\STC - Breen Cruiser.sbc
+Data\Prefabs\GlobalEncounters\GE_BioResearch.sbc
+Data\Prefabs\GlobalEncounters\GE_ListeningPost.sbc
+Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_Debris_Ambush.sbc
+Data\Prefabs\GlobalEncounters\GlobalSubEncounters\GE_Mine.sbc
+Data\Prefabs\GlobalEncounters\GlobalSubEncounters\HighProfileEscort.sbc
+Data\Prefabs\GridsForSale\Blue Ambassador Explorer.sbc
+Data\Prefabs\GridsForSale\Gerbil Miner.sbc
+Data\Prefabs\GridsForSale\J-Class Courier.sbc
+Data\Prefabs\GridsForSale\PV-4 Buggy.sbc
+Data\Prefabs\GridsForSale\T-Ion Fade.sbc
+Data\Prefabs\Guild Claim Enforcer.sbc
+Data\Prefabs\Guild Transport Shuttle (Lommiite).sbc
+Data\Prefabs\Hyperion Systems (HS)\HS_Dragonfly_Fighter.sbc
+Data\Prefabs\IMDC (IMDC)\IMDC_Cerberus_Destroyer_Mk.3.sbc
+Data\Prefabs\Infrastructure\AS2-Basic-Production.sbc
+Data\Prefabs\Infrastructure\AS2-Field-Assembler.sbc
+Data\Prefabs\Infrastructure\AS2-T1-Scrap-1.sbc
+Data\Prefabs\KUS Shipyards (KUSS)\KUS_Spartos_Heavy_Bomber.sbc
+Data\Prefabs\Large5x5.sbc
+Data\Prefabs\LECC-Asinai-Racer-Pink.sbc
+Data\Prefabs\LECC-Driveship-Bittercress.sbc
+Data\Prefabs\LECC-Mil-Series-Heavy-Fighter-Biter.sbc
+Data\Prefabs\LECC-Salvage-Cargo-Ship-Terminus-Rue_1.sbc
+Data\Prefabs\Mahriane (MA-I)\MAH_Magellan_Large_Transport.sbc
+Data\Prefabs\Mahriane (MA-I)\PE_MAH-T14b_Pigeon_Mahriane_NPC.sbc
+Data\Prefabs\MERC-Gauntlet-Escort-Carrier.sbc
+Data\Prefabs\MERC-Undertaker-Strike-Fighter.sbc
+Data\Prefabs\MES-Dummy-Prefabs.sbc
+Data\Prefabs\MES-Spawns\AS2-Processing-T2.sbc
+Data\Prefabs\MES-Spawns\AS2-SurveyRover.sbc
+Data\Prefabs\MGE (MMEC)\MGE_NUK-F_Hornet.sbc
+Data\Prefabs\Military Forces (UCMF)\Donau_Torpedo_Corvette_Military.sbc
+Data\Prefabs\Military Forces (UCMF)\LRHF-2_Andrealphus_Military.sbc
+Data\Prefabs\Military Forces (UCMF)\Sable_Privateer.sbc
+Data\Prefabs\Mining Guild Golan.sbc
+Data\Prefabs\Mining-Guild Hauler (Tibanna).sbc
+Data\Prefabs\MODS Bunker.sbc
+Data\Prefabs\MODS Decimator Moon.sbc
+Data\Prefabs\MODS Diode.sbc
+Data\Prefabs\MODS Floating Fortress.sbc
+Data\Prefabs\MODS Fly MK3.sbc
+Data\Prefabs\MODS GossHawk Space Station.sbc
+Data\Prefabs\MODS Light Cargo Hauler Moon.sbc
+Data\Prefabs\MODS Magnesium Refinery.sbc
+Data\Prefabs\MODS Peregrine Moon.sbc
+Data\Prefabs\MODS Ring Base.sbc
+Data\Prefabs\MODS Spider King.sbc
+Data\Prefabs\MODS Stinger MK2.sbc
+Data\Prefabs\MODS Surveying Base.sbc
+Data\Prefabs\MODS-Space-Runner-Destroyer.sbc
+Data\Prefabs\OIPC-Resolute-Destroyer.sbc
+Data\Prefabs\OLD\Billy's House.sbc
+Data\Prefabs\PD Billy's House.sbc
+Data\Prefabs\PD_Economy_Outpost_3.sbc
+Data\Prefabs\Pirate_Base_Large_mk.2.sbc
+Data\Prefabs\Pirates (SPRT)\AI_Panzerklein_Mech.sbc
+Data\Prefabs\Pirates (SPRT)\FE-201_Enforcer_Pirate.sbc
+Data\Prefabs\Pirates (SPRT)\Panzerklein_Piloted_Pirate.sbc
+Data\Prefabs\Pirates (SPRT)\Skull_Drone_Pirate.sbc
+Data\Prefabs\Pirates (SPRT)\V-2_Gunboat_Pirate.sbc
+Data\Prefabs\Planetary\Relay_Station.sbc
+Data\Prefabs\Police (SEPD)\Eagle_Police_Station_Patrol.sbc
+Data\Prefabs\Police (SEPD)\Police_Firespark_Mk.II.sbc
+Data\Prefabs\Puddle Jumper Missile.sbc
+Data\Prefabs\Random_encounters\Drop_Ship.sbc
+Data\Prefabs\Random_encounters\Little_Bird.sbc
+Data\Prefabs\Random_encounters\Shuttle_C3B2_Seraphim_Sentinel.sbc
+Data\Prefabs\Random_encounters\Worker_Mk.II.sbc
+Data\Prefabs\Romulan\Vokar Warbird.sbc
+Data\Prefabs\Salvage\AS2-Salvage-1.sbc
+Data\Prefabs\Salvage\AS2-Scrap-Compound.sbc
+Data\Prefabs\Section 1\Prefabs\CargoShip\Military3.sbc
+Data\Prefabs\Section 1\Prefabs\CargoShip\Trade2.sbc
+Data\Prefabs\Section 1\Prefabs\CS-88 Lissa.sbc
+Data\Prefabs\Section 1\Prefabs\EmissaryX3N.sbc
+Data\Prefabs\Section 1\Prefabs\Encounter\Encounter Debris A.sbc
+Data\Prefabs\Section 1\Prefabs\Encounter\Encounter Haunted Section.sbc
+Data\Prefabs\Section 1\Prefabs\Encounter\Encounter Imp B.sbc
+Data\Prefabs\Section 1\Prefabs\Encounter\Encounter Mining Outpost.sbc
+Data\Prefabs\Section 1\Prefabs\Encounter\Encounter Ponos-F1.sbc
+Data\Prefabs\Section 1\Prefabs\Encounter\Encounter RS-1217 Transporter A.sbc
+Data\Prefabs\Section 1\Prefabs\Encounter\Encounter Skyheart A.sbc
+Data\Prefabs\Section 1\Prefabs\Encounter\Old Mining Drone.sbc
+Data\Prefabs\Section 1\Prefabs\Frostbite\Large Control Drone.sbc
+Data\Prefabs\Section 1\Prefabs\H88 - Corvette.sbc
+Data\Prefabs\Section 1\Prefabs\Imperial Scout.sbc
+Data\Prefabs\Section 1\Prefabs\Molar_mk.1.sbc
+Data\Prefabs\Section 1\Prefabs\Other\(DL._Inc)_Welder_Drone_Mk_I.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Armed_Transport_Charon.sbc
+Data\Prefabs\Section 1\Prefabs\Other\BaseLoneSurvivor.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Cargo_Buddy_mk.1.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Computer_Part_Factory_(No_Mods).sbc
+Data\Prefabs\Section 1\Prefabs\Other\DoM_Blue03.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Drill_Ship_Moon_mk.1.sbc
+Data\Prefabs\Section 1\Prefabs\Other\DroneS 2GG.1GT.1RL.sbc
+Data\Prefabs\Section 1\Prefabs\Other\EasyStartSpacePirate.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Escort Mining2.sbc
+Data\Prefabs\Section 1\Prefabs\Other\GLU_Jaguar_B-1,_light_Interceptor.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Insinuator_mk.1.sbc
+Data\Prefabs\Section 1\Prefabs\Other\LargeShipRedQS1.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Monolith.sbc
+Data\Prefabs\Section 1\Prefabs\Other\NewStationPrefabSurvival.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Pitbull_Bomber.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Platform_8820.sbc
+Data\Prefabs\Section 1\Prefabs\Other\PZK_Coockie_monster_hull.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Red Drone MK1.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Repair_Lab.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Repair_Satalite2.sbc
+Data\Prefabs\Section 1\Prefabs\Other\Small Ship 5418.sbc
+Data\Prefabs\Section 1\Prefabs\Other\SpawnShipAssembler.sbc
+Data\Prefabs\Section 1\Prefabs\Other\SuicideShip.sbc
+Data\Prefabs\Section 1\Prefabs\Other\V2-Gunboat.sbc
+Data\Prefabs\Section 1\Prefabs\Spiteful_Aggressor_mk.1.sbc
+Data\Prefabs\Section 1\Prefabs\URM Drone\URMAgrippaDrone.sbc
+Data\Prefabs\Section 1\Prefabs\URMCR-08.sbc
+Data\Prefabs\Section 1\Prefabs\URMMenrva.sbc
+Data\Prefabs\Section 2\Prefabs\CargoShip\Military3.sbc
+Data\Prefabs\Section 2\Prefabs\CargoShip\Trade2.sbc
+Data\Prefabs\Section 2\Prefabs\CS-88 Lissa.sbc
+Data\Prefabs\Section 2\Prefabs\Encounter\Encounter Droneyard.sbc
+Data\Prefabs\Section 2\Prefabs\Encounter\Encounter Hydro Tanker.sbc
+Data\Prefabs\Section 2\Prefabs\Encounter\Encounter Prometheus A.sbc
+Data\Prefabs\Section 2\Prefabs\Encounter\Encounter Safehouse station.sbc
+Data\Prefabs\Section 2\Prefabs\Encounter\Encounter Stingray II A.sbc
+Data\Prefabs\Section 2\Prefabs\Small Smuggler.sbc
+Data\Prefabs\Section 2\Prefabs\URMGC-07.sbc
+Data\Prefabs\Section 3\Prefabs\CargoShip\Military2.sbc
+Data\Prefabs\Section 3\Prefabs\CargoShip\Trade1.sbc
+Data\Prefabs\Section 3\Prefabs\CS-10 V01.sbc
+Data\Prefabs\Section 3\Prefabs\Encounter\Encounter Corvette B.sbc
+Data\Prefabs\Section 3\Prefabs\Encounter\Encounter Hermit Station.sbc
+Data\Prefabs\Section 3\Prefabs\Encounter\Encounter Ponos-F1.sbc
+Data\Prefabs\Section 3\Prefabs\Encounter\Encounter RS-1217 Transporter B.sbc
+Data\Prefabs\Section 3\Prefabs\Encounter\Encounter Stealth pirate station.sbc
+Data\Prefabs\Section 3\Prefabs\H88 - Grasshopper.sbc
+Data\Prefabs\Section 3\Prefabs\URMFL-11.sbc
+Data\Prefabs\Section 4\Prefabs\CargoShip\Military1.sbc
+Data\Prefabs\Section 4\Prefabs\CargoShip\The Pilgrims Curiosity.sbc
+Data\Prefabs\Section 4\Prefabs\CS05-Cargo 4.sbc
+Data\Prefabs\Section 4\Prefabs\Encounter\Encounter Corvette A.sbc
+Data\Prefabs\Section 4\Prefabs\Encounter\Encounter HEC Debris B.sbc
+Data\Prefabs\Section 4\Prefabs\Encounter\Encounter Pirate Raider.sbc
+Data\Prefabs\Section 4\Prefabs\Encounter\Encounter RS-1217 Transporter A.sbc
+Data\Prefabs\Section 4\Prefabs\Encounter\Encounter Skyheart B.sbc
+Data\Prefabs\Section 4\Prefabs\H88 - Cricket.sbc
+Data\Prefabs\Section 4\Prefabs\URMDemeter.sbc
+Data\Prefabs\Section 4\Prefabs\URMSulla.sbc
+Data\Prefabs\Section 5\Prefabs\CargoShip\R.U.S.T._Freighter.sbc
+Data\Prefabs\Section 5\Prefabs\CS05-Cargo 3.sbc
+Data\Prefabs\Section 5\Prefabs\EmissaryX3N.sbc
+Data\Prefabs\Section 5\Prefabs\Encounter\Encounter HEC Debris A.sbc
+Data\Prefabs\Section 5\Prefabs\Encounter\Encounter MushStation B.sbc
+Data\Prefabs\Section 5\Prefabs\Encounter\Encounter RoidStation.sbc
+Data\Prefabs\Section 5\Prefabs\Encounter\Encounter Skyheart A.sbc
+Data\Prefabs\Section 5\Prefabs\H88 - Corvette.sbc
+Data\Prefabs\Section 5\Prefabs\URMCW-05.sbc
+Data\Prefabs\Section 5\Prefabs\URMRF-02.sbc
+Data\Prefabs\SmallLootBox.sbc
+Data\Prefabs\SPRT-Drifting-Pursuant-MK3.sbc
+Data\Prefabs\SPRT-Raiding-Station-MK3.sbc
+Data\Prefabs\Start Pod Nate.sbc
+Data\Prefabs\Symmetry\Armor\211\Symm-SlopeBase.sbc
+Data\Prefabs\Symmetry\Armor\Half\Symm-InvHalfSlope.sbc
+Data\Prefabs\Symmetry\Armor\Round\Symm-RoundSlope.sbc
+Data\Prefabs\Symmetry\Thruster\Symm-SciFiIonThruster.sbc
+Data\Prefabs\The_Pilgrims_Curiosity.sbc
+Data\Prefabs\THIE-205-ASC Atlas.sbc
+Data\Prefabs\THIE-521-Buffalo-Ice-Harvester.sbc
+Data\Prefabs\THIE-842-S-Prison-Ship.sbc
+Data\Prefabs\TIE D Interceptor.sbc
+Data\Prefabs\TIE Droid Operations Carrier.sbc
+Data\Prefabs\TODO\Engineering.sbc
+Data\Prefabs\TODO\Kauffman Medicals.sbc
+Data\Prefabs\Traders\Ships\Dromedary_Trader.sbc
+Data\Prefabs\Traders\Stations\PE_XMC_718_Trading_Outpost.sbc
+Data\Prefabs\TXVE-Dull-Karu-Va-Attack-Drone-Omega.sbc
+Data\Prefabs\TXVE-Makuta-Class-Cruiser.sbc
+Data\Prefabs\TXVE-Orb-Fighter-MK2.sbc
+Data\Prefabs\TXVE-Rahi-Exo-Heavy-Attack-Drone.sbc
+Data\Prefabs\TXVE-Rahi-Scout-Droid-Ion.sbc
+Data\Prefabs\TXVE-XEO-Offence-Droid-Missile.sbc
+Data\Prefabs\WcDebug\(NPC-MES) WcRailgunTest.sbc
+Data\Prefabs\WLYC-Gas-Z-Gaseous-Production-Facility.sbc
+Data\Prefabs\WLYC-Pogo-Base.sbc
+Data\Prefabs\WLYC-Remote-Station-Chi.sbc
+Data\Prefabs\WLYC-Remote-Station-Lambda.sbc
+Data\Prefabs\WLYC-Remote-Station-Psi.sbc
+Data\Prefabs\WLYC-Remote-Station-Zeta.sbc
+Data\Prefabs\WLYC-Vengeance-Sphere.sbc
+Data\Prefabs\Wreckage\AS2-Wreckage-2.sbc
+Data\Prefabs\Wrecks-102.sbc
+Data\Prefabs\Wrecks-109.sbc
+Data\Prefabs\Wrecks-115.sbc
+Data\Prefabs\Wrecks-121.sbc
+Data\Prefabs\Wrecks-128.sbc
+Data\Prefabs\Wrecks-134.sbc
+Data\Prefabs\Wrecks-140.sbc
+Data\Prefabs\Wrecks-147.sbc
+Data\Prefabs\Wrecks-153.sbc
+Data\Prefabs\Wrecks-16.sbc
+Data\Prefabs\Wrecks-166.sbc
+Data\Prefabs\Wrecks-172.sbc
+Data\Prefabs\Wrecks-179.sbc
+Data\Prefabs\Wrecks-185.sbc
+Data\Prefabs\Wrecks-191.sbc
+Data\Prefabs\Wrecks-198.sbc
+Data\Prefabs\Wrecks-203.sbc
+Data\Prefabs\Wrecks-21.sbc
+Data\Prefabs\Wrecks-216.sbc
+Data\Prefabs\Wrecks-222.sbc
+Data\Prefabs\Wrecks-229.sbc
+Data\Prefabs\Wrecks-235.sbc
+Data\Prefabs\Wrecks-241.sbc
+Data\Prefabs\Wrecks-248.sbc
+Data\Prefabs\Wrecks-254.sbc
+Data\Prefabs\Wrecks-260.sbc
+Data\Prefabs\Wrecks-268.sbc
+Data\Prefabs\Wrecks-274.sbc
+Data\Prefabs\Wrecks-280.sbc
+Data\Prefabs\Wrecks-287.sbc
+Data\Prefabs\Wrecks-294.sbc
+Data\Prefabs\Wrecks-30.sbc
+Data\Prefabs\Wrecks-306.sbc
+Data\Prefabs\Wrecks-312.sbc
+Data\Prefabs\Wrecks-319.sbc
+Data\Prefabs\Wrecks-325.sbc
+Data\Prefabs\Wrecks-331.sbc
+Data\Prefabs\Wrecks-338.sbc
+Data\Prefabs\Wrecks-344.sbc
+Data\Prefabs\Wrecks-350.sbc
+Data\Prefabs\Wrecks-357.sbc
+Data\Prefabs\Wrecks-364.sbc
+Data\Prefabs\Wrecks-370.sbc
+Data\Prefabs\Wrecks-377.sbc
+Data\Prefabs\Wrecks-383.sbc
+Data\Prefabs\Wrecks-39.sbc
+Data\Prefabs\Wrecks-396.sbc
+Data\Prefabs\Wrecks-401.sbc
+Data\Prefabs\Wrecks-408.sbc
+Data\Prefabs\Wrecks-414.sbc
+Data\Prefabs\Wrecks-420.sbc
+Data\Prefabs\Wrecks-427.sbc
+Data\Prefabs\Wrecks-433.sbc
+Data\Prefabs\Wrecks-44.sbc
+Data\Prefabs\Wrecks-446.sbc
+Data\Prefabs\Wrecks-452.sbc
+Data\Prefabs\Wrecks-459.sbc
+Data\Prefabs\Wrecks-465.sbc
+Data\Prefabs\Wrecks-471.sbc
+Data\Prefabs\Wrecks-478.sbc
+Data\Prefabs\Wrecks-484.sbc
+Data\Prefabs\Wrecks-490.sbc
+Data\Prefabs\Wrecks-497.sbc
+Data\Prefabs\Wrecks-502.sbc
+Data\Prefabs\Wrecks-509.sbc
+Data\Prefabs\Wrecks-515.sbc
+Data\Prefabs\Wrecks-521.sbc
+Data\Prefabs\Wrecks-528.sbc
+Data\Prefabs\Wrecks-534.sbc
+Data\Prefabs\Wrecks-540.sbc
+Data\Prefabs\Wrecks-547.sbc
+Data\Prefabs\Wrecks-553.sbc
+Data\Prefabs\Wrecks-56.sbc
+Data\Prefabs\Wrecks-566.sbc
+Data\Prefabs\Wrecks-572.sbc
+Data\Prefabs\Wrecks-58.sbc
+Data\Prefabs\Wrecks-586.sbc
+Data\Prefabs\Wrecks-592.sbc
+Data\Prefabs\Wrecks-599.sbc
+Data\Prefabs\Wrecks-604.sbc
+Data\Prefabs\Wrecks-610.sbc
+Data\Prefabs\Wrecks-617.sbc
+Data\Prefabs\Wrecks-623.sbc
+Data\Prefabs\Wrecks-63.sbc
+Data\Prefabs\Wrecks-636.sbc
+Data\Prefabs\Wrecks-642.sbc
+Data\Prefabs\Wrecks-649.sbc
+Data\Prefabs\Wrecks-655.sbc
+Data\Prefabs\Wrecks-661.sbc
+Data\Prefabs\Wrecks-668.sbc
+Data\Prefabs\Wrecks-69.sbc
+Data\Prefabs\Wrecks-75.sbc
+Data\Prefabs\Wrecks-81.sbc
+Data\Prefabs\Wrecks-88.sbc
+Data\Prefabs\Wrecks-94.sbc
+Data\Prefabs\XMC (EXMC)\PE_XMC_5019_Core_Station.sbc
+Data\Prefabs\XMC (EXMC)\XMC_Type_2_Cargo.sbc
+Data\Profiles\Actions\AS2-B3-Action.sbc
+Data\Profiles\Autopilot\Hunter.sbc
+Data\Profiles\Behavior\DummyDespawnBehavior.sbc
+Data\Profiles\Behaviors\AS2-Test-Behaviour.sbc
+Data\Profiles\Loot\AS2-B0-ContainerTypes-Consumables.sbc
+Data\Profiles\Loot\AS2-B0-Loot-Cargo-Medium.sbc
+Data\Profiles\Loot\AS2-B0-Loot-Lockers.sbc
+Data\Profiles\Loot\AS2-B1-Loot-Cargo-Medium.sbc
+Data\Profiles\Loot\AS2-B2-ContainerTypes-Components.sbc
+Data\Profiles\Loot\AS2-B2-Loot-Cargo-Medium.sbc
+Data\Profiles\Loot\AS2-B2-Loot-Lockers-Services.sbc
+Data\Profiles\Loot\AS2-B3-ContainerTypes-Weapons.sbc
+Data\Profiles\Loot\AS2-B3-Loot-Freight-Processing.sbc
+Data\Profiles\Loot\ContainerTypes-AdvancedOres.sbc
+Data\Profiles\Loot\ContainerTypes-BasicTools.sbc
+Data\Profiles\Loot\ContainerTypes-MixedComponents.sbc
+Data\Profiles\Loot\Loot-AntiInhibitor.sbc
+Data\Profiles\Loot\Loot-MixedContainersLarge.sbc
+Data\Profiles\Manipulation\AS2-B2-RAI-Manipulation.sbc
+Data\Profiles\Replacement\BlockReplacement-Proprietary.sbc
+Data\Profiles\Replenishment\AS2-B3-Replenishment.sbc
+Data\Profiles\SpawnConditions\InstallationMedium.sbc
+Data\Profiles\SpawnConditions\RAI\AS2-B1-RAI-SpawnCondition.sbc
+Data\Profiles\Spawner\AS2-B0-Spawner.sbc
+Data\Profiles\SpawnGroups\MES\AS2-B0-SpawnGroup.sbc
+Data\Profiles\SpawnGroups\RAI\AS2-P0-RAISG-Pallets.sbc
+Data\Profiles\SpawnGroups\RAI\AS2-P2-RAISG-Cargo.sbc
+Data\Profiles\SpawnGroups\RAI\AS2-P3-RAISG-Defensive.sbc
+Data\Profiles\Trigger\NoTargetRetreatCheck.sbc
+Data\Profiles\Triggers\AS2-B3-Trigger.sbc
+Data\r_smoke.sbc
+Data\Research\Blueprints.sbc
+Data\ResearchGroup.sbc
+Data\RespawnPodEdit_LowAtmo.sbc
+Data\SAS Controller\BlueprintClasses.sbc
+Data\Scripts\FontResources\SpaceEngineers.sbc
+Data\Section 1\DropContainers.sbc
+Data\Section 1\Prefabs\ContainerDrop\Container_MK-1.sbc
+Data\Section 1\Prefabs\ContainerDrop\Container_MK-16.sbc
+Data\Section 1\Prefabs\ContainerDrop\Container_MK-5.sbc
+Data\Section 1\Prefabs\Economy\Economy_MiningStation_3.sbc
+Data\Section 1\Prefabs\Economy\Economy_OrbitalStation_7.sbc
+Data\Section 1\Prefabs\Economy\Economy_Outpost_7.sbc
+Data\Section 1\Prefabs\Economy\Economy_SpaceStation_5.sbc
+Data\Section 1\Prefabs\Research Facility\Warhed.sbc
+Data\Section 5\CargoShips.sbc
+Data\SG_OxyFarm.sbc
+Data\ShieldUpgradeBlocks.sbc
+Data\Skybox\TransparentMaterials.sbc
+Data\Small\CubeBlocks_45_Left Small.sbc
+Data\Small_Basic_Refinery.sbc
+Data\soldiers.sbc
+Data\Spawn Conditions\SpawnConditionsDelta.sbc
+Data\SpawnGroupBoss.sbc
+Data\SpawnGroupMES-Lightly-Aggressive.sbc
+Data\SpawnGroups_EEM_Atmo_Drones.sbc
+Data\SpawnGroups_EEM_Encounters_POI.sbc
+Data\SpawnGroups_KKED.sbc
+Data\SpawnGroups_Vanilla_CargoShips.sbc
+Data\Spawning\Prefabs\(NPC-PHI) Derzky-Class Patrol Craft.sbc
+Data\Spawning\Prefabs\(NPC-PHI) Nideggen II-Class Frigate.sbc
+Data\Spawning\Prefabs\(NPC-TOC) GSX-5010 Chrono-Station.sbc
+Data\Spawning\Prefabs\(NPC-TOC) The Hangar.sbc
+Data\Spawning\Prefabs\Boss\(NPC-INC) Atom Heart (Ship).sbc
+Data\Spawning\Prefabs\Drone\(NPC-IBR) Patrol Drone.sbc
+Data\Spawning\Prefabs\Drone\(NPC-INC) Tempest X.sbc
+Data\Spawning\Prefabs\Drone\(NPC-PLX) Spearhead.sbc
+Data\Spawning\Prefabs\Planetary\Drone\(NPC-IMDC) F-5A Hornet.sbc
+Data\Spawning\Prefabs\Planetary\Ship\(NPC-IMDC) Atlas-Class Frigate.sbc
+Data\Spawning\Prefabs\Planetary\Ship\(NPC-IMDC) T-37 Skycrane.sbc
+Data\Spawning\Prefabs\Planetary\Ship\(NPC-IMDC) V-55 Condor.sbc
+Data\Spawning\Prefabs\PrefabData.sbc
+Data\Spawning\Prefabs\Ship\(NPC-IBR) Gravity Net Mammon.sbc
+Data\Spawning\Prefabs\Ship\(NPC-IBR) Varius MkIV Utility Shuttle.sbc
+Data\Spawning\Prefabs\Ship\(NPC-INC) Gremlin Assault.sbc
+Data\Spawning\Prefabs\Ship\(NPC-INC) SS-1 Serenity MK2.sbc
+Data\Spawning\Prefabs\Ship\(NPC-INC) Ubumboo.sbc
+Data\Spawning\Prefabs\Ship\(NPC-PLX) Lightstar.sbc
+Data\Spawning\Prefabs\Ship\(NPC-PLX) Verdis Quo.sbc
+Data\Spawning\Prefabs\Space\SpaceDrone\(NPC-IMDC) IXO Recon Drone.sbc
+Data\Spawning\Prefabs\Space\SpaceShip\(NPC-IMDC) Europa Carrier.sbc
+Data\Spawning\Prefabs\Space\SpaceShip\(NPC-IMDC) S-5 Omicron Shuttle.sbc
+Data\Spawning\Prefabs\Space\SpaceStation\(NPC-IMDC) Supply Station.sbc
+Data\Spawning\Prefabs\Station\(NPC-IBR) Resource Processing Station.sbc
+Data\Spawning\Prefabs\Station\(NPC-PLX) Bunker.sbc
+Data\Spawning\SpawnConditions\Conditions-PunishmentAssault.sbc
+Data\Spawning\SpawnGroups\Boss\SpawnGroups-Boss.sbc
+Data\Spawning\SpawnGroups\SpawnGroups-CargoShips.sbc
+Data\Spawning\SpawnGroup-SpaceStations.sbc
+Data\ST_Audio.sbc
+Data\ST_CubeBlocks_Borg_Cutting_Beam.sbc
+Data\ST_CubeBlocks_Characters_3x3.sbc
+Data\ST_CubeBlocks_Force_Field.sbc
+Data\ST_CubeBlocks_Impulse_Engines_05_Slope_2x1x1_Base_Up.sbc
+Data\ST_CubeBlocks_Name_Plates.sbc
+Data\ST_CubeBlocks_Phasers.sbc
+Data\ST_CubeBlocks_RCS_Thrusters_04_Slope_Vertical.sbc
+Data\ST_CubeBlocks_RCS_Thrusters_11_Slope_2x1x1_Tip_Up.sbc
+Data\ST_CubeBlocks_RCS_Thrusters_18_Inverted_Corner_2x1x1_Tip_Forward.sbc
+Data\ST_CubeBlocks_RCS_Thrusters_25_2x1_Slope_Side_Tip_Panel_Inverted.sbc
+Data\ST_CubeBlocks_Tritanium_Armor_Armor.sbc
+Data\ST_CubeBlocks_VAQ_Launcher.sbc
+Data\ST_LCD_Images_Federation.sbc
+Data\ST_Particles_003_Torpedo_Quantum.sbc
+Data\ST_Particles_010_Torpedo_VAQ.sbc
+Data\ST_Particles_017_Spatial_Charge_Explosion.sbc
+Data\ST_PhysicalItems.sbc
+Data\ST_Weapons_Phase_Cannon.sbc
+Data\ST_Weapons_Point_Defence_Phaser.sbc
+Data\ST_Weapons_Tractor_Beam.sbc
+Data\Stargate_Universe_Steam.sbc
+Data\Sun\Sun.sbc
+Data\Target Profiles\Final-Boss-Encounter-Target-Profile.sbc
+Data\Target Profiles\MERC-Hunter.sbc
+Data\Target Profiles\MODS Stardust.sbc
+Data\Target Profiles\SPRT-High-Value-Target.sbc
+Data\TargetProfiles\TargetProfiles.sbc
+Data\Textures.sbc
+Data\ThrusterPlumes\RocketExhaustTiny.sbc
+Data\Tota.sbc
+Data\TransparentMaterials_BlueTintGlass.sbc
+Data\TransparentMaterials_ForceFieldDoors.sbc
+Data\TransparentMaterials_Glass.sbc
+Data\TransparentMaterials_NewRepublic.sbc
+Data\TransparentMaterials_STC_HUD1.sbc
+Data\TransparentMaterialsIcons.sbc
+Data\TriatniumArmor_CubeBlocks_Beams.sbc
+Data\TriggerProfiles.sbc
+Data\Tritanium_Armor_CubeBlocks_Windows.sbc
+Data\TritaniumArmor_BlockCategories.sbc
+Data\Underwater_Block_Break.sbc
+Data\Vesta.sbc
+Data\VFX\ImpactBlast__30mm.sbc
+Data\VFX\ImpactBlast_Cannon.sbc
+Data\VFX\MuzzleFlash_GasEject.sbc
+Data\VFX\Tracer_APHE_Shell.sbc
+Data\VFX\Trail_Coilgun.sbc
+Data\Voxel crait.sbc
+Data\VoxelMaterialChanges_Basics.sbc
+Data\VoxelMaterials_asteroids_Dark.sbc
+Data\VoxelMaterials_Kimi.sbc
+Data\VoxelMaterials_planetary - doc oc.sbc
+Data\VoxelMaterials_Resources_Dust.sbc
+Data\VoxelMaterials_Stones.sbc
+Data\VoxelMaterialsDarinusDoctor.sbc
+Data\VoxelMaterialsTriton.sbc
+Data\Warheads.sbc
+Data\WC_EntMiddle.sbc
+Data\WC_VoyagerBase.sbc
+Data\WC_WarpInhibitor.sbc
+Data\Weapon Profiles\THIE-StaticGuns-WP.sbc
+Data\Weapons_CIS.sbc
+Data\Weapons_Sith.sbc
+Data\Weather_TealW.sbc
+Data\WeatherEffects_Forests.sbc
+Data\WLYC-SpawnGroupMES.sbc
+Data\Wrecks-Static-Planetary.sbc
+Data\XLBayWindows_BlockVariantGroups.sbc
+Data\XLBeamBlocks_ResearchBlocks.sbc
+Data\XLGreeblingBlocks_BlockVariantGroups.sbc
+Data\XLPanels_ResearchBlocks.sbc
+Data\XLSlopes_BlueprintClassEntries.sbc
+Data\XLWarfareThrusters_BlockVariantGroups.sbc
+Data\ZardosConnector_Connector Junction.sbc
+Data\ZoomPlus_TransparentMaterials.sbc
