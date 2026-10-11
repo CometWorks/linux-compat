@@ -36,7 +36,8 @@ internal static class ModeChangeForwarder
             s.WindowMode,
             s.BackBufferWidth,
             s.BackBufferHeight,
-            adapters[s.AdapterOrdinal].DesktopBounds
+            adapters[s.AdapterOrdinal].DesktopBounds,
+            RefreshRateHz(adapters[s.AdapterOrdinal], s)
         );
     }
 
@@ -58,8 +59,23 @@ internal static class ModeChangeForwarder
             settings.WindowMode,
             settings.BackBufferWidth,
             settings.BackBufferHeight,
-            adapters[settings.AdapterOrdinal].DesktopBounds
+            adapters[settings.AdapterOrdinal].DesktopBounds,
+            RefreshRateHz(adapters[settings.AdapterOrdinal], settings)
         );
+    }
+
+    // The settings hold the mode's refresh rate numerator, or millihertz after
+    // the game resets them, and GetDisplayMode resolves both. 0 is the desktop rate.
+    private static float RefreshRateHz(MyAdapterInfo adapter, MyRenderDeviceSettings settings)
+    {
+        if (settings.RefreshRate == 0)
+            return 0f;
+        MyDisplayMode? mode = adapter.GetDisplayMode(
+            settings.BackBufferWidth,
+            settings.BackBufferHeight,
+            settings.RefreshRate
+        );
+        return mode?.RefreshRateF ?? 0f;
     }
 }
 

@@ -410,7 +410,13 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         return null;
     }
 
-    public void OnModeChanged(MyWindowModeEnum mode, int width, int height, Rectangle desktopBounds)
+    public void OnModeChanged(
+        MyWindowModeEnum mode,
+        int width,
+        int height,
+        Rectangle desktopBounds,
+        float refreshRate
+    )
     {
         if (Handle == IntPtr.Zero)
             return;
@@ -423,7 +429,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             {
                 if (Handle == IntPtr.Zero)
                     return;
-                ApplyModeChange(mode, width, height, desktopBounds);
+                ApplyModeChange(mode, width, height, desktopBounds, refreshRate);
             }
             finally
             {
@@ -436,7 +442,8 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         MyWindowModeEnum mode,
         int width,
         int height,
-        Rectangle desktopBounds
+        Rectangle desktopBounds,
+        float refreshRate
     )
     {
         Rectangle displayBounds = GetWindowDisplayBounds();
@@ -479,7 +486,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 break;
 
             case MyWindowModeEnum.Fullscreen:
-                ApplyFullscreenMode(width, height);
+                ApplyFullscreenMode(width, height, refreshRate);
                 break;
         }
 
@@ -662,7 +669,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             m_savedWindowedPosition = new Vector2I(x, y);
     }
 
-    private unsafe void ApplyFullscreenMode(int width, int height)
+    private unsafe void ApplyFullscreenMode(int width, int height, float refreshRate)
     {
         // SDL requires a populated display mode before exclusive fullscreen.
         // Include high-density modes to preserve X11 output scaling.
@@ -673,14 +680,14 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 displayId,
                 width,
                 height,
-                0f,
+                refreshRate,
                 true,
                 out SdlDisplayMode mode
             )
         )
         {
             Console.WriteLine(
-                $"[LinuxCompat] Fullscreen mode: requested {width}x{height}, "
+                $"[LinuxCompat] Fullscreen mode: requested {width}x{height} @ {refreshRate:F2}Hz, "
                     + $"picked {mode.W}x{mode.H} @ {mode.RefreshRate:F2}Hz, pixel_density={mode.PixelDensity:F2}"
             );
             SdlDisplayMode* modePtr = &mode;
