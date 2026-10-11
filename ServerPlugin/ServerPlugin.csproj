@@ -125,8 +125,6 @@
     <Target Name="ValidateDS64" BeforeTargets="PrepareForBuild">
         <Error Condition="!Exists('$(DS64)')" Text="Specify SpaceEngineers DedicatedServer64 path!" />
         <Error Condition="!Exists('$(Steamworks)/Steamworks.NET.dll')" Text="Specify Steamworks path!" />
-        <Warning Condition="!Exists('$(Dependencies)')" Text="Plugin will fail at runtime without linux-dependencies!" />
-        <Warning Condition="!Exists('$(Wrappers)')" Text="Plugin will fail at runtime without linux-native-wrappers!" />
     </Target>
 
     <Import Project="../Shared/Shared.projitems" Label="Shared" />
