@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using ClientPlugin.Rewriter;
 using HarmonyLib;
 using VRage.Voxels;
 
@@ -21,6 +22,6 @@ static class MyPrecalcComponentLoadDataPatch
             return;
         scaled = true;
         MyPrecalcComponent.MaxPrecalcTime =
-            MyPrecalcComponent.MaxPrecalcTime * Stopwatch.Frequency / 10_000_000;
+            MyPrecalcComponent.MaxPrecalcTime * Stopwatch.Frequency / WindowsStopwatch.Frequency;
     }
 }
