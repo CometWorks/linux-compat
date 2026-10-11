@@ -83,7 +83,8 @@ internal static class BackbufferResizeRequest
         {
             if (s_inFlight == backbuffer)
                 s_inFlight = null;
-            if (target == (s_inFlight ?? backbuffer))
+            backbuffer = s_inFlight ?? backbuffer;
+            if (target == backbuffer)
                 return;
             s_inFlight = target;
         }
