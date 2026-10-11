@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
-"""Prepare the local Magnetar dedicated server for a diagnostics run.
+"""Prepare an isolated Magnetar dedicated server for a diagnostics run.
 
-Usage: prepare_ds.py <mod-source-dir>
+Usage: prepare_ds.py <mod-source-dir> <root> <repo-dir> <server-port> <steam-port>
 
-Idempotent. Performs the offline fake-Workshop registration procedure:
-  1. Copies the mod to <instance>/content/244850/<FAKE_ID>/.
-  2. Registers <FAKE_ID> in appworkshop_244850.acf (WorkshopItemsInstalled +
-     WorkshopItemDetails, manifest == latest_manifest so NeedsDownload stays 0).
-  3. Creates/refreshes the scratch world "LinuxCompat Mod API Suite" from
-     "Empty Creative" with the diagnostics mod as its only mod.
-  4. Points <LoadWorld> at the scratch world (SpaceEngineers-Dedicated.cfg is
-     UTF-8 without BOM; the edit preserves the rest byte-for-byte).
+Everything is written under <root>; nothing outside it is changed:
+  <root>/magnetar  Magnetar config folder (-config). Its sources.xml registers
+                   <repo-dir> as the dev folder source of the linux-compat core
+                   plugin, so Magnetar compiles the working tree instead of
+                   loading the MagnetarHub build. DOTNET_COMPAT_DIR, when set,
+                   does the same for dotnet-compat.
+  <root>/data      DS data folder (-path): its own SpaceEngineers-Dedicated.cfg
+                   on the given ports, the fake-Workshop registration of the mod,
+                   and the scratch world "LinuxCompat Mod API Suite" with the
+                   diagnostics mod as its only mod.
+
+The dedicated config and the "Empty Creative" world are copied from
+TEMPLATE_INSTANCE (default ~/.config/SpaceEngineersDedicated), which is only read.
 
 The DS rejects local mods in multiplayer, hence the fake Workshop identity.
-Run only while the DS is stopped (it re-saves the world on shutdown).
+Run only while this root's DS is stopped (it re-saves the world on shutdown).
 """
 
 import os
@@ -21,18 +26,16 @@ import re
 import shutil
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 
 FAKE_ID = "900000001"
-INSTANCE = os.path.expanduser("~/.config/SpaceEngineersDedicated")
-ACF = os.path.join(INSTANCE, "appworkshop_244850.acf")
-CONTENT_DIR = os.path.join(INSTANCE, "content", "244850", FAKE_ID)
-TEMPLATE_WORLD = os.path.join(INSTANCE, "Saves", "Empty Creative")
-WORLD = os.path.join(INSTANCE, "Saves", "LinuxCompat Mod API Suite")
 WORLD_NAME = "LinuxCompat Mod API Suite"
-CFG = os.path.join(INSTANCE, "SpaceEngineers-Dedicated.cfg")
+TEMPLATE_INSTANCE = os.environ.get(
+    "TEMPLATE_INSTANCE", os.path.expanduser("~/.config/SpaceEngineersDedicated")
+)
 
 MOD_ITEM_CONFIG = (
-    "<ModItem FriendlyName=\"LinuxCompatDiagnostics\">"
+    '<ModItem FriendlyName="LinuxCompatDiagnostics">'
     f"<Name>{FAKE_ID}.sbm</Name>"
     f"<PublishedFileId>{FAKE_ID}</PublishedFileId>"
     "<PublishedServiceName>Steam</PublishedServiceName>"
@@ -40,18 +43,131 @@ MOD_ITEM_CONFIG = (
     "</ModItem>"
 )
 
+SOURCES_XML = """<?xml version="1.0" encoding="utf-8"?>
+<SourcesConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ShowWarning>false</ShowWarning>
+  <MaxSourceAge>2</MaxSourceAge>
+  <LocalHubSources />
+  <RemoteHubSources>
+    <RemoteHub>
+      <Name>MagnetarHub</Name>
+      <Repo>CometWorks/magnetar-hub</Repo>
+      <Branch>main</Branch>
+      <Enabled>true</Enabled>
+      <Trusted>true</Trusted>
+    </RemoteHub>
+  </RemoteHubSources>
+  <RemotePluginSources />
+  <LocalPluginSources />
+  <ModSources />
+</SourcesConfig>
+"""
 
-def deploy_mod(source: str) -> None:
-    os.makedirs(os.path.dirname(CONTENT_DIR), exist_ok=True)
+# No optional plugins: only the core plugins (dotnet-compat, linux-compat) load.
+PROFILE_XML = """<?xml version="1.0" encoding="utf-8"?>
+<Profile xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Name>Current</Name>
+  <GitHub />
+  <DevFolder />
+  <Local />
+  <Mods />
+</Profile>
+"""
+
+# manifest == latest_manifest keeps NeedsDownload at 0.
+ACF = """"AppWorkshop"
+{
+\t"appid"\t\t"244850"
+\t"NeedsUpdate"\t\t"0"
+\t"NeedsDownload"\t\t"0"
+\t"WorkshopItemsInstalled"
+\t{
+\t\t"%(id)s"
+\t\t{
+\t\t\t"size"\t\t"%(size)d"
+\t\t\t"timeupdated"\t\t"1756500000"
+\t\t\t"manifest"\t\t"1"
+\t\t}
+\t}
+\t"WorkshopItemDetails"
+\t{
+\t\t"%(id)s"
+\t\t{
+\t\t\t"manifest"\t\t"1"
+\t\t\t"timeupdated"\t\t"1756500000"
+\t\t\t"timetouched"\t\t"1756500000"
+\t\t\t"latest_timeupdated"\t\t"1756500000"
+\t\t\t"latest_manifest"\t\t"1"
+\t\t}
+\t}
+}
+"""
+
+
+def set_source(sources: str, name: str, folder: str | None) -> None:
+    """Points the dev folder source of this name at a folder, or removes it when
+    folder is None. The name must equal the core plugin id to override it."""
+    tree = ET.parse(sources)
+    local = tree.getroot().find("LocalPluginSources")
+    for plugin in local.findall("LocalPlugin"):
+        if plugin.findtext("Name") == name:
+            local.remove(plugin)
+    if folder:
+        plugin = ET.SubElement(local, "LocalPlugin")
+        for tag, value in (
+            ("Name", name),
+            ("Folder", folder),
+            ("File", "ServerPlugin/ServerPlugin.xml"),
+            ("Enabled", "true"),
+        ):
+            ET.SubElement(plugin, tag).text = value
+        print(f"dev folder source {name} -> {folder}")
+    tree.write(sources, encoding="utf-8", xml_declaration=True)
+
+
+def prepare_magnetar(config: str, repo: str) -> None:
+    # Kept between runs, so Magnetar's hub check state and plugin caches survive.
+    sources = os.path.join(config, "Sources", "sources.xml")
+    if not os.path.exists(sources):
+        os.makedirs(os.path.dirname(sources), exist_ok=True)
+        with open(sources, "w", encoding="utf-8") as f:
+            f.write(SOURCES_XML)
+    set_source(sources, "linux-compat", repo)
+    dotnet_compat = os.environ.get("DOTNET_COMPAT_DIR")
+    set_source(
+        sources, "dotnet-compat", dotnet_compat and os.path.abspath(dotnet_compat)
+    )
+
+    os.makedirs(os.path.join(config, "Profiles"), exist_ok=True)
+    with open(
+        os.path.join(config, "Profiles", "Current.xml"), "w", encoding="utf-8"
+    ) as f:
+        f.write(PROFILE_XML)
+
+
+def deploy_mod(source: str, data: str) -> str:
+    content = os.path.join(data, "content", "244850", FAKE_ID)
+    os.makedirs(os.path.dirname(content), exist_ok=True)
     subprocess.run(
-        ["rsync", "-a", "--delete", "--exclude", "*.7z", source.rstrip("/") + "/", CONTENT_DIR + "/"],
+        [
+            "rsync",
+            "-a",
+            "--delete",
+            "--exclude",
+            "*.7z",
+            source.rstrip("/") + "/",
+            content + "/",
+        ],
         check=True,
     )
     # Case-pair negative control: the lowercase sibling is generated at
     # deploy time (cannot live in git next to CasePair.txt).
-    with open(os.path.join(CONTENT_DIR, "TestData", "CaseSensitivity", "casepair.txt"), "w") as f:
+    with open(
+        os.path.join(content, "TestData", "CaseSensitivity", "casepair.txt"), "w"
+    ) as f:
         f.write("lower-case-file\n")
-    print(f"mod deployed to {CONTENT_DIR}")
+    print(f"mod deployed to {content}")
+    return content
 
 
 def dir_size(path: str) -> int:
@@ -62,52 +178,16 @@ def dir_size(path: str) -> int:
     return total
 
 
-def register_acf() -> None:
-    with open(ACF, encoding="utf-8") as f:
-        text = f.read()
-
-    if f'"{FAKE_ID}"' in text:
-        print("ACF already registers the fake id")
-        return
-
-    size = dir_size(CONTENT_DIR)
-    installed_entry = (
-        f'\t\t"{FAKE_ID}"\n\t\t{{\n'
-        f'\t\t\t"size"\t\t"{size}"\n'
-        f'\t\t\t"timeupdated"\t\t"1756500000"\n'
-        f'\t\t\t"manifest"\t\t"1"\n'
-        f"\t\t}}\n"
+def make_world(world: str) -> None:
+    if os.path.isdir(world):
+        shutil.rmtree(world)
+    shutil.copytree(
+        os.path.join(TEMPLATE_INSTANCE, "Saves", "Empty Creative"),
+        world,
+        ignore=shutil.ignore_patterns("Backup"),
     )
-    details_entry = (
-        f'\t\t"{FAKE_ID}"\n\t\t{{\n'
-        f'\t\t\t"manifest"\t\t"1"\n'
-        f'\t\t\t"timeupdated"\t\t"1756500000"\n'
-        f'\t\t\t"timetouched"\t\t"1756500000"\n'
-        f'\t\t\t"latest_timeupdated"\t\t"1756500000"\n'
-        f'\t\t\t"latest_manifest"\t\t"1"\n'
-        f"\t\t}}\n"
-    )
-
-    def insert_into(section: str, entry: str, hay: str) -> str:
-        # Insert right after the section's opening brace line.
-        marker = f'"{section}"\n\t{{\n'
-        idx = hay.index(marker) + len(marker)
-        return hay[:idx] + entry + hay[idx:]
-
-    shutil.copy2(ACF, ACF + ".bak-modapi")
-    text = insert_into("WorkshopItemsInstalled", installed_entry, text)
-    text = insert_into("WorkshopItemDetails", details_entry, text)
-    with open(ACF, "w", encoding="utf-8", newline="") as f:
-        f.write(text)
-    print(f"ACF registered fake id {FAKE_ID} (size={size})")
-
-
-def make_world() -> None:
-    if os.path.isdir(WORLD):
-        shutil.rmtree(WORLD)
-    shutil.copytree(TEMPLATE_WORLD, WORLD)
     for name in ("Sandbox_config.sbc", "Sandbox.sbc"):
-        path = os.path.join(WORLD, name)
+        path = os.path.join(world, name)
         with open(path, encoding="utf-8") as f:
             text = f.read()
         text = text.replace(
@@ -123,66 +203,62 @@ def make_world() -> None:
             raise SystemExit(f"no <Mods> element found in {path}")
         with open(path, "w", encoding="utf-8", newline="") as f:
             f.write(text)
-    # Drop stale backups from the template copy.
-    backup = os.path.join(WORLD, "Backup")
-    if os.path.isdir(backup):
-        shutil.rmtree(backup)
-    print(f"scratch world ready: {WORLD}")
+    print(f"scratch world ready: {world}")
 
 
-def point_last_session() -> None:
-    # The DS boots via "Loading last session" and ignores <LoadWorld>, so the
-    # scratch world must also be recorded as the last session.
-    path = os.path.join(INSTANCE, "Saves", "LastSession.sbl")
-    if os.path.exists(path) and not os.path.exists(path + ".bak-modapi"):
-        shutil.copy2(path, path + ".bak-modapi")
-    with open(path, "w", encoding="utf-8", newline="") as f:
-        f.write(
-            '<?xml version="1.0" encoding="utf-8"?>\n'
-            "<MyObjectBuilder_LastSession "
-            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
-            'xmlns:xsd="http://www.w3.org/2001/XMLSchema">\n'
-            f"  <Path>{WORLD}</Path>\n"
-            "  <IsContentWorlds>false</IsContentWorlds>\n"
-            "  <IsOnline>false</IsOnline>\n"
-            "  <IsLobby>false</IsLobby>\n"
-            f"  <GameName>{WORLD_NAME}</GameName>\n"
-            "  <ServerPort>0</ServerPort>\n"
-            f"  <RelativePath>{os.path.basename(WORLD)}</RelativePath>\n"
-            "</MyObjectBuilder_LastSession>"
+def write_cfg(data: str, world: str, server_port: str, steam_port: str) -> None:
+    with open(
+        os.path.join(TEMPLATE_INSTANCE, "SpaceEngineers-Dedicated.cfg"),
+        encoding="utf-8",
+    ) as f:
+        text = f.read()
+    for tag, value in {
+        "IP": "127.0.0.1",
+        "ServerPort": server_port,
+        "SteamPort": steam_port,
+        "WorldName": WORLD_NAME,
+        "PauseGameWhenEmpty": "false",
+        "AutoRestartEnabled": "false",
+        # Load <LoadWorld>, not Saves/LastSession.sbl
+        "IgnoreLastSession": "true",
+        "RemoteApiEnabled": "false",
+        "LoadWorld": world,
+    }.items():
+        text, count = re.subn(
+            rf"<{tag}>.*?</{tag}>|<{tag}\s*/>",
+            f"<{tag}>{value}</{tag}>",
+            text,
+            flags=re.S,
         )
-    print(f"LastSession.sbl -> {WORLD}")
-
-
-def point_cfg() -> None:
-    with open(CFG, "rb") as f:
-        raw = f.read()
-    text = raw.decode("utf-8")
-    new = re.sub(
-        r"<LoadWorld>[^<]*</LoadWorld>",
-        f"<LoadWorld>{WORLD}</LoadWorld>",
-        text,
-        count=1,
-    )
-    if new == text:
-        print("cfg already points at the scratch world")
-        return
-    with open(CFG + ".bak-modapi", "wb") as f:
-        f.write(raw)
-    with open(CFG, "w", encoding="utf-8", newline="") as f:
-        f.write(new)
-    print(f"cfg LoadWorld -> {WORLD}")
+        if count != 1:
+            raise SystemExit(f"<{tag}> not found in the template dedicated config")
+    # UTF-8 without BOM, as the DS writes it
+    with open(
+        os.path.join(data, "SpaceEngineers-Dedicated.cfg"),
+        "w",
+        encoding="utf-8",
+        newline="",
+    ) as f:
+        f.write(text)
+    print(f"dedicated config: ports {server_port}/{steam_port}, world {world}")
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 6:
         print(__doc__, file=sys.stderr)
         return 2
-    deploy_mod(sys.argv[1])
-    register_acf()
-    make_world()
-    point_last_session()
-    point_cfg()
+    mod, root, repo, server_port, steam_port = sys.argv[1:]
+    data = os.path.join(root, "data")
+    world = os.path.join(data, "Saves", WORLD_NAME)
+    prepare_magnetar(os.path.join(root, "magnetar"), os.path.abspath(repo))
+    os.makedirs(data, exist_ok=True)
+    content = deploy_mod(mod, data)
+    with open(
+        os.path.join(data, "appworkshop_244850.acf"), "w", encoding="utf-8", newline=""
+    ) as f:
+        f.write(ACF % {"id": FAKE_ID, "size": dir_size(content)})
+    make_world(world)
+    write_cfg(data, world, server_port, steam_port)
     return 0
 
 

@@ -18,15 +18,20 @@ wrappers in `Shared/Patches/PathHandling/ModApiWrappers/`, and the
   waits for the suite and parses the results. Exit 0 = green.
 - `drive_client.py`: Remote-API driver used by `run.sh` (needs the `se-remote`
   skill checkout, `SE_REMOTE_DIR`).
-- `run-server.sh`: dedicated server harness. Builds the plugin, prepares the
-  local Magnetar DS instance, clears the compiled-mods cache, launches the DS
+- `run-server.sh`: dedicated server harness. Builds the plugin, prepares an
+  isolated Magnetar DS instance, clears the compiled-mods cache, launches the DS
   offline with `-noimplicitmod`, waits for the suite and parses the results.
   Exit 0 = green.
-- `prepare_ds.py`: DS preparation used by `run-server.sh`. It does the offline
-  fake-Workshop registration of the mod (the DS rejects local mods in
-  multiplayer and cannot download Workshop items offline), the scratch world
-  that references it, and the `<LoadWorld>` pointer. Idempotent; run it only
-  while the DS is stopped.
+- `prepare_ds.py`: DS preparation used by `run-server.sh`. Under
+  `MODAPI_DS_ROOT` (default `~/.se-test/linux-compat-mod-api`) it writes a
+  Magnetar config folder that registers this working tree as the
+  `linux-compat` dev folder source, and a DS data folder with its own
+  dedicated config, the offline fake-Workshop registration of the mod (the DS
+  rejects local mods in multiplayer and cannot download Workshop items
+  offline) and the scratch world that references it. The dedicated config and
+  the `Empty Creative` world template are read from
+  `~/.config/SpaceEngineersDedicated`; nothing outside the root is written.
+  Run it only while that root's DS is stopped.
 - `parse_results.py`: log parser, usable standalone on a suite log. It reports
   the security probes as their own section and enforces the manifest.
 - `security-probes.txt`: the security probe manifest (see below).
@@ -101,25 +106,27 @@ so results survive a broken storage API.
 
 ## Notes
 
-- Both harnesses hold an exclusive `flock` on `~/.cache/se-game.lock` while a
-  game instance runs. It is the machine-wide advisory lock shared with the
-  other automation sessions, and it is auto-released if the holder dies. They
-  wait up to 15 minutes for it.
-- DS provenance has two requirements, and both fail silently when unmet. The
-  Magnetar local plugin source must be named `linux-compat`, because only a
-  name matching the plugin id overrides the implicit core plugin; otherwise the
-  GitHub release is loaded. Its `File` must be `ServerPlugin/ServerPlugin.xml`.
-  Both live in `~/.config/Magnetar/Magnetar/Sources/sources.xml`.
+- The client harness holds an exclusive `flock` on `~/.cache/se-game.lock`
+  while the game runs. It is the machine-wide advisory lock shared with the
+  other automation sessions, and it is auto-released if the holder dies. It
+  waits up to 15 minutes for it. The DS harness runs isolated with
+  `-multiInstance` and takes no lock. Give parallel DS runs their own
+  `MODAPI_DS_ROOT`, `MODAPI_DS_PORT` and `MODAPI_DS_STEAM_PORT`.
+- DS provenance: the Magnetar dev folder source must be named `linux-compat`,
+  because only a name matching the plugin id overrides the implicit core
+  plugin; otherwise the MagnetarHub build is loaded. `run-server.sh` writes
+  that source itself and fails the run unless the launch's `info.log` says
+  `Compiling files for LinuxCompat (linux-compat) from <this working tree>`.
+  Set `DOTNET_COMPAT_DIR` to compile a dotnet-compat checkout too; otherwise
+  the MagnetarHub build of dotnet-compat runs.
 - The compiled-mods cache clear in `run.sh` is not optional. Dev builds
   randomize the plugin assembly identity, and cached mods pin the stale
   assembly, so world load then fails with
   `FileNotFoundException: LinuxCompat_...`.
-- Both harnesses verify that a randomized `LinuxCompat*` assembly name appears,
-  which proves the working tree was compiled rather than a shipped plugin
-  build. Pulsar reports it in the game log (`LinuxCompat_<random>.<random>`);
-  Magnetar reports it only on the launcher's stdout, which `run-server.sh`
-  captures, and includes the dev-folder hash
-  (`LinuxCompat-<hash>_<random>.<random>`).
+- `run.sh` checks the game log for a randomized
+  `LinuxCompat_<random>.<random>` assembly name. That name alone does not
+  prove a dev folder build: Magnetar gives hub builds the same kind of name,
+  which is why `run-server.sh` checks `info.log` instead.
 - `TestData/CaseSensitivity/casepair.txt` (lowercase sibling of
   `CasePair.txt`) is generated at deploy time; a file pair differing only in
   case cannot be committed without breaking Windows checkouts.
