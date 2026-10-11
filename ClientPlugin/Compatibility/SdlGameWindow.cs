@@ -464,25 +464,18 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
             case MyWindowModeEnum.Window:
                 SDL_SetWindowFullscreenMode(Handle, IntPtr.Zero);
                 SDL_SetWindowFullscreen(Handle, false);
-                SDL_SetWindowAlwaysOnTop(Handle, false);
-                SDL_SetWindowBordered(Handle, true);
                 ApplyWindowedMode(width, height, displayBounds, modeChanged, initialMode);
                 break;
 
             case MyWindowModeEnum.FullscreenWindow:
-                // Wayland compositors, including XWayland, own borderless placement.
-                if (UsesWaylandCompositor())
-                {
-                    SDL_SetWindowFullscreenMode(Handle, IntPtr.Zero);
-                    SDL_SetWindowFullscreen(Handle, true);
-                    break;
-                }
+                // Desktop fullscreen lets the window manager cover panels and
+                // keep Alt+Tab working. It also needs no display bounds, which
+                // are still the old mode's when leaving exclusive fullscreen.
+                // DXVK has just left exclusive fullscreen from the render
+                // thread; until that settles, SDL ignores the request.
+                SDL_SyncWindow(Handle);
                 SDL_SetWindowFullscreenMode(Handle, IntPtr.Zero);
-                SDL_SetWindowFullscreen(Handle, false);
-                SDL_SetWindowAlwaysOnTop(Handle, true);
-                SDL_SetWindowBordered(Handle, false);
-                SDL_SetWindowPosition(Handle, displayBounds.X, displayBounds.Y);
-                SDL_SetWindowSize(Handle, displayBounds.Width, displayBounds.Height);
+                SDL_SetWindowFullscreen(Handle, true);
                 break;
 
             case MyWindowModeEnum.Fullscreen:
@@ -728,13 +721,6 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     // clamp any larger requested resolution, so it is never trusted either.
     private static bool IsPlausibleDisplayBounds(Rectangle r) =>
         !SdlRenderThread.IsOffscreen && r.Width >= 640 && r.Height >= 480;
-
-    private static bool UsesWaylandCompositor()
-    {
-        string sessionType = Environment.GetEnvironmentVariable("XDG_SESSION_TYPE");
-        return SdlRenderThread.IsWayland
-            || string.Equals(sessionType, "wayland", StringComparison.OrdinalIgnoreCase);
-    }
 
     public void AddChar(char ch)
     {
@@ -1487,20 +1473,6 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     [DllImport(Lib, EntryPoint = "SDL_GetWindowPosition")]
     [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool SDL_GetWindowPosition(IntPtr window, out int x, out int y);
-
-    [DllImport(Lib, EntryPoint = "SDL_SetWindowBordered")]
-    [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_SetWindowBordered(
-        IntPtr window,
-        [MarshalAs(UnmanagedType.I1)] bool bordered
-    );
-
-    [DllImport(Lib, EntryPoint = "SDL_SetWindowAlwaysOnTop")]
-    [return: MarshalAs(UnmanagedType.I1)]
-    private static extern bool SDL_SetWindowAlwaysOnTop(
-        IntPtr window,
-        [MarshalAs(UnmanagedType.I1)] bool onTop
-    );
 
     [DllImport(Lib, EntryPoint = "SDL_SetWindowFullscreen")]
     [return: MarshalAs(UnmanagedType.I1)]
