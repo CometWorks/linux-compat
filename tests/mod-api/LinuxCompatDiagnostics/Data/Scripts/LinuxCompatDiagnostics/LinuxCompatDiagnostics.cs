@@ -223,7 +223,9 @@ namespace LinuxCompatDiagnostics
             Flush();
 
             // The suite is done; stop consuming update time (defect 6).
-            SetUpdateOrder(MyUpdateOrder.NoUpdate);
+            // Deferred to the next frame: this runs inside MySession.UpdateComponents,
+            // which iterates the set SetUpdateOrder modifies, crashing the game.
+            MyAPIGateway.Utilities.InvokeOnGameThread(() => SetUpdateOrder(MyUpdateOrder.NoUpdate));
         }
 
         private void UnregisterModMessageHandler()
