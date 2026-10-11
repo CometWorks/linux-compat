@@ -29,8 +29,9 @@ wrappers in `Shared/Patches/PathHandling/ModApiWrappers/`, and the
   dedicated config, the offline fake-Workshop registration of the mod (the DS
   rejects local mods in multiplayer and cannot download Workshop items
   offline) and the scratch world that references it. The dedicated config and
-  the `Empty Creative` world template are read from
-  `~/.config/SpaceEngineersDedicated`; nothing outside the root is written.
+  the `Empty Creative` world template are read from `TEMPLATE_INSTANCE`
+  (default `~/.config/SpaceEngineersDedicated`); nothing outside the root is
+  written.
   Run it only while that root's DS is stopped.
 - `parse_results.py`: log parser, usable standalone on a suite log. It reports
   the security probes as their own section and enforces the manifest.

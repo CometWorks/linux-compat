@@ -11,6 +11,7 @@ with the commands and environment it needs.
 | [tests/path-translation](../tests/path-translation/README.md) | The root mapping in `PathTranslation.Init()`, in both directions. | Nothing; standalone |
 | [tests/steam-overlay](../tests/steam-overlay/README.md) | The Wayland Steam overlay input bridge. | Nothing for the basic checks; Steam and SDL3 for the optional live check |
 
-Every suite that starts a game instance runs it headless and holds an exclusive
+Every suite that starts a game client runs it headless and holds an exclusive
 `flock` on `~/.cache/se-game.lock`, the machine-wide lock shared with the other
-automation on this machine.
+automation on this machine. The dedicated server run of `tests/mod-api` takes no
+lock; it runs on its own Magnetar config, data folder and ports instead.
