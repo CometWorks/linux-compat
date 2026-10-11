@@ -819,6 +819,26 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         OnExit.InvokeIfNotNull();
     }
 
+    /// <summary>
+    /// Gives the display its desktop mode back. The game process is killed on
+    /// exit, so SDL never gets to do it after exclusive fullscreen.
+    /// </summary>
+    internal void LeaveExclusiveFullscreen()
+    {
+        var done = new ManualResetEventSlim(false);
+        SdlRenderThread.Dispatch(() =>
+        {
+            if (Handle != IntPtr.Zero && m_appliedWindowMode == MyWindowModeEnum.Fullscreen)
+            {
+                SDL_SetWindowFullscreen(Handle, false);
+                SDL_SyncWindow(Handle);
+            }
+            done.Set();
+        });
+        // A wedged SDL thread must not keep the game from exiting.
+        done.Wait(TimeSpan.FromSeconds(2));
+    }
+
     public bool UpdateRenderThread()
     {
         return m_isVisible;

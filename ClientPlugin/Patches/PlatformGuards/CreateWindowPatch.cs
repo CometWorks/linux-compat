@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using ClientPlugin.Compatibility;
+using ClientPlugin.Patches.SystemAbstraction;
 using HarmonyLib;
 using Sandbox;
 using Sandbox.Game.Gui;
@@ -71,6 +72,8 @@ static class CreateWindowPatch
             sdlWindow.Hide();
             sdlWindow.CloseManually();
         };
+
+        MySandboxGameExitThreadSafePatch.BeforeKill = sdlWindow.LeaveExclusiveFullscreen;
 
         sdlWindow.OnExit += () =>
         {
