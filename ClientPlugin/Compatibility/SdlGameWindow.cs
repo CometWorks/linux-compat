@@ -18,6 +18,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 {
     private const string Lib = "libSDL3.so";
 
+    private const ulong SDL_WINDOW_FULLSCREEN = 0x1uL;
     private const ulong SDL_WINDOW_RESIZABLE = 0x20uL;
     private const ulong SDL_WINDOW_HIDDEN = 0x8uL;
     private const ulong SDL_WINDOW_HIGH_PIXEL_DENSITY = 0x2000uL;
@@ -34,6 +35,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     private const uint SDL_EVENT_WINDOW_FOCUS_GAINED = 0x20Eu;
     private const uint SDL_EVENT_WINDOW_FOCUS_LOST = 0x20Fu;
     private const uint SDL_EVENT_WINDOW_CLOSE_REQUESTED = 0x210u;
+    private const uint SDL_EVENT_WINDOW_LEAVE_FULLSCREEN = 0x218u;
     private const uint SDL_EVENT_KEY_DOWN = 0x300u;
     private const uint SDL_EVENT_KEY_UP = 0x301u;
     private const uint SDL_EVENT_TEXT_INPUT = 0x303u;
@@ -75,6 +77,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     // Prevents drag-resize feedback from redundant SDL geometry changes.
     private MyWindowModeEnum? m_appliedWindowMode;
+    private int m_fullscreenRetries;
 
     // Windowed geometry restored after fullscreen transitions and at startup.
     private Vector2I? m_savedWindowedSize;
@@ -471,9 +474,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 // Desktop fullscreen lets the window manager cover panels and
                 // keep Alt+Tab working. It also needs no display bounds, which
                 // are still the old mode's when leaving exclusive fullscreen.
-                // DXVK has just left exclusive fullscreen from the render
-                // thread; until that settles, SDL ignores the request.
-                SDL_SyncWindow(Handle);
+                m_fullscreenRetries = 0;
                 SDL_SetWindowFullscreenMode(Handle, IntPtr.Zero);
                 SDL_SetWindowFullscreen(Handle, true);
                 break;
@@ -1107,6 +1108,21 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                     m_mousePosition = -Vector2.One;
                 }
                 break;
+            case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+                // Leaving exclusive Fullscreen, DXVK leaves SDL fullscreen from
+                // the render thread, unordered with the Fullscreen Window
+                // request, and its leave can land last. Ask again, a few times
+                // at most in case the window manager refuses.
+                if (
+                    m_appliedWindowMode == MyWindowModeEnum.FullscreenWindow
+                    && (SDL_GetWindowFlags(Handle) & SDL_WINDOW_FULLSCREEN) == 0
+                    && m_fullscreenRetries++ < 3
+                )
+                {
+                    SDL_SetWindowFullscreenMode(Handle, IntPtr.Zero);
+                    SDL_SetWindowFullscreen(Handle, true);
+                }
+                break;
             case SDL_EVENT_WINDOW_RESIZED:
                 RefreshWindowMetrics();
                 BackbufferResizeRequest.Request();
@@ -1493,6 +1509,9 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
     [DllImport(Lib, EntryPoint = "SDL_GetWindowPosition")]
     [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool SDL_GetWindowPosition(IntPtr window, out int x, out int y);
+
+    [DllImport(Lib, EntryPoint = "SDL_GetWindowFlags")]
+    private static extern ulong SDL_GetWindowFlags(IntPtr window);
 
     [DllImport(Lib, EntryPoint = "SDL_SetWindowFullscreen")]
     [return: MarshalAs(UnmanagedType.I1)]
