@@ -16,6 +16,10 @@ internal static class BackbufferResizeRequest
     private static bool s_requested;
     private static int s_pendingModeChanges;
 
+    // The render thread applies a switch frames later, so the backbuffer
+    // still reports the old size while a resize is in flight.
+    private static Vector2I? s_inFlight;
+
     public static void Request()
     {
         lock (Sync)
@@ -31,6 +35,7 @@ internal static class BackbufferResizeRequest
         {
             s_pendingModeChanges++;
             s_requested = false;
+            s_inFlight = null;
         }
     }
 
@@ -67,16 +72,22 @@ internal static class BackbufferResizeRequest
         if (target.X <= 0 || target.Y <= 0)
             return;
 
-        // The render-thread backbuffer value avoids duplicate in-flight requests.
-        Vector2I backbuffer = MyRenderProxy.BackBufferResolution;
-        if (backbuffer == target)
-            return;
-
         MyRenderDeviceSettings current = MyVideoSettingsManager.CurrentDeviceSettings;
         if (current.BackBufferWidth <= 0 || current.BackBufferHeight <= 0)
             current = render.CurrentSettings;
         if (current.BackBufferWidth <= 0 || current.BackBufferHeight <= 0)
             return;
+
+        Vector2I backbuffer = MyRenderProxy.BackBufferResolution;
+        lock (Sync)
+        {
+            if (s_inFlight == backbuffer)
+                s_inFlight = null;
+            if (target == (s_inFlight ?? backbuffer))
+                return;
+            s_inFlight = target;
+        }
+
         current.BackBufferWidth = target.X;
         current.BackBufferHeight = target.Y;
         MyLog.Default.WriteLine(
