@@ -7,9 +7,8 @@
         <!-- Folder containing SpaceEngineersDedicated.exe -->
         <DS64></DS64>
 
-        <!-- Plugin loader folders to deploy into after each build (empty = no deployment) -->
+        <!-- Pulsar folder to deploy the client plugin into after each build (empty = no deployment) -->
         <Pulsar></Pulsar>
-        <Magnetar></Magnetar>
 
         <!-- Steam release of https://github.com/CometWorks/linux-dependencies -->
         <Steamworks></Steamworks>

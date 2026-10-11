@@ -5,18 +5,18 @@ debugging it. [Architecture.md](Architecture.md) covers how the plugin works.
 
 ## Local build paths
 
-The build paths (`Bin64`, `DS64`, `Pulsar`, `Magnetar`, `Steamworks`,
-`Dependencies`, `Wrappers`) are empty in `Directory.Build.props`. To override
-them, copy its first `PropertyGroup` into `Directory.Build.props.user`
-(git-ignored) in the repo root, wrapped in a top-level `<Project>` element, and
-fill in your paths.
+The build paths (`Bin64`, `DS64`, `Pulsar`, `Steamworks`, `Dependencies`,
+`Wrappers`) are empty in `Directory.Build.props`. To override them, copy its
+first `PropertyGroup` into `Directory.Build.props.user` (git-ignored) in the
+repo root, wrapped in a top-level `<Project>` element, and fill in your paths.
 
-`Bin64` and `DS64` are auto-detected from Steam if left empty. `Pulsar` and
-`Magnetar` are never auto-detected. Leave them empty and load the working copy
-through a loader development source; a deployed copy shows up as a separate
-local plugin and can shadow the published one. Setting them, in the `.user`
-file or on the command line, enables the post-build deployment into those
-plugin loader folders:
+`Bin64` and `DS64` are auto-detected from Steam if left empty. `Pulsar` is
+never auto-detected. Leave it empty and load the working copy through a loader
+development source, in Pulsar and in Magnetar alike; a deployed copy shows up
+as a separate local plugin and can shadow the published one. The server plugin
+has no deployment step. Setting `Pulsar`, in the `.user` file or on the command
+line, enables the post-build deployment of the client plugin into that Pulsar
+folder:
 
 ```bash
 dotnet build LinuxCompat.sln -c Debug -p:Pulsar=$HOME/.config/Pulsar

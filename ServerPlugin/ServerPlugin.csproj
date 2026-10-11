@@ -127,25 +127,6 @@
         <Error Condition="!Exists('$(Steamworks)/Steamworks.NET.dll')" Text="Specify Steamworks path!" />
         <Warning Condition="!Exists('$(Dependencies)')" Text="Plugin will fail at runtime without linux-dependencies!" />
         <Warning Condition="!Exists('$(Wrappers)')" Text="Plugin will fail at runtime without linux-native-wrappers!" />
-        <Message Condition="'$(Magnetar)' == ''" Text="Magnetar is not set, the plugin will not be deployed." />
-    </Target>
-
-    <Target Name="DeployPlugin" AfterTargets="Build" Condition="'$(Magnetar)' != ''">
-        <PropertyGroup>
-            <FolderName>Legacy</FolderName>
-            <FolderName Condition="Exists('$(Magnetar)/Interim')">Interim</FolderName>
-            <PluginDirectory>$(Magnetar)/$(FolderName)/Local/linux-compat</PluginDirectory>
-        </PropertyGroup>
-        <ItemGroup>
-            <!-- Only the shared libraries. Both folders may be a release extract or a
-                 CMake build tree, and the latter carries the whole build system with it. -->
-            <Deploy Include="$(Dependencies)/*.so*" Condition="'$(Dependencies)' != ''" />
-            <Deploy Include="$(Wrappers)/*.so*" Condition="'$(Wrappers)' != ''" />
-        </ItemGroup>
-        <MakeDir Directories="$(PluginDirectory)" />
-        <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(PluginDirectory)/plugin.dll" />
-        <Copy SourceFiles="@(Deploy)" DestinationFolder="$(PluginDirectory)" />
-        <Copy SourceFiles="$(MSBuildProjectDirectory)/ServerPlugin.xml" DestinationFiles="$(PluginDirectory)/plugin.xml" />
     </Target>
 
     <Import Project="../Shared/Shared.projitems" Label="Shared" />
