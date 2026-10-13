@@ -147,7 +147,9 @@ express: storage filename validation, CRLF XML, and case handling.
 `StorageSharing` emulates the Windows file-sharing semantics of the storage
 API. Linux has no mandatory sharing, so a read that Windows would refuse while
 a writer handle is open otherwise succeeds and yields a half-written (commonly
-empty) file. Path *mapping* does not happen here; that belongs to the rewriter.
+empty) file. As on Windows, the lock ends when the file is closed, also when the
+Bugfixes plugin closes a file a mod left open as the world unloads. Path
+*mapping* does not happen here; that belongs to the rewriter.
 
 ### 3. The ingress funnel, `PathCache.ResolveAbsolute`
 

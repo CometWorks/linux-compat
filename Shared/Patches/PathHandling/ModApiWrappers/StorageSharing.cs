@@ -73,7 +73,7 @@ internal static class StorageSharing
     internal static Lease AcquireWriter(string method, string fullPath)
     {
         var lease = new Lease(fullPath);
-        if (OpenWriters.TryAdd(fullPath, lease))
+        if (!IsWriterOpen(fullPath) && OpenWriters.TryAdd(fullPath, lease))
             return lease;
 
         throw SharingViolation(method, fullPath);
@@ -84,8 +84,20 @@ internal static class StorageSharing
     /// </summary>
     internal static void ThrowIfWriterOpen(string method, string fullPath)
     {
-        if (OpenWriters.ContainsKey(fullPath))
+        if (IsWriterOpen(fullPath))
             throw SharingViolation(method, fullPath);
+    }
+
+    // A registration whose file was closed under the decorator is dropped here.
+    private static bool IsWriterOpen(string fullPath)
+    {
+        if (!OpenWriters.TryGetValue(fullPath, out var lease))
+            return false;
+        if (lease.IsFileOpen)
+            return true;
+
+        lease.Release();
+        return false;
     }
 
     private static IOException SharingViolation(string method, string fullPath)
@@ -132,11 +144,25 @@ internal static class StorageSharing
     {
         private readonly string _fullPath;
         private int _released;
+        private Stream _stream;
 
         internal Lease(string fullPath)
         {
             _fullPath = fullPath;
         }
+
+        /// <summary>
+        /// The engine's file stream under the decorator. Windows lifts the lock
+        /// when the handle closes, whoever closes it: the Bugfixes plugin closes
+        /// the engine's writer of a file a mod left open when the world unloads,
+        /// and the mod still holds this decorator.
+        /// </summary>
+        internal void Watch(Stream stream)
+        {
+            _stream = stream;
+        }
+
+        internal bool IsFileOpen => _stream == null || _stream.CanWrite;
 
         internal void Release()
         {
@@ -163,6 +189,7 @@ internal static class StorageSharing
         {
             _inner = inner;
             _lease = lease;
+            _lease.Watch((inner as StreamWriter)?.BaseStream);
         }
 
         ~TrackedTextWriter()
@@ -227,6 +254,7 @@ internal static class StorageSharing
         {
             _inner = inner;
             _lease = lease;
+            _lease.Watch(inner.BaseStream);
         }
 
         ~TrackedBinaryWriter()
