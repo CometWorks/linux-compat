@@ -125,10 +125,11 @@ static class MyGuiControlMultilineTextPasteTextPatch
 
                 selection.ClipboardText = clipboardText;
 
-                target.Text = new StringBuilder(before)
-                    .Append(Regex.Replace(clipboardText, "\r\n", "\n"))
-                    .Append(after);
-                target.CarriagePositionIndex = before.Length + clipboardText.Length;
+                string pasted = Regex.Replace(clipboardText, "\r\n", "\n");
+                target.Text = new StringBuilder(before).Append(pasted).Append(after);
+                // Vanilla adds clipboardText.Length, which leaves the caret one character
+                // too far for every "\r\n" replaced above
+                target.CarriagePositionIndex = before.Length + pasted.Length;
 
                 selection.Reset(target);
             }
