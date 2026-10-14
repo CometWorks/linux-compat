@@ -94,6 +94,7 @@ namespace LinuxCompatDiagnostics
                 ProbeConfigDedicated();
                 ProbeSessionPaths();
                 ProbeOwnModContext();
+                ProbePathUtils();
                 ProbeLoadedMods();
                 ProbeTextStorage();
                 ProbeStorageCaseSensitivity();

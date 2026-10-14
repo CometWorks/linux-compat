@@ -16,6 +16,8 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
 {
     private const string SystemIoPathFqn = "global::System.IO.Path";
     private const string ReplacementFqn = "global::ClientPlugin.Rewriter.WindowsPath";
+    private const string PathUtilsFqn = "global::VRage.Library.Utils.PathUtils";
+    private const string WindowsPathUtilsFqn = "global::ClientPlugin.Rewriter.WindowsPathUtils";
     private const string FromGameFqn = "global::ClientPlugin.Rewriter.WindowsPath.FromGame";
     private const string ModItemFqn = "global::VRage.Game.MyObjectBuilder_Checkpoint.ModItem";
     private const string EnvironmentFqn = "global::System.Environment";
@@ -106,6 +108,17 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
             RequiresShimReference = true;
             var newType = SyntaxFactory
                 .ParseName(ReplacementFqn)
+                .WithLeadingTrivia(rewritten.Expression.GetLeadingTrivia())
+                .WithTrailingTrivia(rewritten.Expression.GetTrailingTrivia());
+            return rewritten.WithExpression(newType);
+        }
+
+        // PathUtils takes and returns filesystem paths; the shim translates both ways.
+        if (IsNamedTypeReference(node.Expression, PathUtilsFqn))
+        {
+            RequiresShimReference = true;
+            var newType = SyntaxFactory
+                .ParseName(WindowsPathUtilsFqn)
                 .WithLeadingTrivia(rewritten.Expression.GetLeadingTrivia())
                 .WithTrailingTrivia(rewritten.Expression.GetTrailingTrivia());
             return rewritten.WithExpression(newType);

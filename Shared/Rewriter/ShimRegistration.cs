@@ -10,8 +10,8 @@ namespace ClientPlugin.Rewriter;
 /// Plumbs the rewriter shim types into the script compiler before any mod compiles.
 /// <para>
 /// <see cref="WindowsSemanticsRewriter"/> emits references to <see cref="WindowsPath"/>,
-/// <see cref="WindowsTextWriter"/> and <see cref="WindowsStopwatch"/> into mod sources, so the
-/// whitelist and the mod compilations must both see this assembly. The plugin loader renames the
+/// <see cref="WindowsPathUtils"/>, <see cref="WindowsTextWriter"/> and <see cref="WindowsStopwatch"/>
+/// into mod sources, so the whitelist and the mod compilations must both see this assembly. The plugin loader renames the
 /// assembly, and only its in-memory image carries that identity, hence the raw metadata image
 /// instead of <see cref="MetadataReference.CreateFromFile(string)"/> on <see cref="Assembly.Location"/>.
 /// </para>
@@ -59,13 +59,14 @@ internal static class ShimRegistration
                 batch.AllowTypes(
                     MyWhitelistTarget.ModApi,
                     typeof(WindowsPath),
+                    typeof(WindowsPathUtils),
                     typeof(WindowsTextWriter),
                     typeof(WindowsStopwatch)
                 );
             }
 
             Log(
-                $"Rewriter shims (WindowsPath, WindowsTextWriter, WindowsStopwatch) plumbed into MyScriptCompiler from {asm.GetName().Name}"
+                $"Rewriter shims (WindowsPath, WindowsPathUtils, WindowsTextWriter, WindowsStopwatch) plumbed into MyScriptCompiler from {asm.GetName().Name}"
             );
         }
         catch (Exception ex)

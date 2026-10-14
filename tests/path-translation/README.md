@@ -33,5 +33,6 @@ Exit code 0 means every check passed. Covered:
 | `no root` | `RootPath` unset: no install mapping, passthrough in both directions, nothing thrown |
 | `other` | User data, temp, home and passthrough mappings are untouched |
 | `unset home` | `$HOME` unset resolves to the real profile, not an assumed `/home/<user>` |
+| `text` | `TranslateText` translates the paths in exception messages, quoted or running to the end, and leaves non-roots alone |
 
 Translation is asymmetric, so most cases assert both directions.

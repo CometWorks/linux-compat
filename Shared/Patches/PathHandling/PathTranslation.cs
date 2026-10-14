@@ -110,6 +110,50 @@ public static class PathTranslation
         return flipped;
     }
 
+    private static readonly char[] TextPathStart = { ' ', '\'', '"', '(' };
+    private static readonly char[] TextPathEnd = { '\'', '"', '\r', '\n' };
+
+    /// <summary>
+    /// Translates the native paths under the mapped roots inside free text, such as an
+    /// exception message. A path runs to the next quote, line break or the end of the text.
+    /// </summary>
+    public static string TranslateText(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+        // Longest roots first, and translated paths contain no '/', so nothing is translated twice.
+        foreach (var mapping in s_mappings)
+        {
+            var key = mapping.KeyForward;
+            int start = 0;
+            while ((start = text.IndexOf(key, start, StringComparison.Ordinal)) >= 0)
+            {
+                int keyEnd = start + key.Length;
+                bool rooted = start == 0 || Array.IndexOf(TextPathStart, text[start - 1]) >= 0;
+                bool whole =
+                    keyEnd == text.Length
+                    || text[keyEnd] == '/'
+                    || Array.IndexOf(TextPathEnd, text[keyEnd]) >= 0;
+                if (!rooted || !whole)
+                {
+                    start = keyEnd;
+                    continue;
+                }
+
+                int end = text.IndexOfAny(TextPathEnd, keyEnd);
+                if (end < 0)
+                    end = text.Length;
+                var translated =
+                    mapping.Replacement + text.Substring(keyEnd, end - keyEnd).Replace('/', '\\');
+                text = text.Substring(0, start) + translated + text.Substring(end);
+                start += translated.Length;
+            }
+        }
+
+        return text;
+    }
+
     /// <summary>Restores a synthetic drive-prefixed mod path to a Linux-rooted path.</summary>
     public static string Untranslate(string forwardSlashPath)
     {

@@ -31,6 +31,7 @@ internal static class Program
             UnknownRootMapsNoInstall();
             NonGameMappingsUnaffected();
             UnsetHomeIsDiscovered();
+            PathsInText();
         }
         finally
         {
@@ -168,6 +169,45 @@ internal static class Program
         MyFileSystem.RootPath = "/opt/SpaceEngineers";
         PathTranslation.Init();
         Expect("unset home", ToWin(expected + "/notes.txt"), @"C:\users\steamuser\notes.txt");
+    }
+
+    /// <summary>Exception messages that name native paths reach mods translated.</summary>
+    private static void PathsInText()
+    {
+        var home = Home("text");
+
+        Init(home, home + "/Steam/steamapps/common/SpaceEngineers");
+        Expect(
+            "text: quoted",
+            PathTranslation.TranslateText(
+                "Could not find a part of the path '"
+                    + home
+                    + "/.config/SpaceEngineers/Mods/A B/Data'."
+            ),
+            @"Could not find a part of the path 'C:\users\steamuser\AppData\Roaming\SpaceEngineers\Mods\A B\Data'."
+        );
+        Expect(
+            "text: to the end",
+            PathTranslation.TranslateText(
+                "Mods are not allowed to read or write by specified path "
+                    + home
+                    + "/Steam/steamapps/common/SpaceEngineers/Content/Textures"
+            ),
+            @"Mods are not allowed to read or write by specified path "
+                + WinSE
+                + @"\Content\Textures"
+        );
+        Expect(
+            "text: two paths",
+            PathTranslation.TranslateText("'" + home + "/a' and '/tmp/b'"),
+            @"'C:\users\steamuser\a' and 'C:\users\steamuser\AppData\Local\Temp\b'"
+        );
+        Expect(
+            "text: not a root",
+            PathTranslation.TranslateText("'/opt/tmp/x' and '/tmpfoo'"),
+            "'/opt/tmp/x' and '/tmpfoo'"
+        );
+        Expect("text: none", PathTranslation.TranslateText("no paths"), "no paths");
     }
 
     // ---- helpers ---------------------------------------------------------------------------

@@ -2,6 +2,8 @@
 # Every name below must be reported by a green run; a missing one
 # fails parse_results.py even when no probe FAILs. Regenerate with
 #   parse_results.py <log> --update-security-manifest <this file>
+security: allowed, PathUtils.EnsureSafePath: Content\Data
+security: allowed, PathUtils.GetFilesRecursively: own Data
 security: allowed, delete: storage global scope
 security: allowed, delete: storage local scope
 security: allowed, delete: storage world scope
@@ -42,6 +44,8 @@ security: allowed, read: storage world scope
 security: allowed, write: storage global scope
 security: allowed, write: storage local scope
 security: allowed, write: storage world scope
+security: refused, PathUtils.EnsureSafePath: install Bin64
+security: refused, PathUtils.GetFilesRecursively: install Bin64
 security: refused, aftermath: escape.txt absent from local storage
 security: refused, aftermath: escape.txt absent from world storage
 security: refused, binary read: content UNC share

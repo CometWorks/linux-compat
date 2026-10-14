@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Sandbox.ModAPI;
 using VRage.Game;
+using VRage.Library.Utils;
 
 namespace LinuxCompatDiagnostics
 {
@@ -587,6 +588,150 @@ namespace LinuxCompatDiagnostics
                 modPath != null && itemPath == modPath,
                 itemPath
             );
+        }
+
+        /// <summary>
+        /// VRage.Library.Utils.PathUtils is reachable from mods. It takes and
+        /// returns filesystem paths, and its exceptions name them.
+        /// </summary>
+        private void ProbePathUtils()
+        {
+            Section("PathUtils");
+            CheckProbe(
+                OwnerLinux,
+                "PathUtils.Normalize(\"a/b//c\")",
+                "a\\b\\c",
+                () => PathUtils.Normalize("a/b//c")
+            );
+
+            var ctx = ModContext;
+            if (ctx == null)
+            {
+                CheckTrue(OwnerLinux, "ModContext available", false, "<null>");
+                return;
+            }
+            string data = ctx.ModPath + "\\Data";
+            string content = MyAPIGateway.Utilities.GamePaths.ContentPath;
+
+            // Whether a Workshop deployment (the DS run) passes depends on where
+            // the game keeps it, see the Uri.IsBaseOf note below.
+            if (ctx.ModItem.PublishedFileId != 0)
+            {
+                TryInfo(
+                    "PathUtils.GetFilesRecursively(Workshop mod Data) count",
+                    () => PathUtils.GetFilesRecursively(data, "*").Length
+                );
+                return;
+            }
+
+            // Empty when the call throws, so the checks below still run.
+            string[] files = new string[0];
+            CheckNoThrow(
+                OwnerLinux,
+                "security: allowed, PathUtils.GetFilesRecursively: own Data",
+                () => files = PathUtils.GetFilesRecursively(data, "*")
+            );
+            Info("PathUtils.GetFilesRecursively(own Data) count", files.Length);
+            string outside = null;
+            foreach (var file in files)
+            {
+                CheckWindowsShapedAbsolute(
+                    "PathUtils.GetFilesRecursively " + file.Substring(data.Length),
+                    file
+                );
+                if (
+                    outside == null
+                    && !file.StartsWith(data + "\\", StringComparison.OrdinalIgnoreCase)
+                )
+                    outside = file;
+            }
+            CheckTrue(
+                OwnerLinux,
+                "PathUtils.GetFilesRecursively results are under ModPath\\Data",
+                outside == null,
+                outside ?? data
+            );
+            string probesPaths = data + "\\Scripts\\LinuxCompatDiagnostics\\ProbesPaths.cs";
+            CheckTrue(
+                OwnerLinux,
+                "PathUtils.GetFilesRecursively finds Scripts\\...\\ProbesPaths.cs",
+                Array.IndexOf(files, probesPaths) >= 0,
+                files.Length
+            );
+            CheckProbe(
+                OwnerLinux,
+                "PathUtils.GetFilesRecursively(own Data, \"*.sbc\")",
+                data + "\\DiagBlocks.sbc",
+                () => string.Join("|", PathUtils.GetFilesRecursively(data, "*.sbc"))
+            );
+
+            string missing = data + "\\NoSuchFolder";
+            CheckPathUtilsException(
+                "PathUtils.GetFilesRecursively(missing folder)",
+                () => PathUtils.GetFilesRecursively(missing, "*"),
+                "DirectoryNotFoundException",
+                missing
+            );
+
+            CheckNoThrow(
+                OwnerLinux,
+                "security: allowed, PathUtils.EnsureSafePath: Content\\Data",
+                () => PathUtils.EnsureSafePath(content + "\\Data\\Blocks.sbc")
+            );
+            // Vanilla checks with Uri.IsBaseOf on base paths without a trailing
+            // separator, which drops their last segment: everything under Content
+            // and the whole user data folder pass, on Windows too. The install's
+            // Bin64 is outside both.
+            CheckPathUtilsRefused("install Bin64", Path.GetDirectoryName(content) + "\\Bin64");
+        }
+
+        private void CheckPathUtilsRefused(string label, string path)
+        {
+            Info("security input (PathUtils " + label + ")", path);
+            CheckPathUtilsException(
+                "security: refused, PathUtils.EnsureSafePath: " + label,
+                () => PathUtils.EnsureSafePath(path),
+                "SecurityException",
+                path
+            );
+            CheckPathUtilsException(
+                "security: refused, PathUtils.GetFilesRecursively: " + label,
+                () => PathUtils.GetFilesRecursively(path, "*"),
+                "SecurityException",
+                path
+            );
+        }
+
+        /// <summary>
+        /// The probe must throw the given type, with the mod's own Windows-shaped
+        /// path in the message: the Linux path names the user's home folder.
+        /// Neither exception type is mod-whitelisted, so match the name.
+        /// </summary>
+        private void CheckPathUtilsException(
+            string name,
+            Action probe,
+            string exceptionType,
+            string path
+        )
+        {
+            try
+            {
+                probe();
+            }
+            catch (Exception ex)
+            {
+                Report(
+                    OwnerLinux,
+                    name,
+                    ex.GetType().Name == exceptionType
+                        && ex.Message.IndexOf(path, StringComparison.OrdinalIgnoreCase) >= 0
+                        && ex.Message.IndexOf('/') < 0,
+                    "<throws " + exceptionType + " naming " + path + ">",
+                    "<EXCEPTION: " + ex.GetType().Name + ": " + ex.Message + ">"
+                );
+                return;
+            }
+            Report(OwnerLinux, name, false, "<throws " + exceptionType + ">", "<no exception>");
         }
 
         private void ProbeLoadedMods()

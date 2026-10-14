@@ -119,6 +119,8 @@ compiled for Windows assume neither. Three mechanisms carry that difference.
 and `WindowsSemanticsRewriter` rewrites the syntax trees:
 
 - `System.IO.Path` → `WindowsPath` (backslashes, a synthetic `C:\` drive)
+- `VRage.Library.Utils.PathUtils` → `WindowsPathUtils` (paths translated in, out
+  and in exception messages)
 - `TextWriter.WriteLine` → `WindowsTextWriter.WriteLine` (CRLF)
 - `Stopwatch` → `WindowsStopwatch` (the 10 MHz Windows frequency)
 
