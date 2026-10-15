@@ -10,7 +10,7 @@ wrappers in `Shared/Patches/PathHandling/ModApiWrappers/`, and the
 ## Layout
 
 - `LinuxCompatDiagnostics/`: the test mod, and the source of truth. The harness
-  deploys it to `~/.config/SpaceEngineers/Mods/`. A session component runs ~410
+  deploys it to `~/.config/SpaceEngineers/Mods/`. A session component runs ~470
   expected-vs-actual probes during world load and writes
   `Storage/LinuxCompatDiagnostics_LinuxCompatDiagnostics/LinuxCompatDiagnostics.log`.
 - `run.sh`: client harness. Builds the plugin, deploys the mod, clears the
@@ -57,6 +57,16 @@ The dotnet-compat mod rewriter only activates for mods that fail to compile.
 This mod compiles cleanly, so only the linux-compat rewriter transforms it. A
 rewriter-detection probe checks exactly that: `typeof(Stopwatch).FullName`
 must be the `WindowsStopwatch` shim.
+
+## Home folder leaks
+
+Mods must never see the Linux home folder or user name; on Windows they see
+`C:\users\<user>\...`, so on Linux they get `C:\users\steamuser\...`.
+`parse_results.py` fails the run on any log line that names the home folder or
+the user name of whoever runs it, whatever the probe on that line reported. The
+log is written by the mod, so such a line is a leak. `ProbesHomeLeak.cs` covers
+the call shapes, definition paths, caught exceptions and a world listed and read
+through `UserDataPath + "\Saves"`.
 
 ## Security probes
 

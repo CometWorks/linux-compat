@@ -67,6 +67,7 @@ public static class Preloader
 #endif
             case "VRage.Library":
                 ClientPlugin.Patches.PathHandling.MyFileSystemOpenPrepatch.Prepatch(asmDef);
+                ClientPlugin.Patches.PathHandling.PathUtilsEnsureSafePathPrepatch.Prepatch(asmDef);
                 break;
             case "SpaceEngineers.Game":
                 PatchSpaceEngineersGame(asmDef);

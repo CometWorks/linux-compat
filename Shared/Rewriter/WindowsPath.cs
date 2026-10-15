@@ -373,6 +373,37 @@ public static class WindowsPath
     }
 
     /// <summary>
+    /// Translates a string that may be a native path or embed one, such as a definition field,
+    /// leaving any other string alone.
+    /// </summary>
+    public static string FromGameText(string text)
+    {
+        if (string.IsNullOrEmpty(text) || text.IndexOf('/') < 0)
+            return text;
+        return text[0] == '/' ? FromGame(text) : PathTranslation.TranslateText(text);
+    }
+
+    /// <summary>
+    /// A translated copy when an element names a native path, otherwise the array itself, so
+    /// writing to a vanilla definition's array still changes the definition.
+    /// </summary>
+    public static string[] FromGameText(string[] texts)
+    {
+        if (texts == null)
+            return null;
+        string[] copy = null;
+        for (int i = 0; i < texts.Length; i++)
+        {
+            var translated = FromGameText(texts[i]);
+            if (ReferenceEquals(translated, texts[i]))
+                continue;
+            copy ??= (string[])texts.Clone();
+            copy[i] = translated;
+        }
+        return copy ?? texts;
+    }
+
+    /// <summary>
     /// Translates a mod-supplied path to the native form used by game internals.
     /// Rewriter target wrapping path-accepting mod API arguments and setters.
     /// </summary>

@@ -121,6 +121,9 @@ and `WindowsSemanticsRewriter` rewrites the syntax trees:
 - `System.IO.Path` → `WindowsPath` (backslashes, a synthetic `C:\` drive)
 - `VRage.Library.Utils.PathUtils` → `WindowsPathUtils` (paths translated in, out
   and in exception messages)
+- every `catch` block and exception filter starts with `WindowsException.Scrub`,
+  which translates the paths in the caught exception's message, file name and
+  stack trace
 - `TextWriter.WriteLine` → `WindowsTextWriter.WriteLine` (CRLF)
 - `Stopwatch` → `WindowsStopwatch` (the 10 MHz Windows frequency)
 
@@ -131,8 +134,14 @@ member keeps its original binding instead of becoming a compile error.
 Mod API members that return filesystem paths (`IMyGamePaths.ContentPath`,
 `IMySession.CurrentPath`, `IMyModContext.ModPath`, and so on) are wrapped at
 the mod's call site in `WindowsPath.FromGame`, and values flowing the other way
-in `ToGame`. Translation therefore lives in the mod's own compiled code:
-plugins and engine code calling the same members keep receiving native paths.
+in `ToGame`. String and string array members of definitions are wrapped in
+`WindowsPath.FromGameText`, because the asset paths of a mod's own definitions
+are absolute; it translates only strings that are or contain a native path. A
+read in the middle of a `?.` chain cannot be wrapped in a call, so it moves into
+a lambda of an extension method from `ClientPlugin.Rewriter.ModExtensions`, which
+the rewriter then imports into that file. Translation therefore lives in the
+mod's own compiled code: plugins and engine code calling the same members keep
+receiving native paths.
 
 `ShimRegistration` plumbs the shim types into the script compiler before any
 mod compiles. It uses the raw in-memory metadata image rather than
@@ -165,6 +174,10 @@ caches for mutable roots, so resolution does not walk the filesystem per call.
 
 `MyFileSystemOpenPrepatch` injects a call to it as the prologue of
 `MyFileSystem.Open`, which is why `VRage.Library.dll` is in `TargetDLLs`.
+`PathUtilsEnsureSafePathPrepatch` makes `PathUtils.EnsureSafePath` check the
+native path too. Linux does not consider a `C:\` path rooted, so the check used
+to combine it with the Mods folder and pass it, and `MyObjectBuilderSerializer`
+then read or wrote its native target anywhere under the home folder.
 
 `IngressTrace` records every internal site that still receives a
 drive-prefixed mod path, together with the stack that delivered it. Debug

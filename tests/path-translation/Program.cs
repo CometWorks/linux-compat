@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using ClientPlugin.Patches.PathHandling;
+using ClientPlugin.Rewriter;
 using VRage.FileSystem;
 
 namespace PathTranslationTests;
@@ -32,6 +34,8 @@ internal static class Program
             NonGameMappingsUnaffected();
             UnsetHomeIsDiscovered();
             PathsInText();
+            RoundTripsWithoutUserName();
+            CaughtExceptionsAreScrubbed(originalHome);
         }
         finally
         {
@@ -209,6 +213,119 @@ internal static class Program
         );
         Expect("text: none", PathTranslation.TranslateText("no paths"), "no paths");
     }
+
+    /// <summary>
+    /// What a mod gets back names neither /home nor the user, and leads back to the same file.
+    /// </summary>
+    private static void RoundTripsWithoutUserName()
+    {
+        const string home = "/home/alice";
+        Init(home, home + "/.steam/steam/steamapps/common/SpaceEngineers");
+        string[] natives =
+        {
+            home,
+            home + "/.config/SpaceEngineers",
+            home + "/.config/SpaceEngineers/Saves/76561198000000000/My World/Sandbox_config.sbc",
+            home + "/.config/SpaceEngineers/Mods/My Mod/Data",
+            home + "/.config/SpaceEngineers/SpaceEngineers_20261015_120000000.log",
+            home + "/.steam/steam/steamapps/common/SpaceEngineers/Content/Data/Blocks.sbc",
+            home + "/.steam/steam/steamapps/workshop/content/244850/123/Models/a.mwm",
+            home + "/.local/share/Pulsar/Legacy/GitHub/plugin/Source.cs",
+            "/tmp/abc.tmp",
+        };
+        foreach (var native in natives)
+        {
+            var win = ToWin(native);
+            Expect("no user: " + native, NamesUser(win, home) ? win : "<no user>", "<no user>");
+            Expect("round trip: " + native, ToLinux(win), native);
+        }
+
+        Expect(
+            "text: stack trace frame",
+            PathTranslation.TranslateText(
+                "   at ClientPlugin.X.Read(String file) in "
+                    + home
+                    + "/.local/share/Pulsar/Legacy/GitHub/plugin/X.cs:line 12"
+            ),
+            @"   at ClientPlugin.X.Read(String file) in C:\users\steamuser\.local\share\Pulsar\Legacy\GitHub\plugin\X.cs:line 12"
+        );
+    }
+
+    /// <summary>
+    /// What WindowsException.Scrub, run first in every catch block of mod code, leaves of an
+    /// exception: no native path in the message, the file name, the stack trace or ToString().
+    /// </summary>
+    private static void CaughtExceptionsAreScrubbed(string realHome)
+    {
+        Init(realHome, "/opt/SpaceEngineers");
+        var native = realHome + "/.config/SpaceEngineers/Mods/M/Data/Scripts";
+        try
+        {
+            ThrowNotFound(native);
+        }
+        catch (FileNotFoundException e)
+        {
+            WindowsException.Scrub(e);
+            var win = @"C:\users\steamuser\AppData\Roaming\SpaceEngineers\Mods\M\Data\Scripts";
+            Expect(
+                "scrub: message",
+                e.Message,
+                "Access to protected location '" + win + "' not allowed."
+            );
+            Expect("scrub: file name", e.FileName, win);
+            Expect(
+                "scrub: ToString",
+                e.ToString().Contains(realHome) ? e.ToString() : "<no home>",
+                "<no home>"
+            );
+            // This file's path is in the trace when the build carries a PDB and lives under $HOME.
+            var source = SourcePath();
+            if (source.StartsWith(realHome + "/", StringComparison.Ordinal))
+                Expect(
+                    "scrub: stack trace",
+                    e.StackTrace.Contains(realHome) ? e.StackTrace : "<no home>",
+                    "<no home>"
+                );
+        }
+
+        try
+        {
+            ThrowNotFound(native);
+        }
+        catch (Exception e) when (WindowsException.Scrub(e))
+        {
+            Expect(
+                "scrub: in a filter",
+                e.Message.Contains(realHome) ? e.Message : "<no home>",
+                "<no home>"
+            );
+        }
+
+        var aggregate = new AggregateException(new IOException("'" + native + "'"));
+        WindowsException.Scrub(aggregate);
+        Expect(
+            "scrub: aggregate",
+            aggregate.InnerExceptions[0].Message.Contains(realHome)
+                ? aggregate.Message
+                : "<no home>",
+            "<no home>"
+        );
+        Expect("scrub: null", WindowsException.Scrub(null) ? "true" : "false", "true");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowNotFound(string path) =>
+        throw new FileNotFoundException(
+            "Access to protected location '" + path + "' not allowed.",
+            path
+        );
+
+    private static string SourcePath([CallerFilePath] string path = "") => path;
+
+    private static bool NamesUser(string path, string home) =>
+        path.IndexOf('/') >= 0
+        || path.IndexOf(@"\home\", StringComparison.OrdinalIgnoreCase) >= 0
+        || path.IndexOf(Path.GetFileName(home), StringComparison.OrdinalIgnoreCase) >= 0;
 
     // ---- helpers ---------------------------------------------------------------------------
 

@@ -95,6 +95,10 @@ namespace LinuxCompatDiagnostics
                 ProbeSessionPaths();
                 ProbeOwnModContext();
                 ProbePathUtils();
+                ProbeHomeFolderLeak();
+                ProbeExceptionText();
+                ProbeDefinitionPaths();
+                ProbeSerializerContainment();
                 ProbeLoadedMods();
                 ProbeTextStorage();
                 ProbeStorageCaseSensitivity();

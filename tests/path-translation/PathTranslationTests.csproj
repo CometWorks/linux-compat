@@ -17,6 +17,7 @@
     <ItemGroup>
         <!-- The code under test, compiled verbatim from the plugin sources. -->
         <Compile Include="../../Shared/Patches/PathHandling/PathTranslation.cs" Link="PathTranslation.cs" />
+        <Compile Include="../../Shared/Rewriter/WindowsException.cs" Link="WindowsException.cs" />
         <Compile Include="IngressTraceStub.cs" />
         <Compile Include="MyFileSystemStub.cs" />
         <Compile Include="Program.cs" />

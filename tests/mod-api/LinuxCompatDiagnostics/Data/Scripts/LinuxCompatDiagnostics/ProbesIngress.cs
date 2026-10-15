@@ -44,9 +44,9 @@ namespace LinuxCompatDiagnostics
             );
             if (def != null)
             {
-                Info("DiagBlock def.Model (raw)", def.Model);
+                Info("DiagBlock def.Model", def.Model);
                 Info(
-                    "DiagBlock def.Icons[0] (raw)",
+                    "DiagBlock def.Icons[0]",
                     def.Icons != null && def.Icons.Length > 0 ? def.Icons[0] : "<none>"
                 );
                 CheckTrue(

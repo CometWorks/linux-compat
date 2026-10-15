@@ -60,13 +60,15 @@ internal static class ShimRegistration
                     MyWhitelistTarget.ModApi,
                     typeof(WindowsPath),
                     typeof(WindowsPathUtils),
+                    typeof(WindowsException),
+                    typeof(ModExtensions.LinuxCompatPathExtensions),
                     typeof(WindowsTextWriter),
                     typeof(WindowsStopwatch)
                 );
             }
 
             Log(
-                $"Rewriter shims (WindowsPath, WindowsPathUtils, WindowsTextWriter, WindowsStopwatch) plumbed into MyScriptCompiler from {asm.GetName().Name}"
+                $"Rewriter shims (WindowsPath, WindowsPathUtils, WindowsException, WindowsTextWriter, WindowsStopwatch) plumbed into MyScriptCompiler from {asm.GetName().Name}"
             );
         }
         catch (Exception ex)

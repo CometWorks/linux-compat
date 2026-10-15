@@ -10,8 +10,9 @@ The suite is standalone. It compiles
 `$HOME` and root path, so it needs neither the game nor Steam, and it touches
 nothing on disk. `IngressTraceStub.cs` replaces the real `IngressTrace`, which
 reaches into `PathCache`, `PathHelpers` and `MyLog` and cannot compile outside
-the game. `MyFileSystemStub.cs` provides the one `RootPath` field
-`PathTranslation` reads.
+the game. `Shared/Rewriter/WindowsException.cs` is compiled verbatim as well.
+`MyFileSystemStub.cs` provides the one `RootPath` field `PathTranslation`
+reads.
 
 It is not part of `LinuxCompat.sln`: it targets plain `net10.0` with no game
 references, and its own `Directory.Build.props` shadows the repository root's,
@@ -34,5 +35,7 @@ Exit code 0 means every check passed. Covered:
 | `other` | User data, temp, home and passthrough mappings are untouched |
 | `unset home` | `$HOME` unset resolves to the real profile, not an assumed `/home/<user>` |
 | `text` | `TranslateText` translates the paths in exception messages, quoted or running to the end, and leaves non-roots alone |
+| `round trip` | Paths under a `/home/alice` home translate without `/home` or the user name, back to the same native path; a stack trace frame |
+| `scrub` | `WindowsException.Scrub`, which runs first in every catch block of mod code, translates the message, file name, `ToString()` and stack trace, also in a filter and inside an `AggregateException` |
 
 Translation is asymmetric, so most cases assert both directions.

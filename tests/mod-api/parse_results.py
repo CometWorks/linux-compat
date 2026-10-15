@@ -7,7 +7,8 @@ Usage:
 
 Exit codes:
   0 - complete run, no FAIL lines, security manifest satisfied
-  1 - complete run with FAIL lines, or a missing security probe
+  1 - complete run with FAIL lines, a missing security probe, or a line naming
+      the home folder or user name of whoever runs this parser
   2 - incomplete or missing log (no END terminator)
 
 Failures are reported in three sections:
@@ -18,6 +19,10 @@ Failures are reported in three sections:
   [DOTNET] - follow-up items for the dotnet-compat repo (raw .NET 10
              expectations broken; may indicate an active dotnet-compat shim)
 
+Mods must never see the Linux home folder. The log is written by the mod, so
+any line naming this machine's home folder or user name is a leak and fails the
+run, whatever the probe on that line reported.
+
 The security manifest is the regression net for the containment checks: it
 lists every security probe name a green run is expected to report. A probe that
 disappears - because the probe was deleted, renamed, or never ran since the
@@ -26,6 +31,8 @@ exists for it. Regenerate it from a known-good run with
 --update-security-manifest and commit the result.
 """
 
+import getpass
+import os
 import re
 import sys
 
@@ -37,6 +44,14 @@ SUMMARY_RE = re.compile(
 )
 END_MARKER = "=== END LinuxCompatDiagnostics ==="
 SECURITY_PREFIX = "security: "
+
+
+def home_leak(line):
+    """Whether the line names this machine's home folder, or its user name as a path segment."""
+    line = line.replace("\\", "/")
+    home = re.escape(os.path.expanduser("~").rstrip("/"))
+    user = re.escape(getpass.getuser())
+    return re.search(rf"{home}|/{user}(?=/|\"|'|>|$)", line, re.IGNORECASE) is not None
 
 
 def read_manifest(path):
@@ -102,6 +117,7 @@ def main() -> int:
     summary = None
     fatal = [line for line in lines if line.startswith("FATAL ")]
     complete = any(line == END_MARKER for line in lines)
+    leaks = [line for line in lines if home_leak(line)]
 
     for line in lines:
         m = RESULT_RE.match(line)
@@ -127,7 +143,9 @@ def main() -> int:
 
     if update_manifest:
         write_manifest(update_manifest, sorted(set(security_names)))
-        print(f"wrote {len(set(security_names))} security probe names to {update_manifest}")
+        print(
+            f"wrote {len(set(security_names))} security probe names to {update_manifest}"
+        )
 
     print(f"Suite log: {path}")
     print(f"Probes: {len(results)} total, {len(passed)} passed, {len(failed)} failed")
@@ -144,26 +162,36 @@ def main() -> int:
         try:
             expected_names = read_manifest(manifest_path)
         except OSError as ex:
-            print(f"ERROR: cannot read security manifest {manifest_path}: {ex}", file=sys.stderr)
+            print(
+                f"ERROR: cannot read security manifest {manifest_path}: {ex}",
+                file=sys.stderr,
+            )
             return 2
         reported = set(security_names)
         missing = [n for n in expected_names if n not in reported]
         unknown = sorted(reported - set(expected_names))
 
     if security_failed:
-        print_failures("SECURITY failures - containment escape or over-tightened check", security_failed)
+        print_failures(
+            "SECURITY failures - containment escape or over-tightened check",
+            security_failed,
+        )
 
     if missing:
         print()
-        print(f"SECURITY probes missing from the run ({len(missing)}) - "
-              "deleted, renamed, or the suite died before reporting them:")
+        print(
+            f"SECURITY probes missing from the run ({len(missing)}) - "
+            "deleted, renamed, or the suite died before reporting them:"
+        )
         for name in missing:
             print(f"  MISSING {name}")
 
     if unknown:
         print()
-        print(f"New security probes not in the manifest ({len(unknown)}) - "
-              "re-run with --update-security-manifest and commit it:")
+        print(
+            f"New security probes not in the manifest ({len(unknown)}) - "
+            "re-run with --update-security-manifest and commit it:"
+        )
         for name in unknown:
             print(f"  NEW {name}")
 
@@ -171,7 +199,15 @@ def main() -> int:
         print_failures("[LINUX] failures - linux-compat bugs", linux_failed)
 
     if dotnet_failed:
-        print_failures("[DOTNET] failures - follow-ups for dotnet-compat", dotnet_failed)
+        print_failures(
+            "[DOTNET] failures - follow-ups for dotnet-compat", dotnet_failed
+        )
+
+    if leaks:
+        print()
+        print(f"Lines naming the home folder or user name ({len(leaks)}):")
+        for line in leaks:
+            print(f"  {line}")
 
     if fatal:
         print()
@@ -181,7 +217,9 @@ def main() -> int:
 
     print()
     if not complete:
-        print("RESULT: INCOMPLETE - the END terminator is missing; the suite died mid-run.")
+        print(
+            "RESULT: INCOMPLETE - the END terminator is missing; the suite died mid-run."
+        )
         return 2
     if not security:
         print("RESULT: FAIL - the suite reported no security probes at all.")
@@ -195,11 +233,16 @@ def main() -> int:
                 "WARNING: summary line disagrees with parsed lines "
                 f"(summary pass={s_pass} linux_fail={s_linux} dotnet_fail={s_dotnet})"
             )
-    if failed or fatal or missing:
-        parts = [f"{len(security_failed)} security", f"{len(linux_failed)} linux",
-                 f"{len(dotnet_failed)} dotnet"]
+    if failed or fatal or missing or leaks:
+        parts = [
+            f"{len(security_failed)} security",
+            f"{len(linux_failed)} linux",
+            f"{len(dotnet_failed)} dotnet",
+        ]
         if missing:
             parts.append(f"{len(missing)} missing security probes")
+        if leaks:
+            parts.append(f"{len(leaks)} home folder leaks")
         if fatal:
             parts.append(f"{len(fatal)} fatal")
         print("RESULT: FAIL (" + ", ".join(parts) + ")")

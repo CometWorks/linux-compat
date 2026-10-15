@@ -44,6 +44,8 @@ security: allowed, read: storage world scope
 security: allowed, write: storage global scope
 security: allowed, write: storage local scope
 security: allowed, write: storage world scope
+security: refused, MyObjectBuilderSerializer.DeserializeXML: home folder
+security: refused, MyObjectBuilderSerializer.DeserializeXML: install Bin64
 security: refused, PathUtils.EnsureSafePath: install Bin64
 security: refused, PathUtils.GetFilesRecursively: install Bin64
 security: refused, aftermath: escape.txt absent from local storage

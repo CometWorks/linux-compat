@@ -30,6 +30,16 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
     private const string XmlWriterSettingsFqn = "global::System.Xml.XmlWriterSettings";
 
     private const string ToGameFqn = "global::ClientPlugin.Rewriter.WindowsPath.ToGame";
+    private const string FromGameTextFqn = "global::ClientPlugin.Rewriter.WindowsPath.FromGameText";
+    private const string ModExtensionsNamespace = "global::ClientPlugin.Rewriter.ModExtensions";
+    private const string FromGameExtension = nameof(
+        ModExtensions.LinuxCompatPathExtensions.LinuxCompatFromGame
+    );
+    private const string FromGameTextExtension = nameof(
+        ModExtensions.LinuxCompatPathExtensions.LinuxCompatFromGameText
+    );
+    private const string DefinitionBaseFqn = "global::VRage.Game.MyDefinitionBase";
+    private const string ScrubFqn = "global::ClientPlugin.Rewriter.WindowsException.Scrub";
 
     // Only rewrite bare Path members the shim actually implements; unknown members
     // keep their original binding rather than turning into compile errors.
@@ -53,15 +63,39 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
             "UserDataPath",
             "SavesPath",
         },
-        ["global::VRage.Game.ModAPI.IMyConfigDedicated"] = new()
-        {
-            "PremadeCheckpointPath",
-            "GetFilePath",
-        },
         ["global::VRage.Game.ModAPI.IMyModContext"] = new() { "ModPath", "ModPathData" },
         // Mods also reach the concrete context through MyDefinitionBase.Context.
         ["global::VRage.Game.MyModContext"] = new() { "ModPath", "ModPathData" },
         ["global::VRage.Game.ModAPI.IMyModel"] = new() { "AssetName" },
+        ["global::VRage.Utils.MyLog"] = new() { "GetFilePath" },
+        // Read through a lambda mid-chain in a conditional access; elsewhere VisitInvocationExpression
+        // passes the struct itself to FromGame(ModItem).
+        ["global::VRage.Game.MyObjectBuilder_Checkpoint.ModItem"] = new() { "GetPath" },
+        ["global::VRage.Game.ModAPI.IMyConfigDedicated"] = new()
+        {
+            "PremadeCheckpointPath",
+            "GetFilePath",
+            "LoadWorld",
+        },
+        ["global::Sandbox.Game.MyVisualScriptLogicProvider"] = new()
+        {
+            "GetCurrentSessionPath",
+            "GetContentPath",
+            "GetSavesPath",
+            "GetModsPath",
+        },
+    };
+
+    // Strings that may hold or embed native paths, besides every string and string[] member of
+    // a definition (paths of mod assets are absolute there); reads are wrapped in FromGameText.
+    private static readonly Dictionary<string, HashSet<string>> EgressTextMembers = new()
+    {
+        ["global::VRage.Game.MyModContext"] = new() { "CurrentFile" },
+        ["global::VRage.Game.MyDefinitionErrors.Error"] = new() { "ErrorFile", "Message" },
+        ["global::VRage.Game.ObjectBuilders.Definitions.MyObjectBuilder_GuiTexture"] = new()
+        {
+            "Path",
+        },
     };
 
     // Mod API calls whose listed parameters carry filesystem paths; those
@@ -80,22 +114,45 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         [("global::VRage.Game.ModAPI.IMyConfigDedicated", "Load")] = new[] { 0 },
         [("global::VRage.Game.ModAPI.IMyConfigDedicated", "Save")] = new[] { 0 },
         [("global::VRage.Game.ModAPI.IMySession", "Save")] = new[] { 0 },
+        [("global::VRage.Utils.MyLog", "Init")] = new[] { 0 },
+        [("global::Sandbox.Game.MyVisualScriptLogicProvider", "TakeScreenshot")] = new[] { 0 },
+        [("global::Sandbox.Game.MyVisualScriptLogicProvider", "SetCustomSkybox")] = new[] { 0 },
+        [("global::Sandbox.Game.MyVisualScriptLogicProvider", "SetCustomLoadingScreenImage")] =
+            new[] { 0 },
+        [("global::Sandbox.Game.MyVisualScriptLogicProvider", "SessionReloadDialog")] = new[] { 2 },
     };
 
     // Mod API property setters accepting filesystem paths; assigned values are
     // wrapped in ToGame.
     private static readonly Dictionary<string, HashSet<string>> IngressPathSetters = new()
     {
-        ["global::VRage.Game.ModAPI.IMyConfigDedicated"] = new() { "PremadeCheckpointPath" },
+        ["global::VRage.Game.ModAPI.IMyConfigDedicated"] = new()
+        {
+            "PremadeCheckpointPath",
+            "LoadWorld",
+        },
     };
 
     private readonly SemanticModel _semanticModel;
 
     internal bool RequiresShimReference { get; private set; }
 
+    // Set when a rewritten read needs the extension methods of ModExtensionsNamespace.
+    private bool RequiresExtensionsUsing { get; set; }
+
     public WindowsSemanticsRewriter(SemanticModel semanticModel)
     {
         _semanticModel = semanticModel;
+    }
+
+    public override SyntaxNode VisitCompilationUnit(CompilationUnitSyntax node)
+    {
+        var rewritten = (CompilationUnitSyntax)base.VisitCompilationUnit(node);
+        if (!RequiresExtensionsUsing)
+            return rewritten;
+        return rewritten.AddUsings(
+            SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(ModExtensionsNamespace))
+        );
     }
 
     public override SyntaxNode VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
@@ -146,37 +203,193 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
                 .WithTrailingTrivia(rewritten.GetTrailingTrivia());
         }
 
-        // Mod API path getters; conditional access is wrapped at the enclosing node.
-        if (
-            _semanticModel.GetSymbolInfo(node).Symbol is IPropertySymbol pathProperty
-            && IsEgressPathMember(pathProperty)
-            && !IsAssignmentTarget(node)
-            && !IsOnConditionalAccessSpine(node)
-            && !IsInsideNameOf(node)
-        )
-        {
-            RequiresShimReference = true;
-            return WrapShimCall(FromGameFqn, rewritten);
-        }
+        // Mod API path getters and definition strings. Method calls are handled by
+        // VisitInvocationExpression, a conditional access tail by the conditional itself.
+        var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+        if (symbol is not IMethodSymbol && !IsWriteTarget(node) && !IsInsideNameOf(node))
+            return WrapEgress(node, rewritten, EgressOf(symbol)) ?? rewritten;
 
         return rewritten;
     }
 
-    private bool IsEgressPathMember(ISymbol symbol)
+    /// <summary>A member read inside a conditional access chain, like <c>a?.GamePaths.UserDataPath</c>.</summary>
+    public override SyntaxNode VisitMemberBindingExpression(MemberBindingExpressionSyntax node)
     {
-        if (symbol is not IPropertySymbol && symbol is not IMethodSymbol)
-            return false;
+        var rewritten = (MemberBindingExpressionSyntax)base.VisitMemberBindingExpression(node);
+        var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+        if (symbol is IMethodSymbol || IsInsideNameOf(node))
+            return rewritten;
+        return WrapEgress(node, rewritten, EgressOf(symbol)) ?? rewritten;
+    }
+
+    private enum Egress
+    {
+        None,
+
+        // A filesystem path: FromGame.
+        Path,
+
+        // A string that may hold or embed a native path: FromGameText.
+        Text,
+    }
+
+    /// <summary>
+    /// Translates the value of an egress member read or call. Returns null when the node is no
+    /// egress, or when it is the tail of a conditional access, which the conditional wraps whole.
+    /// </summary>
+    private ExpressionSyntax WrapEgress(
+        ExpressionSyntax node,
+        ExpressionSyntax rewritten,
+        Egress egress
+    )
+    {
+        if (egress == Egress.None || IsConditionalTail(node))
+            return null;
+
+        if (!IsOnConditionalAccessSpine(node))
+        {
+            RequiresShimReference = true;
+            return WrapShimCall(egress == Egress.Path ? FromGameFqn : FromGameTextFqn, rewritten);
+        }
+
+        // Mid-chain in a conditional access the member binding cannot leave the chain, so the
+        // read moves into a lambda of an extension call: a?.B.C.D() -> a?.B.LinuxCompatFromGame(o => o.C).D()
+        const string owner = "__linuxCompatOwner";
+        ExpressionSyntax receiver;
+        ExpressionSyntax read;
+        switch (rewritten)
+        {
+            case MemberAccessExpressionSyntax access:
+                receiver = access.Expression;
+                read = access.WithExpression(SyntaxFactory.IdentifierName(owner));
+                break;
+            case MemberBindingExpressionSyntax binding:
+                receiver = null;
+                read = SyntaxFactory.MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression,
+                    SyntaxFactory.IdentifierName(owner),
+                    binding.Name
+                );
+                break;
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax access }:
+                receiver = access.Expression;
+                read = ((InvocationExpressionSyntax)rewritten).WithExpression(
+                    access.WithExpression(SyntaxFactory.IdentifierName(owner))
+                );
+                break;
+            case InvocationExpressionSyntax { Expression: MemberBindingExpressionSyntax binding }:
+                receiver = null;
+                read = ((InvocationExpressionSyntax)rewritten).WithExpression(
+                    SyntaxFactory.MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        SyntaxFactory.IdentifierName(owner),
+                        binding.Name
+                    )
+                );
+                break;
+            default:
+                return null;
+        }
+
+        RequiresShimReference = true;
+        RequiresExtensionsUsing = true;
+        var extension = SyntaxFactory.IdentifierName(
+            egress == Egress.Path ? FromGameExtension : FromGameTextExtension
+        );
+        ExpressionSyntax target =
+            receiver == null
+                ? SyntaxFactory.MemberBindingExpression(extension)
+                : SyntaxFactory.MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression,
+                    receiver,
+                    extension
+                );
+        var lambda = SyntaxFactory.SimpleLambdaExpression(
+            SyntaxFactory.Parameter(SyntaxFactory.Identifier(owner)),
+            read.WithoutTrivia()
+        );
+        return SyntaxFactory
+            .InvocationExpression(
+                target,
+                SyntaxFactory.ArgumentList(
+                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(lambda))
+                )
+            )
+            .WithLeadingTrivia(rewritten.GetLeadingTrivia())
+            .WithTrailingTrivia(rewritten.GetTrailingTrivia());
+    }
+
+    private Egress EgressOf(ISymbol symbol)
+    {
+        // A constant may sit where only constants are allowed, such as a case label.
+        if (
+            symbol
+            is not IPropertySymbol
+                and not IFieldSymbol { IsConst: false }
+                and not IMethodSymbol
+        )
+            return Egress.None;
         var containing = symbol.ContainingType;
         if (containing == null)
-            return false;
-        return EgressPathMembers.TryGetValue(
-                containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                out var members
-            ) && members.Contains(symbol.Name);
+            return Egress.None;
+        var fqn = containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        if (EgressPathMembers.TryGetValue(fqn, out var paths) && paths.Contains(symbol.Name))
+            return Egress.Path;
+        if (EgressTextMembers.TryGetValue(fqn, out var texts) && texts.Contains(symbol.Name))
+            return Egress.Text;
+
+        var type = symbol switch
+        {
+            IPropertySymbol property => property.Type,
+            IFieldSymbol field => field.Type,
+            _ => null,
+        };
+        bool isText =
+            type?.SpecialType == SpecialType.System_String
+            || (
+                type is IArrayTypeSymbol array
+                && array.ElementType.SpecialType == SpecialType.System_String
+            );
+        return isText && IsInDefinition(containing) ? Egress.Text : Egress.None;
     }
+
+    // A definition, or a type nested in one, such as MyCubeBlockDefinition.BuildProgressModel.
+    private static bool IsInDefinition(INamedTypeSymbol type)
+    {
+        for (var outer = type; outer != null; outer = outer.ContainingType)
+        {
+            for (var t = outer; t != null; t = t.BaseType)
+            {
+                if (
+                    t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == DefinitionBaseFqn
+                )
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    // The last link of a conditional access chain, wrapped whole by VisitConditionalAccessExpression.
+    private static bool IsConditionalTail(SyntaxNode node) =>
+        node.Parent is ConditionalAccessExpressionSyntax conditional
+        && conditional.WhenNotNull == node;
 
     private static bool IsAssignmentTarget(SyntaxNode node) =>
         node.Parent is AssignmentExpressionSyntax assignment && assignment.Left == node;
+
+    /// <summary>
+    /// A member written to rather than read: assigned, passed by reference, or an array whose
+    /// element is assigned (<c>def.Icons[0] = ...</c>).
+    /// </summary>
+    private static bool IsWriteTarget(SyntaxNode node) =>
+        IsAssignmentTarget(node)
+        || node.Parent is ArgumentSyntax { RefKindKeyword.RawKind: not (int)SyntaxKind.None }
+        || node.Parent is PrefixUnaryExpressionSyntax or PostfixUnaryExpressionSyntax
+        || (
+            node.Parent is ElementAccessExpressionSyntax element
+            && element.Expression == node
+            && IsWriteTarget(element)
+        );
 
     private static bool IsInsideNameOf(SyntaxNode node)
     {
@@ -267,15 +480,8 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         rewritten = RewriteIngressPathArguments(node, rewritten);
 
         // Mod API path-returning calls (IMyConfigDedicated.GetFilePath).
-        if (
-            !IsOnConditionalAccessSpine(node)
-            && _semanticModel.GetSymbolInfo(node).Symbol is IMethodSymbol pathMethod
-            && IsEgressPathMember(pathMethod)
-        )
-        {
-            RequiresShimReference = true;
-            return WrapShimCall(FromGameFqn, rewritten);
-        }
+        if (_semanticModel.GetSymbolInfo(node).Symbol is IMethodSymbol pathMethod)
+            return WrapEgress(node, rewritten, EgressOf(pathMethod)) ?? rewritten;
 
         return rewritten;
     }
@@ -504,10 +710,17 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
     /// </summary>
     private static bool IsOnConditionalAccessSpine(SyntaxNode node)
     {
-        for (var parent = node.Parent; parent != null; parent = parent.Parent)
+        for (var child = node; child.Parent != null; child = child.Parent)
         {
-            if (parent is ConditionalAccessExpressionSyntax)
-                return true;
+            var parent = child.Parent;
+            // The receiver of ?. holds no binding of its own conditional, so it can be wrapped
+            // unless that conditional is itself on a spine.
+            if (parent is ConditionalAccessExpressionSyntax conditional)
+            {
+                if (conditional.WhenNotNull == child)
+                    return true;
+                continue;
+            }
             if (
                 parent is ArgumentSyntax
                 || parent is InterpolationSyntax
@@ -575,11 +788,14 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
             while (tail is ConditionalAccessExpressionSyntax inner)
                 tail = inner.WhenNotNull;
 
-            var tailSymbol = _semanticModel.GetSymbolInfo(tail).Symbol;
-            if (tailSymbol != null && IsEgressPathMember(tailSymbol))
+            var egress = EgressOf(_semanticModel.GetSymbolInfo(tail).Symbol);
+            if (egress != Egress.None)
             {
                 RequiresShimReference = true;
-                return WrapShimCall(FromGameFqn, rewritten);
+                return WrapShimCall(
+                    egress == Egress.Path ? FromGameFqn : FromGameTextFqn,
+                    rewritten
+                );
             }
         }
 
@@ -629,6 +845,49 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
 
         var augmented = existingInit.WithExpressions(existingInit.Expressions.Add(crlfAssignment));
         return rewritten.WithInitializer(augmented);
+    }
+
+    /// <summary>
+    /// Translates the native paths in a caught exception before the mod sees it: first in the
+    /// filter, if there is one, otherwise first in the block.
+    /// </summary>
+    public override SyntaxNode VisitCatchClause(CatchClauseSyntax node)
+    {
+        var rewritten = (CatchClauseSyntax)base.VisitCatchClause(node);
+        var identifier = rewritten.Declaration?.Identifier ?? default;
+        if (identifier.IsKind(SyntaxKind.None))
+            return rewritten;
+
+        RequiresShimReference = true;
+        var scrub = SyntaxFactory.InvocationExpression(
+            SyntaxFactory.ParseExpression(ScrubFqn),
+            SyntaxFactory.ArgumentList(
+                SyntaxFactory.SingletonSeparatedList(
+                    SyntaxFactory.Argument(SyntaxFactory.IdentifierName(identifier.ValueText))
+                )
+            )
+        );
+
+        if (rewritten.Filter != null)
+        {
+            return rewritten.WithFilter(
+                rewritten.Filter.WithFilterExpression(
+                    SyntaxFactory.BinaryExpression(
+                        SyntaxKind.LogicalAndExpression,
+                        scrub,
+                        SyntaxFactory.ParenthesizedExpression(
+                            rewritten.Filter.FilterExpression.WithoutTrivia()
+                        )
+                    )
+                )
+            );
+        }
+
+        return rewritten.WithBlock(
+            rewritten.Block.WithStatements(
+                rewritten.Block.Statements.Insert(0, SyntaxFactory.ExpressionStatement(scrub))
+            )
+        );
     }
 
     public override SyntaxNode VisitTypeOfExpression(TypeOfExpressionSyntax node)

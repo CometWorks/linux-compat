@@ -22,6 +22,9 @@
             <GuiVisible>false</GuiVisible>
             <Model>models\linuxcompatdiag\TESTCUBE.mwm</Model>
             <ModelOffset x="0" y="0" z="0" />
+            <BuildProgressModels>
+                <Model BuildPercentUpperBound="0.50" File="models\linuxcompatdiag\TESTCUBE.mwm" />
+            </BuildProgressModels>
             <Components>
                 <Component Subtype="SteelPlate" Count="1" />
             </Components>
