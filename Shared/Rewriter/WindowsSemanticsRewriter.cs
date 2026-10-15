@@ -39,6 +39,12 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         ModExtensions.LinuxCompatPathExtensions.LinuxCompatFromGameText
     );
     private const string DefinitionBaseFqn = "global::VRage.Game.MyDefinitionBase";
+    private const string DefinitionBuilderFqn = "global::VRage.Game.MyObjectBuilder_DefinitionBase";
+    private const string ToGameTextFqn = "global::ClientPlugin.Rewriter.WindowsPath.ToGameText";
+    private const string CubeBlockFqn = "global::VRage.Game.ModAPI.IMyCubeBlock";
+    private const string CalcLocalMatrixExtension = nameof(
+        ModExtensions.LinuxCompatPathExtensions.LinuxCompatCalcLocalMatrix
+    );
     private const string ScrubFqn = "global::ClientPlugin.Rewriter.WindowsException.Scrub";
 
     // Only rewrite bare Path members the shim actually implements; unknown members
@@ -76,7 +82,10 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
             "PremadeCheckpointPath",
             "GetFilePath",
             "LoadWorld",
+            "Plugins",
         },
+        // The exceptions of a parallel task reach the mod without a catch block.
+        ["global::ParallelTasks.Task"] = new() { "Exceptions" },
         ["global::Sandbox.Game.MyVisualScriptLogicProvider"] = new()
         {
             "GetCurrentSessionPath",
@@ -85,6 +94,11 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
             "GetModsPath",
         },
     };
+
+    // Names to check before binding a bare identifier.
+    private static readonly HashSet<string> EgressMemberNames = new(
+        EgressPathMembers.Values.SelectMany(names => names)
+    );
 
     // Strings that may hold or embed native paths, besides every string and string[] member of
     // a definition (paths of mod assets are absolute there); reads are wrapped in FromGameText.
@@ -95,6 +109,14 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         ["global::VRage.Game.ObjectBuilders.Definitions.MyObjectBuilder_GuiTexture"] = new()
         {
             "Path",
+        },
+        // IMySession.GetCheckpoint and GetWorld; also what a mod reads from a save file.
+        ["global::VRage.Game.MyObjectBuilder_Checkpoint"] = new()
+        {
+            "CustomSkybox",
+            "CustomLoadingScreenImage",
+            "VicinityModelsCache",
+            "VicinityArmorModelsCache",
         },
     };
 
@@ -130,6 +152,7 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         {
             "PremadeCheckpointPath",
             "LoadWorld",
+            "Plugins",
         },
     };
 
@@ -209,7 +232,73 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         if (symbol is not IMethodSymbol && !IsWriteTarget(node) && !IsInsideNameOf(node))
             return WrapEgress(node, rewritten, EgressOf(symbol)) ?? rewritten;
 
-        return rewritten;
+        return WrapMethodGroup(node, rewritten, symbol) ?? rewritten;
+    }
+
+    /// <summary>
+    /// A path getter converted to a delegate, like <c>Func&lt;string&gt; f = MyLog.Default.GetFilePath;</c>,
+    /// becomes <c>FromGame(new Func&lt;string&gt;(MyLog.Default.GetFilePath))</c>, wrapped in a
+    /// <c>new D(....Invoke)</c> when the target is another delegate type.
+    /// </summary>
+    private ExpressionSyntax WrapMethodGroup(
+        ExpressionSyntax node,
+        ExpressionSyntax rewritten,
+        ISymbol symbol
+    )
+    {
+        if (
+            symbol
+                is not IMethodSymbol
+                {
+                    Parameters.Length: 0,
+                    ReturnType.SpecialType: SpecialType.System_String,
+                }
+            || node.Parent is InvocationExpressionSyntax invocation && invocation.Expression == node
+            || IsInsideNameOf(node)
+            || EgressOf(symbol) != Egress.Path
+        )
+            return null;
+
+        RequiresShimReference = true;
+        const string func = "global::System.Func<string>";
+        var read = SyntaxFactory
+            .ObjectCreationExpression(SyntaxFactory.ParseTypeName(func))
+            .WithArgumentList(
+                SyntaxFactory.ArgumentList(
+                    SyntaxFactory.SingletonSeparatedList(
+                        SyntaxFactory.Argument(rewritten.WithoutTrivia())
+                    )
+                )
+            );
+        ExpressionSyntax wrapped = WrapShimCall(FromGameFqn, read);
+
+        var target = _semanticModel.GetTypeInfo(node).ConvertedType;
+        if (target is INamedTypeSymbol { TypeKind: TypeKind.Delegate } named)
+        {
+            var name = named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            if (name != func)
+            {
+                wrapped = SyntaxFactory
+                    .ObjectCreationExpression(SyntaxFactory.ParseTypeName(name))
+                    .WithArgumentList(
+                        SyntaxFactory.ArgumentList(
+                            SyntaxFactory.SingletonSeparatedList(
+                                SyntaxFactory.Argument(
+                                    SyntaxFactory.MemberAccessExpression(
+                                        SyntaxKind.SimpleMemberAccessExpression,
+                                        wrapped,
+                                        SyntaxFactory.IdentifierName("Invoke")
+                                    )
+                                )
+                            )
+                        )
+                    );
+            }
+        }
+
+        return wrapped
+            .WithLeadingTrivia(rewritten.GetLeadingTrivia())
+            .WithTrailingTrivia(rewritten.GetTrailingTrivia());
     }
 
     /// <summary>A member read inside a conditional access chain, like <c>a?.GamePaths.UserDataPath</c>.</summary>
@@ -338,20 +427,30 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         if (EgressTextMembers.TryGetValue(fqn, out var texts) && texts.Contains(symbol.Name))
             return Egress.Text;
 
+        // def.GetObjectBuilder() carries the absolute paths of the definition's assets.
+        if (
+            symbol is IMethodSymbol { Name: "GetObjectBuilder", Parameters.Length: 0 } method
+            && method.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+                == DefinitionBuilderFqn
+            && IsInDefinition(containing)
+        )
+            return Egress.Path;
+
         var type = symbol switch
         {
             IPropertySymbol property => property.Type,
             IFieldSymbol field => field.Type,
             _ => null,
         };
-        bool isText =
-            type?.SpecialType == SpecialType.System_String
-            || (
-                type is IArrayTypeSymbol array
-                && array.ElementType.SpecialType == SpecialType.System_String
-            );
-        return isText && IsInDefinition(containing) ? Egress.Text : Egress.None;
+        return IsText(type) && IsInDefinition(containing) ? Egress.Text : Egress.None;
     }
+
+    private static bool IsText(ITypeSymbol type) =>
+        type?.SpecialType == SpecialType.System_String
+        || (
+            type is IArrayTypeSymbol array
+            && array.ElementType.SpecialType == SpecialType.System_String
+        );
 
     // A definition, or a type nested in one, such as MyCubeBlockDefinition.BuildProgressModel.
     private static bool IsInDefinition(INamedTypeSymbol type)
@@ -441,6 +540,10 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         // Rewrite its receiver here; conditional access is handled at the parent node.
         var rewritten = (InvocationExpressionSyntax)base.VisitInvocationExpression(node);
 
+        var outPath = RewriteCalcLocalMatrix(node, rewritten);
+        if (outPath != null)
+            return outPath;
+
         // MemberBindingExpression nodes cannot be lifted out of their conditional access.
         if (IsModItemGetPath(node) && !IsOnConditionalAccessSpine(node))
         {
@@ -484,6 +587,41 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
             return WrapEgress(node, rewritten, EgressOf(pathMethod)) ?? rewritten;
 
         return rewritten;
+    }
+
+    /// <summary>
+    /// <c>IMyCubeBlock.CalcLocalMatrix(out m, out model)</c> hands the model path out through an
+    /// <c>out</c> argument, so the call is renamed to an extension that translates it.
+    /// </summary>
+    private InvocationExpressionSyntax RewriteCalcLocalMatrix(
+        InvocationExpressionSyntax node,
+        InvocationExpressionSyntax rewritten
+    )
+    {
+        if (
+            _semanticModel.GetSymbolInfo(node).Symbol
+                is not IMethodSymbol { Name: "CalcLocalMatrix", ContainingType: { } containing }
+            || containing.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) != CubeBlockFqn
+        )
+            return null;
+
+        var name = SyntaxFactory.IdentifierName(CalcLocalMatrixExtension);
+        ExpressionSyntax target = rewritten.Expression switch
+        {
+            MemberAccessExpressionSyntax access => access.WithName(
+                name.WithTriviaFrom(access.Name)
+            ),
+            MemberBindingExpressionSyntax binding => binding.WithName(
+                name.WithTriviaFrom(binding.Name)
+            ),
+            _ => null,
+        };
+        if (target == null)
+            return null;
+
+        RequiresShimReference = true;
+        RequiresExtensionsUsing = true;
+        return rewritten.WithExpression(target);
     }
 
     private InvocationExpressionSyntax RewriteIngressPathArguments(
@@ -687,7 +825,29 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
             return rewritten.WithRight(WrapShimCall(ToGameFqn, rewritten.Right));
         }
 
+        // A definition string written back, like def.Model = def.Model or def.Icons[0] = ...;
+        // some engine code loads these without MyFileSystem, which would untranslate them.
+        var written = node.Left is ElementAccessExpressionSyntax element
+            ? element.Expression
+            : node.Left;
+        if (IsDefinitionText(_semanticModel.GetSymbolInfo(written).Symbol))
+        {
+            RequiresShimReference = true;
+            return rewritten.WithRight(WrapShimCall(ToGameTextFqn, rewritten.Right));
+        }
+
         return rewritten;
+    }
+
+    private static bool IsDefinitionText(ISymbol symbol)
+    {
+        var type = symbol switch
+        {
+            IPropertySymbol property => property.Type,
+            IFieldSymbol { IsConst: false } field => field.Type,
+            _ => null,
+        };
+        return IsText(type) && IsInDefinition(symbol.ContainingType);
     }
 
     private bool IsIngressPathSetter(IPropertySymbol property)
@@ -946,6 +1106,18 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
             return bareMember
                 .WithLeadingTrivia(node.GetLeadingTrivia())
                 .WithTrailingTrivia(node.GetTrailingTrivia());
+        }
+
+        // A bare path getter converted to a delegate, imported with `using static`.
+        if (EgressMemberNames.Contains(node.Identifier.ValueText))
+        {
+            var methodGroup = WrapMethodGroup(
+                node,
+                node,
+                _semanticModel.GetSymbolInfo(node).Symbol
+            );
+            if (methodGroup != null)
+                return methodGroup;
         }
 
         return base.VisitIdentifierName(node);

@@ -28,6 +28,7 @@ internal static class Program
         {
             InstallUnderHome();
             InstallOutsideHome();
+            WorkshopInSteamLibrary();
             DifferentlyNamedInstall();
             TrailingSlashOnRoot();
             UnknownRootMapsNoInstall();
@@ -93,9 +94,35 @@ internal static class Program
         );
         Expect("outside: prefix only", ToWin(install), WinSE);
         Expect(
-            "outside: longer sibling untouched",
+            "outside: longer sibling is another Steam app",
             ToWin(install + "Dedicated/Content"),
-            @"\mnt\games\SteamLibrary\steamapps\common\SpaceEngineersDedicated\Content"
+            @"C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineersDedicated\Content"
+        );
+    }
+
+    /// <summary>Workshop items are in the game's Steam library, which may be under $HOME.</summary>
+    private static void WorkshopInSteamLibrary()
+    {
+        var home = Home("workshop");
+        var library = home + "/.steam/debian-installation/steamapps";
+        var item = "/workshop/content/244850/514062285/Data/Scripts/x.cs";
+        var winItem =
+            @"C:\Program Files (x86)\Steam\steamapps\workshop\content\244850\514062285\Data\Scripts\x.cs";
+
+        Init(home, library + "/common/SpaceEngineers");
+        Expect("workshop: linux -> win", ToWin(library + item), winItem);
+        Expect("workshop: win -> linux", ToLinux(winItem), library + item);
+        Expect(
+            "workshop: install still wins",
+            ToWin(library + "/common/SpaceEngineers/Content"),
+            WinSE + @"\Content"
+        );
+
+        Init(home, "/opt/SpaceEngineers");
+        Expect(
+            "workshop: no steamapps mapping outside Steam",
+            ToWin(library + item),
+            @"C:\users\steamuser\.steam\debian-installation\steamapps" + item.Replace('/', '\\')
         );
     }
 
