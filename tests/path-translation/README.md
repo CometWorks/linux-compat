@@ -28,7 +28,8 @@ Exit code 0 means every check passed. Covered:
 | Case | What it pins down |
 | --- | --- |
 | `under home` | An install inside `$HOME` beats the shorter home mapping; siblings still map to home |
-| `outside` | An install outside `$HOME`; the exact prefix and a longer sibling folder name |
+| `outside` | An install outside `$HOME`; the exact prefix, and a longer sibling folder that maps as another app in the same Steam library |
+| `workshop` | Workshop items in the install's Steam library map under `C:\Program Files (x86)\Steam\steamapps`; an install outside a Steam library maps no library |
 | `server` | An install root not named `SpaceEngineers` is used as given |
 | `trailing slash` | A root path with a trailing separator |
 | `no root` | `RootPath` unset: no install mapping, passthrough in both directions, nothing thrown |

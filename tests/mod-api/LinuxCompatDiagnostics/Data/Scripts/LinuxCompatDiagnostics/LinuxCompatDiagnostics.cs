@@ -99,6 +99,7 @@ namespace LinuxCompatDiagnostics
                 ProbeExceptionText();
                 ProbeDefinitionPaths();
                 ProbeSerializerContainment();
+                ProbeRarePathLeaks();
                 ProbeLoadedMods();
                 ProbeTextStorage();
                 ProbeStorageCaseSensitivity();
@@ -163,6 +164,7 @@ namespace LinuxCompatDiagnostics
                     // session fully loaded; the first update tick is the
                     // earliest safe point.
                     ProbeIngressSpawns();
+                    ProbeSessionCheckpoint();
                     return;
                 }
 
