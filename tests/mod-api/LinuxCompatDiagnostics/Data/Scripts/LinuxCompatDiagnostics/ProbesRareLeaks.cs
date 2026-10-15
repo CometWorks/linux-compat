@@ -53,12 +53,17 @@ namespace LinuxCompatDiagnostics
                 temp + "armor.mwm",
                 checkpoint?.VicinityArmorModelsCache[0]
             );
-            CheckEquals(OwnerLinux, "checkpoint.CustomSkybox", temp + "sky.dds", checkpoint.CustomSkybox);
+            CheckEquals(
+                OwnerLinux,
+                "checkpoint.CustomSkybox",
+                temp + "sky.dds",
+                checkpoint.CustomSkybox
+            );
 
             // Exceptions of a parallel task reach the mod without a catch block.
             const string Protected = "Data\\Scripts\\LinuxCompatDiagnostics\\ProbesPaths.cs";
-            var task = MyAPIGateway.Parallel.Start(
-                () => MyAPIGateway.Utilities.ReadFileInModLocation(Protected, OwnModItem())
+            var task = MyAPIGateway.Parallel.Start(() =>
+                MyAPIGateway.Utilities.ReadFileInModLocation(Protected, OwnModItem())
             );
             task.Wait(true);
             var exceptions = task.Exceptions;
@@ -91,12 +96,22 @@ namespace LinuxCompatDiagnostics
             var builder = def.GetObjectBuilder() as MyObjectBuilder_CubeBlockDefinition;
             if (builder == null)
             {
-                CheckTrue(OwnerLinux, "def.GetObjectBuilder() is a cube block builder", false, "<null>");
+                CheckTrue(
+                    OwnerLinux,
+                    "def.GetObjectBuilder() is a cube block builder",
+                    false,
+                    "<null>"
+                );
                 return;
             }
             CheckNoHomeFolder("def.GetObjectBuilder().Model", builder.Model);
             CheckNoHomeFolder("def.GetObjectBuilder().Icons[0]", builder.Icons[0]);
-            CheckEquals(OwnerLinux, "def.GetObjectBuilder().Model is def.Model", def.Model, builder.Model);
+            CheckEquals(
+                OwnerLinux,
+                "def.GetObjectBuilder().Model is def.Model",
+                def.Model,
+                builder.Model
+            );
             CheckNoHomeFolder("def?.GetObjectBuilder().Icons[0]", def?.GetObjectBuilder().Icons[0]);
 
             string xml = null;
@@ -132,7 +147,12 @@ namespace LinuxCompatDiagnostics
                 def.Icons = new string[] { icon.Replace('\\', '/') };
                 CheckEquals(OwnerLinux, "def.Icons = Windows path, read back", icon, def.Icons[0]);
                 def.Icons[0] = icon.Replace('\\', '/');
-                CheckEquals(OwnerLinux, "def.Icons[0] = Windows path, read back", icon, def.Icons[0]);
+                CheckEquals(
+                    OwnerLinux,
+                    "def.Icons[0] = Windows path, read back",
+                    icon,
+                    def.Icons[0]
+                );
                 def.Model = cube.Replace('\\', '/');
                 CheckEquals(OwnerLinux, "def.Model = Windows path, read back", cube, def.Model);
             }
@@ -181,7 +201,9 @@ namespace LinuxCompatDiagnostics
         private void ProbeSessionCheckpoint()
         {
             Section("Session checkpoint (SE1-0224)");
-            string original = MyAPIGateway.Session.GetCheckpoint("LinuxCompat probe").CustomLoadingScreenImage;
+            string original = MyAPIGateway
+                .Session.GetCheckpoint("LinuxCompat probe")
+                .CustomLoadingScreenImage;
             string image = ModContext.ModPath + "\\Textures\\LinuxCompatDiag\\TestIcon.dds";
             try
             {
