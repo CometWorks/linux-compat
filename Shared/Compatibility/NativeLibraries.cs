@@ -124,13 +124,17 @@ internal static class NativeWrapper
         return true;
     }
 
+    // In the game's user data folder, which -appdata (client) or -path (server) moves, so
+    // instances with their own folder, and so their own install, never share sidecars.
     private static string CreateCacheDirectory()
     {
-        var directory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            DataDirectory,
-            "NativeWrapperCache"
-        );
+        var userData = MyFileSystem.UserDataPath;
+        if (string.IsNullOrEmpty(userData))
+            userData = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                DataDirectory
+            );
+        var directory = Path.Combine(userData, "NativeWrapperCache");
         if (TryCreateDirectory(directory))
             return directory;
 
