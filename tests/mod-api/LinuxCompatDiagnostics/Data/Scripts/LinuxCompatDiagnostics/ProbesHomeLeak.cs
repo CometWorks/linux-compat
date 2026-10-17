@@ -20,9 +20,7 @@ namespace LinuxCompatDiagnostics
     public partial class LinuxCompatDiagnosticsSession
     {
         // Initialized before LoadData runs, from a static field initializer.
-        private static readonly string StaticUserDataPath = UserDataPathOf(
-            MyAPIGateway.Utilities
-        );
+        private static readonly string StaticUserDataPath = UserDataPathOf(MyAPIGateway.Utilities);
 
         private static string UserDataPathOf(IMyUtilities utilities)
         {
@@ -64,7 +62,10 @@ namespace LinuxCompatDiagnostics
             var utilities = MyAPIGateway.Utilities;
             var gamePaths = utilities.GamePaths;
             Func<string> lambda = () => gamePaths.UserDataPath;
-            CheckNoHomeFolder("UserDataPath via local IMyUtilities", utilities.GamePaths.UserDataPath);
+            CheckNoHomeFolder(
+                "UserDataPath via local IMyUtilities",
+                utilities.GamePaths.UserDataPath
+            );
             CheckNoHomeFolder("UserDataPath via lambda", lambda());
             CheckNoHomeFolder("UserDataPath via helper(IMyUtilities)", UserDataPathOf(utilities));
             CheckNoHomeFolder("UserDataPath via helper(IMyGamePaths)", UserDataPathOf(gamePaths));
@@ -121,7 +122,10 @@ namespace LinuxCompatDiagnostics
                 configs.Length > 0 ? configs[0] : "<none>"
             );
             foreach (var config in configs)
-                CheckNoHomeFolder("listed " + Path.GetFileName(Path.GetDirectoryName(config)), config);
+                CheckNoHomeFolder(
+                    "listed " + Path.GetFileName(Path.GetDirectoryName(config)),
+                    config
+                );
 
             MyObjectBuilder_WorldConfiguration world = null;
             CheckProbe(
@@ -188,7 +192,11 @@ namespace LinuxCompatDiagnostics
                 errors++;
                 foreach (var text in new[] { error.ErrorFile, error.Message })
                 {
-                    if (leak == null && text != null && text.IndexOf("/home/", StringComparison.Ordinal) >= 0)
+                    if (
+                        leak == null
+                        && text != null
+                        && text.IndexOf("/home/", StringComparison.Ordinal) >= 0
+                    )
                         leak = text;
                 }
             }
@@ -279,7 +287,12 @@ namespace LinuxCompatDiagnostics
                 path == null
                 || path.IndexOf('/') >= 0
                 || path.IndexOf("\\home\\", StringComparison.OrdinalIgnoreCase) >= 0;
-            CheckTrue(OwnerLinux, name + " names no Linux home", !linux && IsDriveRooted(path), path);
+            CheckTrue(
+                OwnerLinux,
+                name + " names no Linux home",
+                !linux && IsDriveRooted(path),
+                path
+            );
         }
     }
 }
