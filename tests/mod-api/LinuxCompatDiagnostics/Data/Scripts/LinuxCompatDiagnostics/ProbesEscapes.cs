@@ -9,8 +9,9 @@ namespace LinuxCompatDiagnostics
     /// <summary>
     /// SE1-0291: the verified mod-API escapes split out of SE1-0263. Each probe reproduces one
     /// escape and asserts it is refused (A1-A4) or that the value a mod reads back is Windows-shaped
-    /// (B4). B2 (programmable-script paths) stays open after this ticket, so its probe only reports
-    /// a boolean, never a path, because the harness fails any log line that names the home folder.
+    /// (B4), and the user data folder stays allowed next to the A4 refusals. B2
+    /// (programmable-script paths) stays open after this ticket and is only an INFO line, never a
+    /// path, because the harness fails any log line that names the home folder.
     /// </summary>
     public partial class LinuxCompatDiagnosticsSession
     {
