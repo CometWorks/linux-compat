@@ -37,9 +37,10 @@ namespace ClientPlugin.Patches.PlatformGuards;
 // restarted.
 //
 // Signals considered and not used: the available flag of BGetDLCDataByIndex
-// only says whether a store page is visible, which a "coming soon" page
-// probably is, and a delisted DLC would lock paying owners; the game ignores
-// it too. BIsAppInstalled and GetAppInstallDir work for base apps only,
+// is about the store, not the release. On an account without either DLC it was
+// false for both the unreleased Warfare 3 Pack and the released Space
+// Engineers 2013 (573900), which is no longer sold, so it would lock owners of
+// DLC that left the store. The game ignores it too. BIsAppInstalled and GetAppInstallDir work for base apps only,
 // GetDlcDownloadProgress needs DLC depots, which SE's DLC don't have, and
 // purchase time, free weekend and family sharing say nothing about release.
 // The ownership ticket API is not in Steamworks.NET.
