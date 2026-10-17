@@ -232,6 +232,7 @@
         <DoNotPublicize Include="Sandbox.Graphics:Sandbox.Graphics.GUI.MyGuiControlTable.ItemDoubleClicked"/>
         <DoNotPublicize Include="Sandbox.Graphics:Sandbox.Graphics.GUI.MyGuiControlTable.ItemSelected"/>
         <DoNotPublicize Include="Sandbox.Graphics:Sandbox.Graphics.GUI.MyGuiControlTextbox.TextChanged"/>
+        <DoNotPublicize Include="Sandbox.Graphics:Sandbox.Graphics.Gui.MyGuiScreenDialogColor.OnConfirmed"/>
         <DoNotPublicize Include="Sandbox.Graphics:Sandbox.Graphics.GUI.MyGuiScreenBase.Closed"/>
         <DoNotPublicize Include="Sandbox.Graphics:Sandbox.Graphics.GUI.MyGuiScreenDialogAmount.OnConfirmed"/>
     </ItemGroup>

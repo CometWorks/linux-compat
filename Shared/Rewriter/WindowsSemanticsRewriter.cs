@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using ClientPlugin.Patches.PathHandling;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -813,13 +814,16 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
     /// Compound assignments store native too (the read of the left side is native), so only
     /// their value needs translating. A member of an object initializer, like
     /// <c>new BuildProgressModel { File = x }</c>, has no value and must stay an assignment.
+    /// <see cref="IPathSecurityConfig.TranslateAssignmentValues"/> turns the value translation
+    /// off.
     /// </summary>
     public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
     {
         var rewritten = (AssignmentExpressionSyntax)base.VisitAssignmentExpression(node);
         var simple = node.IsKind(SyntaxKind.SimpleAssignmentExpression);
         var usedAsValue =
-            node.Parent is not ExpressionStatementSyntax
+            PathSecurity.Config.TranslateAssignmentValues
+            && node.Parent is not ExpressionStatementSyntax
             && !node.Parent.IsKind(SyntaxKind.ObjectInitializerExpression);
 
         if (
