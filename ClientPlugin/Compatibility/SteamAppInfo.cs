@@ -9,9 +9,9 @@ namespace ClientPlugin.Compatibility;
 // appcache/appinfo.vdf. Steamworks gives a game no way to ask whether a DLC is
 // released, but the Steam client keeps the store's common/ReleaseState
 // ("released", "prerelease", ...) of every app it knows in this file, the
-// game's DLC included. The file is binary VDF in format 28 or 29 (Steam since
-// 2024). Anything unexpected throws, and the caller then treats the release
-// state as unknown.
+// game's DLC included. The file is binary VDF in format 28 (Steam since 2022)
+// or 29 (since 2024). Anything unexpected throws, and the caller then treats
+// the release state as unknown.
 static class SteamAppInfo
 {
     const uint Format28 = 0x07564428;

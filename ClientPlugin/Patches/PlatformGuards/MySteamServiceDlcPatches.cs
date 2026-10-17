@@ -40,9 +40,10 @@ namespace ClientPlugin.Patches.PlatformGuards;
 // is about the store, not the release. On an account without either DLC it was
 // false for both the unreleased Warfare 3 Pack and the released Space
 // Engineers 2013 (573900), which is no longer sold, so it would lock owners of
-// DLC that left the store. The game ignores it too. BIsAppInstalled and GetAppInstallDir work for base apps only,
-// GetDlcDownloadProgress needs DLC depots, which SE's DLC don't have, and
-// purchase time, free weekend and family sharing say nothing about release.
+// DLC that left the store. The game ignores it too. BIsAppInstalled and
+// GetAppInstallDir work for base apps only, GetDlcDownloadProgress needs DLC
+// depots, which SE's DLC don't have, and purchase time, free weekend and family
+// sharing say nothing about release.
 // The ownership ticket API is not in Steamworks.NET.
 //
 // Not covered by the in-game test suites: none of us owns an unreleased DLC.
@@ -61,8 +62,8 @@ static class SteamDlcOwnership
     internal static bool IsUnlocked(bool installed, bool subscribed, string releaseState) =>
         installed || (subscribed && !IsUnreleased(releaseState));
 
-    // Returns false (and leaves result untouched) to fall through to the
-    // original method if the Steamworks call fails for any reason.
+    // Returns false to fall through to the original method, which then sets the
+    // result, if a Steamworks call fails for any reason.
     internal static bool TryGetOwnership(uint dlcId, out bool result)
     {
         ReleaseStates().TryGetValue(dlcId, out var releaseState);
