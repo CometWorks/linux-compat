@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using ClientPlugin.Patches.PathHandling;
 using ClientPlugin.Rewriter;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -66,6 +67,7 @@ internal static class Program
         AssignmentValueTranslated();
         ShimUseRefused();
         ShimUseAllowedOutsideMods();
+        SwitchesOff();
 
         Console.WriteLine($"{s_checks - s_failures}/{s_checks} checks passed");
         return s_failures == 0 ? 0 : 1;
@@ -248,6 +250,60 @@ internal static class Program
         );
         var result = CompilationRewriter.Rewrite(compilation, MyApiTarget.Ingame);
         Check("other target untouched", ReferenceEquals(result, compilation));
+    }
+
+    private sealed class Switches : IPathSecurityConfig
+    {
+        public bool RefuseUnloadedModItems => true;
+        public bool RefuseLeftoverDrives => true;
+        public bool CheckSafePathAsOpened => true;
+        public bool RefuseShimUse { get; set; } = true;
+        public bool TranslateAssignmentValues { get; set; } = true;
+    }
+
+    /// <summary>
+    /// The config switches for B1 and B4: off, a mod naming a shim compiles, and an assignment
+    /// used as a value is left as the mod wrote it.
+    /// </summary>
+    private static void SwitchesOff()
+    {
+        var switches = new Switches { RefuseShimUse = false, TranslateAssignmentValues = false };
+        PathSecurity.Loader = () => switches;
+        try
+        {
+            var shimUse = Rewrite(
+                """
+                public class Mod
+                {
+                    public string Native(string p) => ClientPlugin.Rewriter.WindowsPath.ToGame(p);
+                }
+                """
+            );
+            CheckNoErrors("switch off: shim use compiles", shimUse);
+
+            var assignment = Rewrite(
+                """
+                using Sandbox.Definitions;
+
+                public class Mod
+                {
+                    public string Simple(MyCubeBlockDefinition def, string p) => (def.Model = p);
+                }
+                """
+            );
+            CheckNoErrors("switch off: assignment value", assignment);
+            Check(
+                "switch off: assignment value not wrapped",
+                Text(assignment)
+                    .Contains(
+                        "=> (def.Model = global::ClientPlugin.Rewriter.WindowsPath.ToGameText(p))"
+                    )
+            );
+        }
+        finally
+        {
+            PathSecurity.Loader = null;
+        }
     }
 
     private static void CheckRefused(string label, string source, string symbol)

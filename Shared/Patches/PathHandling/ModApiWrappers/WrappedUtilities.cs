@@ -174,7 +174,8 @@ internal sealed class WrappedUtilities : IMyUtilities
     /// (<see cref="PathCache.ResolveAbsolute"/>, also in <c>MyFileSystem.Open</c>) would
     /// translate such a path a second time, to somewhere the check never saw. Without a
     /// drive letter left that resolver only fixes casing, so the string checked here is
-    /// the one opened.
+    /// the one opened. <see cref="IPathSecurityConfig.RefuseLeftoverDrives"/> turns the
+    /// refusal off.
     /// </summary>
     private static string ContainedPath(string file, string root)
     {
@@ -186,7 +187,7 @@ internal sealed class WrappedUtilities : IMyUtilities
             return null;
 
         file = PathHelpers.FromWindowsPath(file);
-        if (PathHelpers.HasDriveSegment(file))
+        if (PathSecurity.Config.RefuseLeftoverDrives && PathHelpers.HasDriveSegment(file))
             return null;
 
         string fullPath;
@@ -209,9 +210,14 @@ internal sealed class WrappedUtilities : IMyUtilities
     /// <c>ModItem</c>, and vanilla <c>GetPath()</c> combines the Mods folder with its
     /// <c>Name</c>, so a rooted name would pick any folder; only the session's own copy is
     /// trusted. Stricter than Windows on purpose: an item naming no loaded mod is refused.
+    /// With <see cref="IPathSecurityConfig.RefuseUnloadedModItems"/> off, the item's own path
+    /// is used, as on Windows.
     /// </summary>
     private static string LoadedModPath(MyObjectBuilder_Checkpoint.ModItem item)
     {
+        if (!PathSecurity.Config.RefuseUnloadedModItems)
+            return item.GetPath();
+
         var mods = MySession.Static?.Mods;
         if (mods == null)
             return null;

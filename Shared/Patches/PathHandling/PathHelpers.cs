@@ -125,12 +125,16 @@ public static class PathHelpers
     /// drive segment after one translation is refused outright, because the engine resolver would
     /// translate it a second time at open and land somewhere the containment check never saw —
     /// this is the double-drive escape (<c>C:C:\...</c>). Native engine paths have no drive
-    /// segment, so they pass through to the same resolution the open uses.
+    /// segment, so they pass through to the same resolution the open uses. With
+    /// <see cref="IPathSecurityConfig.CheckSafePathAsOpened"/> off, the path is only translated
+    /// once, as before.
     /// </summary>
     public static string ResolveForSafetyCheck(string path)
     {
         if (string.IsNullOrEmpty(path))
             return path;
+        if (!PathSecurity.Config.CheckSafePathAsOpened)
+            return FromWindowsPath(path);
         if (HasDriveSegment(FromWindowsPath(path)))
             throw new SecurityException("Mods are not allowed to read or write by specified path");
         return PathCache.ResolveAbsolute(path);

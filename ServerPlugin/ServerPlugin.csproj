@@ -38,6 +38,11 @@
             <HintPath>$(DS64)/Sandbox.Common.dll</HintPath>
             <Private>False</Private>
         </Reference>
+        <!-- Provided by Magnetar at runtime, so it is not copied. -->
+        <Reference Include="PluginSdk">
+            <HintPath>$(MagnetarBin)/PluginSdk.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
         <Reference Include="Sandbox.Game">
             <HintPath>$(DS64)/Sandbox.Game.dll</HintPath>
             <Private>False</Private>

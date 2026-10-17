@@ -7,6 +7,9 @@
         <!-- Folder containing SpaceEngineersDedicated.exe -->
         <DS64></DS64>
 
+        <!-- Magnetar installation folder; the server plugin's config uses its PluginSdk.dll -->
+        <Magnetar></Magnetar>
+
         <!-- Pulsar folder to deploy the client plugin into after each build (empty = no deployment) -->
         <Pulsar></Pulsar>
 
@@ -22,9 +25,9 @@
 
     <!-- Plugin version -->
     <PropertyGroup>
-        <Version>1.0.38.0</Version>
-        <AssemblyVersion>1.0.38.0</AssemblyVersion>
-        <FileVersion>1.0.38.0</FileVersion>
+        <Version>1.0.39.0</Version>
+        <AssemblyVersion>1.0.39.0</AssemblyVersion>
+        <FileVersion>1.0.39.0</FileVersion>
     </PropertyGroup>
 
     <!-- Local developer overrides for the variables above; ignored by Git (*.user).
@@ -69,5 +72,7 @@
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(HOME)' != ''">
         <Bin64 Condition="'$(Bin64)' == ''">$(HOME)/.steam/steam/steamapps/common/SpaceEngineers/Bin64</Bin64>
         <DS64 Condition="'$(DS64)' == ''">$(HOME)/.steam/steam/steamapps/common/SpaceEngineersDedicatedServer/DedicatedServer64</DS64>
+        <Magnetar Condition="'$(Magnetar)' == ''">$(HOME)/.config/Magnetar</Magnetar>
+        <MagnetarBin Condition="'$(MagnetarBin)' == ''">$(Magnetar)/Libraries/MagnetarInterim</MagnetarBin>
     </PropertyGroup>
 </Project>
