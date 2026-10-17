@@ -811,13 +811,16 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
     /// of the assignment expression itself is the stored, native string, so an assignment
     /// used as a value, like <c>string p = (def.Model = x);</c>, is translated back whole.
     /// Compound assignments store native too (the read of the left side is native), so only
-    /// their value needs translating.
+    /// their value needs translating. A member of an object initializer, like
+    /// <c>new BuildProgressModel { File = x }</c>, has no value and must stay an assignment.
     /// </summary>
     public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
     {
         var rewritten = (AssignmentExpressionSyntax)base.VisitAssignmentExpression(node);
         var simple = node.IsKind(SyntaxKind.SimpleAssignmentExpression);
-        var usedAsValue = node.Parent is not ExpressionStatementSyntax;
+        var usedAsValue =
+            node.Parent is not ExpressionStatementSyntax
+            && !node.Parent.IsKind(SyntaxKind.ObjectInitializerExpression);
 
         if (
             _semanticModel.GetSymbolInfo(node.Left).Symbol is IPropertySymbol property

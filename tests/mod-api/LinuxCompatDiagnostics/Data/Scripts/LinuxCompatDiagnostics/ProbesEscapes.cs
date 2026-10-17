@@ -21,6 +21,7 @@ namespace LinuxCompatDiagnostics
             ProbeDoubleDriveRefused();
             ProbeContentDriveRefused();
             ProbeSerializerDriveRefused();
+            ProbeUserDataAllowed();
             ProbeAssignmentValueOracle();
 
             // B2 (programmable-block scripts) is not rewritten and still sees native paths. It
@@ -133,6 +134,87 @@ namespace LinuxCompatDiagnostics
                 "C:\\users\\steamuser\\linuxcompat-probe.sbc"
             );
             CheckSerializerRefused("A4 double drive", "C:C:\\users\\steamuser\\x.sbc");
+        }
+
+        /// <summary>
+        /// The other half of A4: the user data folder in Windows form stays usable through the
+        /// serializer, as on Windows, where vanilla <c>EnsureSafePath</c> lets all of it pass
+        /// (<c>Uri.IsBaseOf</c> on <c>ModsPath</c> drops its last segment). The drive-segment
+        /// refusal must not catch it, whether the mod spells it with backslashes, forward slashes
+        /// or another casing.
+        /// </summary>
+        private void ProbeUserDataAllowed()
+        {
+            var gp = MyAPIGateway.Utilities.GamePaths;
+            string world = MyAPIGateway.Session.CurrentPath;
+            if (gp == null || gp.UserDataPath == null || world == null)
+            {
+                CheckTrue(
+                    OwnerLinux,
+                    "A4 preconditions (UserDataPath, CurrentPath)",
+                    false,
+                    "<null>"
+                );
+                return;
+            }
+
+            const string file = "linuxcompat-userdata-probe.sbc";
+            string config = world + "\\Sandbox_config.sbc";
+            string written = gp.UserDataPath + "\\Storage\\" + file;
+            try
+            {
+                CheckUserDataAllowed("backslash", config, written);
+                CheckUserDataAllowed(
+                    "forward slash",
+                    config.Replace('\\', '/'),
+                    written.Replace('\\', '/')
+                );
+                // Only an existing file: the resolver fixes the casing of what is on disk.
+                CheckUserDataAllowed(
+                    "other casing",
+                    config.Replace('\\', '/').ToLowerInvariant(),
+                    null
+                );
+            }
+            finally
+            {
+                MyAPIGateway.Utilities.DeleteFileInGlobalStorage(file);
+            }
+        }
+
+        private void CheckUserDataAllowed(string form, string config, string written)
+        {
+            string read = config;
+            Info("security input (user data, " + form + ")", read);
+            CheckNoThrow(
+                OwnerLinux,
+                "security: allowed, PathUtils.EnsureSafePath: user data, " + form,
+                () => VRage.Library.Utils.PathUtils.EnsureSafePath(read)
+            );
+            CheckProbe(
+                OwnerLinux,
+                "security: allowed, deserialize: user data, " + form,
+                true,
+                () =>
+                {
+                    MyObjectBuilder_WorldConfiguration world;
+                    return MyObjectBuilderSerializer.DeserializeXML(read, out world);
+                }
+            );
+            if (written == null)
+                return;
+            string captured = written;
+            CheckProbe(
+                OwnerLinux,
+                "security: allowed, serialize: user data, " + form,
+                true,
+                () =>
+                    MyObjectBuilderSerializer.SerializeXML(
+                        captured,
+                        false,
+                        new MyObjectBuilder_WorldConfiguration()
+                    )
+            );
         }
 
         /// <summary>

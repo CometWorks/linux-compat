@@ -9,6 +9,7 @@ with the commands and environment it needs.
 | [tests/physics-border](../tests/physics-border/README.md) | Bounded-world broad-phase border cleanup, through both `MyPhysics.CreateHkWorld` creation paths. | The game client |
 | [tests/definition-file-order](../tests/definition-file-order/README.md) | `WindowsStringOrder`, the Windows sort order of the definition files, against data sorted by Wine's `CompareStringEx`. | Nothing; standalone |
 | [tests/path-translation](../tests/path-translation/README.md) | The root mapping in `PathTranslation.Init()`, in both directions, round trips without the user name, and `WindowsException.Scrub`. | Nothing; standalone |
+| [tests/rewriter](../tests/rewriter/README.md) | `CompilationRewriter` on small mod sources: mods naming the shims are refused, definition assignments used as values or in object initializers. | Nothing; standalone |
 | [tests/steam-overlay](../tests/steam-overlay/README.md) | The Wayland Steam overlay input bridge. | Nothing for the basic checks; Steam and SDL3 for the optional live check |
 
 Every suite that starts a game client runs it headless and holds an exclusive

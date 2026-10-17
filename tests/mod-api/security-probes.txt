@@ -3,10 +3,16 @@
 # fails parse_results.py even when no probe FAILs. Regenerate with
 #   parse_results.py <log> --update-security-manifest <this file>
 security: allowed, PathUtils.EnsureSafePath: Content\Data
+security: allowed, PathUtils.EnsureSafePath: user data, backslash
+security: allowed, PathUtils.EnsureSafePath: user data, forward slash
+security: allowed, PathUtils.EnsureSafePath: user data, other casing
 security: allowed, PathUtils.GetFilesRecursively: own Data
 security: allowed, delete: storage global scope
 security: allowed, delete: storage local scope
 security: allowed, delete: storage world scope
+security: allowed, deserialize: user data, backslash
+security: allowed, deserialize: user data, forward slash
+security: allowed, deserialize: user data, other casing
 security: allowed, exists: content backslash path
 security: allowed, exists: content inner traversal
 security: allowed, exists: content leading dot segment
@@ -41,6 +47,8 @@ security: allowed, read: mod uppercased path
 security: allowed, read: storage global scope
 security: allowed, read: storage local scope
 security: allowed, read: storage world scope
+security: allowed, serialize: user data, backslash
+security: allowed, serialize: user data, forward slash
 security: allowed, write: storage global scope
 security: allowed, write: storage local scope
 security: allowed, write: storage world scope
