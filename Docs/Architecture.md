@@ -198,9 +198,16 @@ caches for mutable roots, so resolution does not walk the filesystem per call.
 `MyFileSystemOpenPrepatch` injects a call to it as the prologue of
 `MyFileSystem.Open`, which is why `VRage.Library.dll` is in `TargetDLLs`.
 `PathUtilsEnsureSafePathPrepatch` makes `PathUtils.EnsureSafePath` check the
-native path too. Linux does not consider a `C:\` path rooted, so the check used
-to combine it with the Mods folder and pass it, and `MyObjectBuilderSerializer`
-then read or wrote its native target anywhere under the home folder.
+native path too, through `PathHelpers.ResolveForSafetyCheck`. Linux does not
+consider a `C:\` path rooted, so the check used to combine it with the Mods
+folder and pass it, and `MyObjectBuilderSerializer` then read or wrote its
+native target anywhere under the home folder. `ResolveForSafetyCheck`
+translates the path exactly once and refuses one that still carries a drive
+segment afterwards, so the resolver cannot translate it again at open and land
+somewhere the check never saw (the `C:C:\...` double-drive escape); the
+mod-location and game-content readers in `WrappedUtilities` apply the same
+translate-once, reject-leftover-drive rule, and accept only a `ModItem` loaded
+in the session rather than any folder a crafted `Name` would select.
 
 `IngressTrace` records every internal site that still receives a
 drive-prefixed mod path, together with the stack that delivered it. Debug
