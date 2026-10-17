@@ -5,11 +5,12 @@ with the commands and environment it needs.
 
 | Suite | Covers | Needs |
 | --- | --- | --- |
-| [tests/mod-api](../tests/mod-api/README.md) | The mod API boundary: Windows path, newline and stopwatch semantics for mods, path containment, and no Linux home folder in anything a mod sees. ~500 probes, of which 155 are security probes. | The game client and the dedicated server |
+| [tests/mod-api](../tests/mod-api/README.md) | The mod API boundary: Windows path, newline and stopwatch semantics for mods, path containment, and no Linux home folder in anything a mod sees. ~550 probes, of which 199 are security probes. | The game client and the dedicated server |
 | [tests/physics-border](../tests/physics-border/README.md) | Bounded-world broad-phase border cleanup, through both `MyPhysics.CreateHkWorld` creation paths. | The game client |
 | [tests/definition-file-order](../tests/definition-file-order/README.md) | `WindowsStringOrder`, the Windows sort order of the definition files, against data sorted by Wine's `CompareStringEx`. | Nothing; standalone |
 | [tests/path-translation](../tests/path-translation/README.md) | The root mapping in `PathTranslation.Init()`, in both directions, round trips without the user name, and `WindowsException.Scrub`. | Nothing; standalone |
 | [tests/dlc-ownership](../tests/dlc-ownership/README.md) | The DLC unlock decision on Linux (license, release state from the Steam app info cache), the cache reader, and the DLC block in the game log, with faked Steam answers. | Nothing; reads the local Steam cache if there is one |
+| [tests/rewriter](../tests/rewriter/README.md) | `CompilationRewriter` on small mod sources: mods naming the shims are refused, definition assignments used as values or in object initializers. | Nothing; standalone |
 | [tests/steam-overlay](../tests/steam-overlay/README.md) | The Wayland Steam overlay input bridge. | Nothing for the basic checks; Steam and SDL3 for the optional live check |
 
 Every suite that starts a game client runs it headless and holds an exclusive

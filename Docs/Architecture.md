@@ -164,7 +164,11 @@ A few shapes need more than a wrapped read:
 - A string or string array written into a definition (`def.Model = ...`,
   `def.Icons[0] = ...`) goes through `ToGameText`, which turns a Windows path
   back into the native one. Some engine code, like the LCD texture change,
-  loads these without `MyFileSystem` and could not untranslate it.
+  loads these without `MyFileSystem` and could not untranslate it. When the
+  assignment is used as a value (`p = (def.Model = x)`), it is wrapped in
+  `FromGameText` too, so it cannot hand back the stored native string. An
+  object initializer member (`new BuildProgressModel { File = x }`) has no
+  value and stays an assignment.
 
 `ShimRegistration` plumbs the shim types into the script compiler before any
 mod compiles. It uses the raw in-memory metadata image rather than
@@ -172,6 +176,16 @@ mod compiles. It uses the raw in-memory metadata image rather than
 the in-memory image carries the identity the whitelist was populated from. It
 cannot be a Harmony patch on the whitelist: the game runs the whitelist batch
 from `MySandboxGame.LoadData`, before `IPlugin.Init` is called.
+
+Mods may not name the shims themselves. They are whitelisted only because the
+rewriter emits calls to them, and a mod calling `WindowsPath.ToGame` could read
+a native path back. Before rewriting, `CompilationRewriter` binds every name in
+the mod's source; if any resolves into the shim assembly (a call, `using
+static`, an alias, a method group or an extension method), it adds an `#error`
+syntax tree, so that mod fails to compile with a message naming the uses. It
+does not throw, because Pulsar disables a rewriter that throws.
+[tests/rewriter](../tests/rewriter/README.md) covers this and the assignment
+rules above.
 
 ### 2. Mod API wrappers, `Shared/Patches/PathHandling/ModApiWrappers/`
 
@@ -198,9 +212,16 @@ caches for mutable roots, so resolution does not walk the filesystem per call.
 `MyFileSystemOpenPrepatch` injects a call to it as the prologue of
 `MyFileSystem.Open`, which is why `VRage.Library.dll` is in `TargetDLLs`.
 `PathUtilsEnsureSafePathPrepatch` makes `PathUtils.EnsureSafePath` check the
-native path too. Linux does not consider a `C:\` path rooted, so the check used
-to combine it with the Mods folder and pass it, and `MyObjectBuilderSerializer`
-then read or wrote its native target anywhere under the home folder.
+native path too, through `PathHelpers.ResolveForSafetyCheck`. Linux does not
+consider a `C:\` path rooted, so the check used to combine it with the Mods
+folder and pass it, and `MyObjectBuilderSerializer` then read or wrote its
+native target anywhere under the home folder. `ResolveForSafetyCheck`
+translates the path exactly once and refuses one that still carries a drive
+segment afterwards, so the resolver cannot translate it again at open and land
+somewhere the check never saw (the `C:C:\...` double-drive escape); the
+mod-location and game-content readers in `WrappedUtilities` apply the same
+translate-once, reject-leftover-drive rule, and accept only a `ModItem` loaded
+in the session rather than any folder a crafted `Name` would select.
 
 `IngressTrace` records every internal site that still receives a
 drive-prefixed mod path, together with the stack that delivered it. Debug

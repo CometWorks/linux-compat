@@ -3,10 +3,16 @@
 # fails parse_results.py even when no probe FAILs. Regenerate with
 #   parse_results.py <log> --update-security-manifest <this file>
 security: allowed, PathUtils.EnsureSafePath: Content\Data
+security: allowed, PathUtils.EnsureSafePath: user data, backslash
+security: allowed, PathUtils.EnsureSafePath: user data, forward slash
+security: allowed, PathUtils.EnsureSafePath: user data, other casing
 security: allowed, PathUtils.GetFilesRecursively: own Data
 security: allowed, delete: storage global scope
 security: allowed, delete: storage local scope
 security: allowed, delete: storage world scope
+security: allowed, deserialize: user data, backslash
+security: allowed, deserialize: user data, forward slash
+security: allowed, deserialize: user data, other casing
 security: allowed, exists: content backslash path
 security: allowed, exists: content inner traversal
 security: allowed, exists: content leading dot segment
@@ -41,6 +47,8 @@ security: allowed, read: mod uppercased path
 security: allowed, read: storage global scope
 security: allowed, read: storage local scope
 security: allowed, read: storage world scope
+security: allowed, serialize: user data, backslash
+security: allowed, serialize: user data, forward slash
 security: allowed, write: storage global scope
 security: allowed, write: storage local scope
 security: allowed, write: storage world scope
@@ -50,6 +58,16 @@ security: refused, PathUtils.EnsureSafePath: install Bin64
 security: refused, PathUtils.GetFilesRecursively: install Bin64
 security: refused, aftermath: escape.txt absent from local storage
 security: refused, aftermath: escape.txt absent from world storage
+security: refused, binary read: A1 rooted local mod name
+security: refused, binary read: A1 rooted local mod name, absolute
+security: refused, binary read: A1 unloaded local mod name
+security: refused, binary read: A1 unloaded workshop item
+security: refused, binary read: A2 double-drive home escape
+security: refused, binary read: A2 double-drive install escape
+security: refused, binary read: A2 drive after a dot segment
+security: refused, binary read: A3 double drive
+security: refused, binary read: A3 drive after a dot segment
+security: refused, binary read: A3 drive mid path
 security: refused, binary read: content UNC share
 security: refused, binary read: content absolute native path
 security: refused, binary read: content bare ..
@@ -85,6 +103,19 @@ security: refused, delete is a no-op: storage absolute path (local)
 security: refused, delete is a no-op: storage bare .. (local)
 security: refused, delete is a no-op: storage drive-prefixed path (local)
 security: refused, delete is a no-op: storage sub/dir/f.txt (local)
+security: refused, deserialize: A4 content-prefixed drive escape
+security: refused, deserialize: A4 double drive
+security: refused, deserialize: A4 invented drive
+security: refused, exists: A1 rooted local mod name
+security: refused, exists: A1 rooted local mod name, absolute
+security: refused, exists: A1 unloaded local mod name
+security: refused, exists: A1 unloaded workshop item
+security: refused, exists: A2 double-drive home escape
+security: refused, exists: A2 double-drive install escape
+security: refused, exists: A2 drive after a dot segment
+security: refused, exists: A3 double drive
+security: refused, exists: A3 drive after a dot segment
+security: refused, exists: A3 drive mid path
 security: refused, exists: content UNC share
 security: refused, exists: content absolute native path
 security: refused, exists: content bare ..
@@ -120,6 +151,16 @@ security: refused, exists: storage absolute path (local)
 security: refused, exists: storage bare .. (local)
 security: refused, exists: storage drive-prefixed path (local)
 security: refused, exists: storage sub/dir/f.txt (local)
+security: refused, read: A1 rooted local mod name
+security: refused, read: A1 rooted local mod name, absolute
+security: refused, read: A1 unloaded local mod name
+security: refused, read: A1 unloaded workshop item
+security: refused, read: A2 double-drive home escape
+security: refused, read: A2 double-drive install escape
+security: refused, read: A2 drive after a dot segment
+security: refused, read: A3 double drive
+security: refused, read: A3 drive after a dot segment
+security: refused, read: A3 drive mid path
 security: refused, read: content UNC share
 security: refused, read: content absolute native path
 security: refused, read: content bare ..
@@ -148,6 +189,9 @@ security: refused, read: mod protected Data/Scripts (backslash)
 security: refused, read: mod root traversal
 security: refused, read: mod root traversal (backslash)
 security: refused, read: mod traversal after valid segments
+security: refused, serialize: A4 content-prefixed drive escape
+security: refused, serialize: A4 double drive
+security: refused, serialize: A4 invented drive
 security: refused, write: ingress drive-prefixed storage name
 security: refused, write: storage ../escape.txt (global)
 security: refused, write: storage ../escape.txt (local)

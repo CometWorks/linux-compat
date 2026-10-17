@@ -807,14 +807,20 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
     }
 
     /// <summary>
-    /// Restores native form for values mods assign to path-typed Mod API setters.
+    /// Restores native form for values mods assign to path-typed Mod API setters. The value
+    /// of the assignment expression itself is the stored, native string, so an assignment
+    /// used as a value, like <c>string p = (def.Model = x);</c>, is translated back whole.
+    /// Compound assignments store native too (the read of the left side is native), so only
+    /// their value needs translating. A member of an object initializer, like
+    /// <c>new BuildProgressModel { File = x }</c>, has no value and must stay an assignment.
     /// </summary>
     public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
     {
         var rewritten = (AssignmentExpressionSyntax)base.VisitAssignmentExpression(node);
-
-        if (!node.IsKind(SyntaxKind.SimpleAssignmentExpression))
-            return rewritten;
+        var simple = node.IsKind(SyntaxKind.SimpleAssignmentExpression);
+        var usedAsValue =
+            node.Parent is not ExpressionStatementSyntax
+            && !node.Parent.IsKind(SyntaxKind.ObjectInitializerExpression);
 
         if (
             _semanticModel.GetSymbolInfo(node.Left).Symbol is IPropertySymbol property
@@ -822,7 +828,9 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         )
         {
             RequiresShimReference = true;
-            return rewritten.WithRight(WrapShimCall(ToGameFqn, rewritten.Right));
+            if (simple)
+                rewritten = rewritten.WithRight(WrapShimCall(ToGameFqn, rewritten.Right));
+            return usedAsValue ? WrapShimCall(FromGameFqn, rewritten) : rewritten;
         }
 
         // A definition string written back, like def.Model = def.Model or def.Icons[0] = ...;
@@ -833,7 +841,9 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         if (IsDefinitionText(_semanticModel.GetSymbolInfo(written).Symbol))
         {
             RequiresShimReference = true;
-            return rewritten.WithRight(WrapShimCall(ToGameTextFqn, rewritten.Right));
+            if (simple)
+                rewritten = rewritten.WithRight(WrapShimCall(ToGameTextFqn, rewritten.Right));
+            return usedAsValue ? WrapShimCall(FromGameTextFqn, rewritten) : rewritten;
         }
 
         return rewritten;
