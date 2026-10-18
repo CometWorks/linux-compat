@@ -1,13 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
 using ClientPlugin.Patches.PathHandling;
 using ClientPlugin.Tools;
 using HarmonyLib;
-using SharpDX.Multimedia;
+using Mono.Cecil;
+using Mono.Cecil.Cil;
 using VRage.Audio;
 using VRage.Data.Audio;
 
@@ -104,44 +103,54 @@ static class MyInMemoryWaveCtorPatch
     }
 }
 
-// The shim leaves m_stream null and ignores WMA DecodedPacketsInfo. Replace its
-// callvirt with `pop; ldnull` to preserve the expected stack signature.
-[HarmonyPatch(typeof(MySourceVoice))]
-[HarmonyPatchCategory("Finish")]
-// ReSharper disable once UnusedType.Global
-static class MySourceVoiceSubmitBufferTranspiler
+// The shim leaves m_stream null and ignores WMA DecodedPacketsInfo, so
+// SubmitSourceBuffer must not read wave.Stream.DecodedPacketsInfo. Replace that
+// callvirt with `pop; ldnull` in the assembly itself. A Harmony transpiler did this
+// before, but players still ended up running the original body, and then every
+// sound threw a NullReferenceException (SpaceGT/Pulsar#70).
+public static class MySourceVoiceSubmitSourceBufferPrepatch
 {
-    // ReSharper disable once UnusedMember.Local
-    [HarmonyTranspiler]
-    [HarmonyPatch("SubmitSourceBuffer", new[] { typeof(MyInMemoryWave) })]
-    static IEnumerable<CodeInstruction> SubmitSourceBufferTranspiler(
-        IEnumerable<CodeInstruction> instructions,
-        MethodBase patchedMethod
-    )
+    public static void Prepatch(AssemblyDefinition asmDef)
     {
-        var il = instructions.ToList();
-        il.RecordOriginalCode(patchedMethod);
-
-        var getDecodedPackets = typeof(SoundStream)
-            .GetProperty("DecodedPacketsInfo", BindingFlags.Public | BindingFlags.Instance)
-            ?.GetGetMethod();
-
-        // Walk backwards so Insert calls don't shift the indexes still to visit.
-        for (var i = il.Count - 1; i >= 0 && getDecodedPackets != null; i--)
+        var method = asmDef
+            .MainModule.GetType("VRage.Audio.MySourceVoice")
+            ?.Methods.FirstOrDefault(m =>
+                m.Name == "SubmitSourceBuffer"
+                && m.Parameters.Count == 1
+                && m.Parameters[0].ParameterType.FullName == "VRage.Audio.MyInMemoryWave"
+            );
+        if (method?.Body == null)
         {
-            var instr = il[i];
-            if (instr.opcode != OpCodes.Callvirt)
-                continue;
-            if (instr.operand is not MethodInfo mi || mi != getDecodedPackets)
-                continue;
-
-            // Reuse the instruction so labels and exception blocks stay attached.
-            instr.opcode = OpCodes.Pop;
-            instr.operand = null;
-            il.Insert(i + 1, new CodeInstruction(OpCodes.Ldnull));
+            Console.WriteLine(
+                "[LinuxCompat] MySourceVoiceSubmitSourceBufferPrepatch: MySourceVoice.SubmitSourceBuffer(MyInMemoryWave) not found"
+            );
+            return;
         }
 
-        il.RecordPatchedCode(patchedMethod);
-        return il;
+        method.Body.Instructions.RecordOriginalCode(method);
+
+        var il = method.Body.GetILProcessor();
+        var replaced = 0;
+        foreach (var instr in method.Body.Instructions.ToList())
+        {
+            if (
+                instr.OpCode != OpCodes.Callvirt
+                || instr.Operand is not MethodReference { Name: "get_DecodedPacketsInfo" } mr
+                || mr.DeclaringType.FullName != "SharpDX.Multimedia.SoundStream"
+            )
+                continue;
+
+            // Reuse the instruction so branch targets stay attached.
+            instr.OpCode = OpCodes.Pop;
+            instr.Operand = null;
+            il.InsertAfter(instr, il.Create(OpCodes.Ldnull));
+            replaced++;
+        }
+
+        method.Body.Instructions.RecordPatchedCode(method);
+
+        Console.WriteLine(
+            $"[LinuxCompat] MySourceVoiceSubmitSourceBufferPrepatch: replaced {replaced} DecodedPacketsInfo read(s) in MySourceVoice.SubmitSourceBuffer"
+        );
     }
 }

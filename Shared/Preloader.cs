@@ -208,6 +208,7 @@ public static class Preloader
     {
         // Resolve SharpDX.XAudio2 types to this assembly's shims.
         RedirectAssemblyRef(asmDef, "SharpDX.XAudio2");
+        ClientPlugin.Patches.Audio.MySourceVoiceSubmitSourceBufferPrepatch.Prepatch(asmDef);
     }
 
     private static void RedirectAssemblyRef(AssemblyDefinition asmDef, string fromName)
