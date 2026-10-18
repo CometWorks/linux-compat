@@ -26,7 +26,11 @@ GRID_NAME = "BorderDriftShip"
 
 
 def newest_game_log(log_dir: Path, not_before: float) -> Path | None:
-    logs = [p for p in log_dir.glob("SpaceEngineers*.log") if p.stat().st_mtime >= not_before]
+    logs = [
+        p
+        for p in log_dir.glob("SpaceEngineers*.log")
+        if p.stat().st_mtime >= not_before
+    ]
     return max(logs, key=lambda p: p.stat().st_mtime) if logs else None
 
 

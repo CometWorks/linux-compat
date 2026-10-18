@@ -100,6 +100,7 @@ namespace LinuxCompatDiagnostics
                 ProbeDefinitionPaths();
                 ProbeSerializerContainment();
                 ProbeRarePathLeaks();
+                ProbeVerifiedEscapes();
                 ProbeLoadedMods();
                 ProbeTextStorage();
                 ProbeStorageCaseSensitivity();
