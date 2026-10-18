@@ -10,7 +10,7 @@ wrappers in `Shared/Patches/PathHandling/ModApiWrappers/`, and the
 ## Layout
 
 - `LinuxCompatDiagnostics/`: the test mod, and the source of truth. The harness
-  deploys it to `~/.config/SpaceEngineers/Mods/`. A session component runs ~470
+  deploys it to `~/.config/SpaceEngineers/Mods/`. A session component runs ~500
   expected-vs-actual probes during world load and writes
   `Storage/LinuxCompatDiagnostics_LinuxCompatDiagnostics/LinuxCompatDiagnostics.log`.
 - `run.sh`: client harness. Builds the plugin, deploys the mod, clears the
@@ -66,7 +66,10 @@ Mods must never see the Linux home folder or user name; on Windows they see
 the user name of whoever runs it, whatever the probe on that line reported. The
 log is written by the mod, so such a line is a leak. `ProbesHomeLeak.cs` covers
 the call shapes, definition paths, caught exceptions and a world listed and read
-through `UserDataPath + "\Saves"`.
+through `UserDataPath + "\Saves"`. `ProbesRareLeaks.cs` covers the rarer reaches:
+path getters as method groups, checkpoint paths, a parallel task's exceptions,
+`def.GetObjectBuilder()`, Windows paths written into a definition, and the
+dedicated server's `Plugins` list.
 
 ## Security probes
 

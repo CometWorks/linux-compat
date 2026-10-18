@@ -143,6 +143,23 @@ the rewriter then imports into that file. Translation therefore lives in the
 mod's own compiled code: plugins and engine code calling the same members keep
 receiving native paths.
 
+A few shapes need more than a wrapped read:
+
+- A path getter used as a method group (`Func<string> f = MyLog.Default.GetFilePath;`)
+  becomes a delegate that translates what the getter returns.
+- `IMyCubeBlock.CalcLocalMatrix` hands the model path out through an `out`
+  argument, so the call is renamed to an extension method that translates it.
+- `def.GetObjectBuilder()` is passed through `FromGame`, which translates the
+  string fields of the new builder in place and replaces its arrays and lists
+  with translated copies, because those can be the definition's own. A mod that
+  serializes the builder writes Windows paths too.
+- The exceptions of a parallel task (`Task.Exceptions`) are scrubbed like
+  caught ones.
+- A string or string array written into a definition (`def.Model = ...`,
+  `def.Icons[0] = ...`) goes through `ToGameText`, which turns a Windows path
+  back into the native one. Some engine code, like the LCD texture change,
+  loads these without `MyFileSystem` and could not untranslate it.
+
 `ShimRegistration` plumbs the shim types into the script compiler before any
 mod compiles. It uses the raw in-memory metadata image rather than
 `Assembly.Location`, because the loader renames the plugin assembly and only
@@ -196,6 +213,10 @@ launcher sets before any plugin runs, so the plugin knows nothing about Steam
 or where the game was installed. Matching accepts paths with or without the
 synthetic drive prefix, and the mapping is asymmetric, so both directions are
 tested in [tests/path-translation](../tests/path-translation/README.md).
+When the install sits in a Steam library (`.../steamapps/common/<game>`), that
+library's `steamapps` folder maps to `C:\Program Files (x86)\Steam\steamapps`,
+so Workshop items look the way they do on Windows rather than like a folder
+under the home folder.
 
 ### Definition load order, `WindowsStringOrder`
 
