@@ -41,6 +41,9 @@ public static class D3DCompilerLinux
     );
 
     [DllImport("libD3DCompiler.so")]
+    private static extern IntPtr SE_CreateForwardingIncludeHandler(IntPtr linuxInclude);
+
+    [DllImport("libD3DCompiler.so")]
     private static extern void SE_DestroyIncludeHandler(IntPtr pInclude);
 
     [DllImport("libD3DCompiler.so")]
@@ -102,57 +105,24 @@ public static class D3DCompilerLinux
     )
     {
         errors = null;
-        string source;
-        try
-        {
-            source = File.ReadAllText(sourceFilePath);
-        }
-        catch (Exception ex)
-        {
-            errors = ex.Message;
-            return null;
-        }
-
-        _ = Initialized.Value;
-
-        byte[] sourceBytes = Encoding.UTF8.GetBytes(source);
         IntPtr include = IntPtr.Zero;
-        IntPtr pSourceName = IntPtr.Zero;
-        IntPtr pSrcData = IntPtr.Zero;
-        IntPtr ppCode = IntPtr.Zero;
-        IntPtr ppErrorMsgs = IntPtr.Zero;
         var allocations = new List<IntPtr>();
-
         try
         {
+            IntPtr source = ReadSource(sourceFilePath, allocations, out int size);
+
+            _ = Initialized.Value;
             include = SE_CreateIncludeHandler(Path.GetDirectoryName(sourceFilePath), includeDir);
 
             // SharpDX PreprocessFromFile passes an empty source name; the
             // shipped cache entries all start with '#line 1 ""'.
-            pSourceName = Marshal.StringToHGlobalAnsi("");
-            pSrcData = Marshal.AllocHGlobal(sourceBytes.Length);
-            Marshal.Copy(sourceBytes, 0, pSrcData, sourceBytes.Length);
-            IntPtr pDefines = MarshalMacros(macros, allocations);
-
-            int hr = SE_D3DPreprocess(
-                pSrcData,
-                (ulong)sourceBytes.Length,
-                pSourceName,
-                pDefines,
-                include,
-                out ppCode,
-                out ppErrorMsgs
-            );
-
+            int hr = Preprocess(source, size, "", macros, include, out string text, out errors);
             if (hr < 0)
             {
-                errors = GetErrorText(ppErrorMsgs) ?? $"D3DPreprocess failed: HRESULT 0x{hr:X8}";
+                errors ??= $"D3DPreprocess failed: HRESULT 0x{hr:X8}";
                 return null;
             }
-
-            // The blob is NUL-terminated text, decoded to the same string
-            // SharpDX produces with Marshal.PtrToStringAnsi.
-            return Marshal.PtrToStringAnsi(SE_BlobGetBufferPointer(ppCode));
+            return text;
         }
         catch (Exception ex)
         {
@@ -161,7 +131,9 @@ public static class D3DCompilerLinux
         }
         finally
         {
-            ReleaseAll(ppCode, ppErrorMsgs, include, allocations, pSourceName, pSrcData);
+            if (include != IntPtr.Zero)
+                SE_DestroyIncludeHandler(include);
+            FreeAll(allocations);
         }
     }
 
@@ -183,60 +155,208 @@ public static class D3DCompilerLinux
         out string compileLog
     )
     {
-        compileLog = null;
-        string source = File.ReadAllText(sourceFilePath);
-
-        _ = Initialized.Value;
-
         uint flags = D3DCOMPILE_DEBUG;
         if (optimize)
             flags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
 
-        byte[] sourceBytes = Encoding.UTF8.GetBytes(source);
         IntPtr include = IntPtr.Zero;
-        IntPtr pSourceName = IntPtr.Zero;
-        IntPtr pEntryPoint = IntPtr.Zero;
-        IntPtr pTarget = IntPtr.Zero;
-        IntPtr pSrcData = IntPtr.Zero;
+        var allocations = new List<IntPtr>();
+        try
+        {
+            IntPtr source = ReadSource(sourceFilePath, allocations, out int size);
+
+            _ = Initialized.Value;
+            include = SE_CreateIncludeHandler(Path.GetDirectoryName(sourceFilePath), includeDir);
+
+            int hr = Compile(
+                source,
+                size,
+                sourceFilePath,
+                macros,
+                include,
+                entryPoint,
+                profile,
+                flags,
+                0,
+                optimize,
+                out byte[] code,
+                out compileLog
+            );
+            if (hr < 0)
+                throw new Exception(compileLog ?? $"D3DCompile failed: HRESULT 0x{hr:X8}");
+            return code;
+        }
+        finally
+        {
+            if (include != IntPtr.Zero)
+                SE_DestroyIncludeHandler(include);
+            FreeAll(allocations);
+        }
+    }
+
+    /// <summary>
+    /// D3DPreprocess with the inputs of SharpDX's ShaderBytecode.Preprocess.
+    /// linuxInclude is SharpDX's native Include shadow, or zero. Returns the
+    /// HRESULT; text is null on failure, errors is the compiler output or null.
+    /// </summary>
+    internal static int PreprocessForSharpDX(
+        IntPtr source,
+        int size,
+        string sourceName,
+        ShaderMacro[] macros,
+        IntPtr linuxInclude,
+        out string text,
+        out string errors
+    )
+    {
+        _ = Initialized.Value;
+        IntPtr include = ForwardInclude(linuxInclude);
+        try
+        {
+            return Preprocess(source, size, sourceName, macros, include, out text, out errors);
+        }
+        finally
+        {
+            if (include != IntPtr.Zero)
+                SE_DestroyIncludeHandler(include);
+        }
+    }
+
+    /// <summary>
+    /// D3DCompile with the inputs of SharpDX's ShaderBytecode.Compile, flags
+    /// passed as given. linuxInclude is SharpDX's native Include shadow, or
+    /// zero. Returns the HRESULT; code is null on failure, errors is the
+    /// compiler output or null.
+    /// </summary>
+    internal static int CompileForSharpDX(
+        IntPtr source,
+        int size,
+        string sourceName,
+        ShaderMacro[] macros,
+        IntPtr linuxInclude,
+        string entryPoint,
+        string profile,
+        uint flags1,
+        uint flags2,
+        out byte[] code,
+        out string errors
+    )
+    {
+        _ = Initialized.Value;
+        IntPtr include = ForwardInclude(linuxInclude);
+        try
+        {
+            return Compile(
+                source,
+                size,
+                sourceName,
+                macros,
+                include,
+                entryPoint,
+                profile,
+                flags1,
+                flags2,
+                false,
+                out code,
+                out errors
+            );
+        }
+        finally
+        {
+            if (include != IntPtr.Zero)
+                SE_DestroyIncludeHandler(include);
+        }
+    }
+
+    // SharpDX builds its Include shadow with the Linux calling convention;
+    // the PE-loaded compiler can only call it through the wrapper's forwarder.
+    private static IntPtr ForwardInclude(IntPtr linuxInclude) =>
+        linuxInclude == IntPtr.Zero ? IntPtr.Zero : SE_CreateForwardingIncludeHandler(linuxInclude);
+
+    private static int Preprocess(
+        IntPtr source,
+        int size,
+        string sourceName,
+        ShaderMacro[] macros,
+        IntPtr include,
+        out string text,
+        out string errors
+    )
+    {
+        text = null;
+        IntPtr ppCode = IntPtr.Zero;
+        IntPtr ppErrorMsgs = IntPtr.Zero;
+        var allocations = new List<IntPtr>();
+        try
+        {
+            int hr = SE_D3DPreprocess(
+                source,
+                (ulong)size,
+                Ansi(sourceName, allocations),
+                MarshalMacros(macros, allocations),
+                include,
+                out ppCode,
+                out ppErrorMsgs
+            );
+            errors = GetErrorText(ppErrorMsgs);
+
+            // The blob is NUL-terminated text, decoded to the same string
+            // SharpDX produces with Marshal.PtrToStringAnsi.
+            if (hr >= 0)
+                text = Marshal.PtrToStringAnsi(SE_BlobGetBufferPointer(ppCode));
+            return hr;
+        }
+        finally
+        {
+            Release(ppCode);
+            Release(ppErrorMsgs);
+            FreeAll(allocations);
+        }
+    }
+
+    private static int Compile(
+        IntPtr source,
+        int size,
+        string sourceName,
+        ShaderMacro[] macros,
+        IntPtr include,
+        string entryPoint,
+        string profile,
+        uint flags1,
+        uint flags2,
+        bool strip,
+        out byte[] code,
+        out string errors
+    )
+    {
+        code = null;
         IntPtr ppCode = IntPtr.Zero;
         IntPtr ppErrorMsgs = IntPtr.Zero;
         IntPtr ppStripped = IntPtr.Zero;
         var allocations = new List<IntPtr>();
-
         try
         {
-            include = SE_CreateIncludeHandler(Path.GetDirectoryName(sourceFilePath), includeDir);
-
-            pSourceName = Marshal.StringToHGlobalAnsi(sourceFilePath);
-            pEntryPoint = Marshal.StringToHGlobalAnsi(entryPoint);
-            pTarget = Marshal.StringToHGlobalAnsi(profile);
-            pSrcData = Marshal.AllocHGlobal(sourceBytes.Length);
-            Marshal.Copy(sourceBytes, 0, pSrcData, sourceBytes.Length);
-            IntPtr pDefines = MarshalMacros(macros, allocations);
-
             int hr = SE_D3DCompile(
-                pSrcData,
-                (ulong)sourceBytes.Length,
-                pSourceName,
-                pDefines,
+                source,
+                (ulong)size,
+                Ansi(sourceName, allocations),
+                MarshalMacros(macros, allocations),
                 include,
-                pEntryPoint,
-                pTarget,
-                flags,
-                0,
+                Ansi(entryPoint, allocations),
+                Ansi(profile, allocations),
+                flags1,
+                flags2,
                 out ppCode,
                 out ppErrorMsgs
             );
-
-            compileLog = GetErrorText(ppErrorMsgs);
-
+            errors = GetErrorText(ppErrorMsgs);
             if (hr < 0)
-                throw new Exception(compileLog ?? $"D3DCompile failed: HRESULT 0x{hr:X8}");
+                return hr;
 
             IntPtr codePtr = SE_BlobGetBufferPointer(ppCode);
             int codeSize = (int)SE_BlobGetBufferSize(ppCode);
 
-            if (optimize && codeSize != 0)
+            if (strip && codeSize != 0)
             {
                 int hr2 = SE_D3DStripShader(codePtr, (ulong)codeSize, STRIP_FLAGS, out ppStripped);
                 if (hr2 < 0)
@@ -245,24 +365,41 @@ public static class D3DCompilerLinux
                 codeSize = (int)SE_BlobGetBufferSize(ppStripped);
             }
 
-            byte[] result = new byte[codeSize];
-            Marshal.Copy(codePtr, result, 0, codeSize);
-            return result;
+            code = new byte[codeSize];
+            Marshal.Copy(codePtr, code, 0, codeSize);
+            return hr;
         }
         finally
         {
-            if (ppStripped != IntPtr.Zero)
-                SE_BlobRelease(ppStripped);
-            ReleaseAll(ppCode, ppErrorMsgs, include, allocations, pSourceName, pSrcData);
-            if (pEntryPoint != IntPtr.Zero)
-                Marshal.FreeHGlobal(pEntryPoint);
-            if (pTarget != IntPtr.Zero)
-                Marshal.FreeHGlobal(pTarget);
+            Release(ppStripped);
+            Release(ppCode);
+            Release(ppErrorMsgs);
+            FreeAll(allocations);
         }
+    }
+
+    private static IntPtr ReadSource(string path, List<IntPtr> allocations, out int size)
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes(File.ReadAllText(path));
+        size = bytes.Length;
+        IntPtr source = Marshal.AllocHGlobal(Math.Max(size, 1));
+        allocations.Add(source);
+        Marshal.Copy(bytes, 0, source, size);
+        return source;
+    }
+
+    private static IntPtr Ansi(string value, List<IntPtr> allocations)
+    {
+        if (value == null)
+            return IntPtr.Zero;
+        IntPtr ptr = Marshal.StringToHGlobalAnsi(value);
+        allocations.Add(ptr);
+        return ptr;
     }
 
     private static IntPtr MarshalMacros(ShaderMacro[] macros, List<IntPtr> allocations)
     {
+        macros ??= Array.Empty<ShaderMacro>();
         int macroCount = 0;
         for (int i = 0; i < macros.Length; i++)
         {
@@ -311,25 +448,14 @@ public static class D3DCompilerLinux
         return Marshal.PtrToStringAnsi(msgPtr, (int)msgSize).TrimEnd('\0');
     }
 
-    private static void ReleaseAll(
-        IntPtr ppCode,
-        IntPtr ppErrorMsgs,
-        IntPtr include,
-        List<IntPtr> allocations,
-        IntPtr pSourceName,
-        IntPtr pSrcData
-    )
+    private static void Release(IntPtr blob)
     {
-        if (ppCode != IntPtr.Zero)
-            SE_BlobRelease(ppCode);
-        if (ppErrorMsgs != IntPtr.Zero)
-            SE_BlobRelease(ppErrorMsgs);
-        if (include != IntPtr.Zero)
-            SE_DestroyIncludeHandler(include);
-        if (pSourceName != IntPtr.Zero)
-            Marshal.FreeHGlobal(pSourceName);
-        if (pSrcData != IntPtr.Zero)
-            Marshal.FreeHGlobal(pSrcData);
+        if (blob != IntPtr.Zero)
+            SE_BlobRelease(blob);
+    }
+
+    private static void FreeAll(List<IntPtr> allocations)
+    {
         foreach (IntPtr ptr in allocations)
             Marshal.FreeHGlobal(ptr);
     }

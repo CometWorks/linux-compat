@@ -644,6 +644,7 @@ public static class Preloader
         // Server Plugin.Init runs after the auto-loaded world's mods compile.
         ClientPlugin.Patches.PathHandling.PathTranslation.Init();
         ClientPlugin.Rewriter.ShimRegistration.Register();
+        ServerPlugin.Plugin.InstallConfigLoader();
 #endif
     }
 }

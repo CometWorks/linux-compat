@@ -90,73 +90,33 @@ internal sealed class WrappedUtilities : IMyUtilities
 
     public TextReader ReadFileInModLocation(string file, MyObjectBuilder_Checkpoint.ModItem modItem)
     {
-        if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
+        var stream = OpenInModLocation(file, modItem);
+        if (stream == null)
             throw new FileNotFoundException();
-
-        file = PathHelpers.FromWindowsPath(file);
-        var modPath = modItem.GetPath();
-        var fullPath = Path.GetFullPath(Path.Combine(modPath, file));
-        if (fullPath.StartsWith(modPath))
-        {
-            var protectedDir = Path.Combine(modPath, "Data", "Scripts");
-            if (fullPath.StartsWith(protectedDir))
-                throw new FileNotFoundException(
-                    "Access to protected location '" + protectedDir + "' not allowed.",
-                    fullPath
-                );
-
-            var resolved = CaseInsensitivePathResolver.Resolve(file, modPath);
-            var stream = MyFileSystem.OpenRead(resolved);
-            if (stream != null)
-                return new StreamReader(stream);
-        }
-        throw new FileNotFoundException();
+        return new StreamReader(stream);
     }
 
     public TextReader ReadFileInGameContent(string file)
     {
-        if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
+        var stream = OpenInGameContent(file);
+        if (stream == null)
             throw new FileNotFoundException();
-
-        file = PathHelpers.FromWindowsPath(file);
-        var resolved = PathHelpers.ResolveContentFilePath(file, MyFileSystem.ContentPath);
-        if (PathHelpers.IsInsideRoot(resolved, MyFileSystem.ContentPath))
-        {
-            var stream = MyFileSystem.OpenRead(resolved);
-            if (stream != null)
-                return new StreamReader(stream);
-        }
-        throw new FileNotFoundException();
+        return new StreamReader(stream);
     }
 
     public bool FileExistsInModLocation(string file, MyObjectBuilder_Checkpoint.ModItem modItem)
     {
-        if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
+        var modPath = LoadedModPath(modItem);
+        var fullPath = modPath == null ? null : ContainedPath(file, modPath);
+        if (fullPath == null || IsProtected(fullPath, modPath))
             return false;
-
-        file = PathHelpers.FromWindowsPath(file);
-        var modPath = modItem.GetPath();
-        var fullPath = Path.GetFullPath(Path.Combine(modPath, file));
-        if (!fullPath.StartsWith(modPath))
-            return false;
-
-        var protectedDir = Path.Combine(modPath, "Data", "Scripts");
-        if (fullPath.StartsWith(protectedDir))
-            return false;
-
-        var resolved = CaseInsensitivePathResolver.Resolve(file, modPath);
-        return File.Exists(resolved);
+        return File.Exists(PathCache.ResolveAbsolute(fullPath));
     }
 
     public bool FileExistsInGameContent(string file)
     {
-        if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
-            return false;
-
-        file = PathHelpers.FromWindowsPath(file);
-        var resolved = PathHelpers.ResolveContentFilePath(file, MyFileSystem.ContentPath);
-        return PathHelpers.IsInsideRoot(resolved, MyFileSystem.ContentPath)
-            && File.Exists(resolved);
+        var fullPath = ContainedPath(file, MyFileSystem.ContentPath);
+        return fullPath != null && File.Exists(PathCache.ResolveAbsolute(fullPath));
     }
 
     public BinaryReader ReadBinaryFileInModLocation(
@@ -164,46 +124,122 @@ internal sealed class WrappedUtilities : IMyUtilities
         MyObjectBuilder_Checkpoint.ModItem modItem
     )
     {
-        // Mirrors ReadFileInModLocation: resolve casing here instead of
-        // forwarding to the engine, which requires exact on-disk casing.
-        if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
+        var stream = OpenInModLocation(file, modItem);
+        if (stream == null)
             throw new FileNotFoundException();
-
-        file = PathHelpers.FromWindowsPath(file);
-        var modPath = modItem.GetPath();
-        var fullPath = Path.GetFullPath(Path.Combine(modPath, file));
-        if (fullPath.StartsWith(modPath))
-        {
-            var protectedDir = Path.Combine(modPath, "Data", "Scripts");
-            if (fullPath.StartsWith(protectedDir))
-                throw new FileNotFoundException(
-                    "Access to protected location '" + protectedDir + "' not allowed.",
-                    fullPath
-                );
-
-            var resolved = CaseInsensitivePathResolver.Resolve(file, modPath);
-            var stream = MyFileSystem.OpenRead(resolved);
-            if (stream != null)
-                return new BinaryReader(stream);
-        }
-        throw new FileNotFoundException();
+        return new BinaryReader(stream);
     }
 
     public BinaryReader ReadBinaryFileInGameContent(string file)
     {
-        // Mirrors ReadFileInGameContent for the same casing reasons.
-        if (file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1)
+        var stream = OpenInGameContent(file);
+        if (stream == null)
             throw new FileNotFoundException();
+        return new BinaryReader(stream);
+    }
+
+    private static Stream OpenInModLocation(string file, MyObjectBuilder_Checkpoint.ModItem modItem)
+    {
+        var modPath = LoadedModPath(modItem);
+        if (modPath == null)
+            return null;
+        var fullPath = ContainedPath(file, modPath);
+        if (fullPath == null)
+            return null;
+        if (IsProtected(fullPath, modPath))
+        {
+            var protectedDir = Path.Combine(modPath, "Data", "Scripts");
+            throw new FileNotFoundException(
+                "Access to protected location '" + protectedDir + "' not allowed.",
+                fullPath
+            );
+        }
+        return MyFileSystem.OpenRead(PathCache.ResolveAbsolute(fullPath));
+    }
+
+    private static Stream OpenInGameContent(string file)
+    {
+        var fullPath = ContainedPath(file, MyFileSystem.ContentPath);
+        if (fullPath == null)
+            return null;
+        return MyFileSystem.OpenRead(PathCache.ResolveAbsolute(fullPath));
+    }
+
+    /// <summary>
+    /// The native path of a mod-supplied file under <paramref name="root"/>, or null when it
+    /// is refused. The engine checks <c>GetFullPath(Combine(root, file)).StartsWith(root)</c>
+    /// and this does the same, but on Linux the check and the open have to see one string:
+    /// the mod's Windows path is translated exactly once here, and anything that still
+    /// carries a drive letter afterwards is refused, because the open's own resolver
+    /// (<see cref="PathCache.ResolveAbsolute"/>, also in <c>MyFileSystem.Open</c>) would
+    /// translate such a path a second time, to somewhere the check never saw. Without a
+    /// drive letter left that resolver only fixes casing, so the string checked here is
+    /// the one opened. <see cref="IPathSecurityConfig.RefuseLeftoverDrives"/> turns the
+    /// refusal off.
+    /// </summary>
+    private static string ContainedPath(string file, string root)
+    {
+        if (
+            string.IsNullOrEmpty(file)
+            || string.IsNullOrEmpty(root)
+            || file.IndexOfAny(MyKeenUtils.GetFixedInvalidPathChars()) != -1
+        )
+            return null;
 
         file = PathHelpers.FromWindowsPath(file);
-        var resolved = PathHelpers.ResolveContentFilePath(file, MyFileSystem.ContentPath);
-        if (PathHelpers.IsInsideRoot(resolved, MyFileSystem.ContentPath))
+        if (PathSecurity.Config.RefuseLeftoverDrives && PathHelpers.HasDriveSegment(file))
+            return null;
+
+        string fullPath;
+        try
         {
-            var stream = MyFileSystem.OpenRead(resolved);
-            if (stream != null)
-                return new BinaryReader(stream);
+            fullPath = Path.GetFullPath(Path.Combine(root, file));
         }
-        throw new FileNotFoundException();
+        catch
+        {
+            return null;
+        }
+        return fullPath.StartsWith(root, StringComparison.Ordinal) ? fullPath : null;
+    }
+
+    private static bool IsProtected(string fullPath, string modPath) =>
+        fullPath.StartsWith(Path.Combine(modPath, "Data", "Scripts"), StringComparison.Ordinal);
+
+    /// <summary>
+    /// The folder of the loaded mod the item names, or null. A mod can build any
+    /// <c>ModItem</c>, and vanilla <c>GetPath()</c> combines the Mods folder with its
+    /// <c>Name</c>, so a rooted name would pick any folder; only the session's own copy is
+    /// trusted. Stricter than Windows on purpose: an item naming no loaded mod is refused.
+    /// With <see cref="IPathSecurityConfig.RefuseUnloadedModItems"/> off, the item's own path
+    /// is used, as on Windows.
+    /// </summary>
+    private static string LoadedModPath(MyObjectBuilder_Checkpoint.ModItem item)
+    {
+        if (!PathSecurity.Config.RefuseUnloadedModItems)
+            return item.GetPath();
+
+        var mods = MySession.Static?.Mods;
+        if (mods == null)
+            return null;
+        foreach (var mod in mods)
+        {
+            bool same =
+                item.PublishedFileId != 0
+                    ? mod.PublishedFileId == item.PublishedFileId
+                        && (
+                            string.IsNullOrEmpty(item.PublishedServiceName)
+                            || string.Equals(
+                                mod.PublishedServiceName,
+                                item.PublishedServiceName,
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                        )
+                    : mod.PublishedFileId == 0
+                        && string.Equals(mod.Name, item.Name, StringComparison.Ordinal);
+            if (same)
+                return mod.GetPath();
+        }
+        return null;
     }
 
     // Storage filenames resolve Linux filesystem casing before delegation;

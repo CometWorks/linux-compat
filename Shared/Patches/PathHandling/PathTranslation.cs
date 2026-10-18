@@ -29,9 +29,10 @@ public static class PathTranslation
     private static Mapping[] s_mappings = Array.Empty<Mapping>();
     private static string s_tempPath = @"C:\Temp\";
 
+    private const string WindowsSteamAppsPath = @"C:\Program Files (x86)\Steam\steamapps";
+
     /// <summary>Windows install root exposed to mods.</summary>
-    public static string WindowsGameInstallPath =
-        @"C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers";
+    public static string WindowsGameInstallPath = WindowsSteamAppsPath + @"\common\SpaceEngineers";
 
     /// <summary>Drive-prefixed temp path with the trailing separator expected from GetTempPath.</summary>
     public static string TempPath => s_tempPath;
@@ -65,7 +66,18 @@ public static class PathTranslation
         {
             gameRoot = gameRoot.TrimEnd('/', '\\');
             if (gameRoot.Length > 0)
-                list.Add(new(gameRoot.Replace('/', '\\'), WindowsGameInstallPath));
+            {
+                gameRoot = gameRoot.Replace('/', '\\');
+                list.Add(new(gameRoot, WindowsGameInstallPath));
+
+                // A Steam install: Workshop items sit in the same library, under steamapps\workshop.
+                const string common = @"\steamapps\common\";
+                int at = gameRoot.LastIndexOf(common, StringComparison.OrdinalIgnoreCase);
+                if (at >= 0 && gameRoot.IndexOf('\\', at + common.Length) < 0)
+                    list.Add(
+                        new(gameRoot.Substring(0, at + @"\steamapps".Length), WindowsSteamAppsPath)
+                    );
+            }
         }
 
         list.Add(new(homeBs + @"\.config\SpaceEngineers", winUserSE));
