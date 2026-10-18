@@ -97,7 +97,13 @@ Audio goes through OpenAL Soft (`SdlAudio`, `MySdlAudioInterop`, and
 `XAudio2Shim` for the XAudio2 surface the engine expects). Video playback runs
 through FFmpeg (`FfmpegBindings`, `MyLinuxVideoPlayer`) instead of DirectShow.
 
-Shader compilation uses `D3DCompilerLinux`. The `SE_SHADER_OVERRIDE`
+Shader compilation uses `D3DCompilerLinux`, which calls the game's
+`d3dcompiler_47.dll` through the `libD3DCompiler.so` wrapper.
+`ShaderCompilerPatch` sends the engine's own shaders there.
+`SharpDXShaderBytecodePatch` does the same for plugins that call SharpDX's
+`ShaderBytecode.Compile` or `Preprocess` themselves, since SharpDX's P/Invoke
+of the Windows DLL fails on Linux. Their `Include` handler reaches the
+compiler through the wrapper's forwarding include handler. The `SE_SHADER_OVERRIDE`
 [diagnostic variable](Development.md#diagnostic-environment-variables) lets a
 local directory shadow the game's shader sources.
 
