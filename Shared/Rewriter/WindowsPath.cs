@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using ClientPlugin.Patches.PathHandling;
+using VRage.Game;
 
 namespace ClientPlugin.Rewriter;
 
@@ -387,20 +391,86 @@ public static class WindowsPath
     /// A translated copy when an element names a native path, otherwise the array itself, so
     /// writing to a vanilla definition's array still changes the definition.
     /// </summary>
-    public static string[] FromGameText(string[] texts)
+    public static string[] FromGameText(string[] texts) => Map(texts, FromGameText);
+
+    /// <summary>A translated copy when an element names a native path, otherwise the list itself.</summary>
+    public static List<string> FromGameText(List<string> texts) => Map(texts, FromGameText);
+
+    /// <summary>A translated copy when an element changes, otherwise the list itself.</summary>
+    public static List<string> FromGame(List<string> paths) => Map(paths, FromGame);
+
+    /// <summary>
+    /// Rewriter target for a method group of a path getter, like
+    /// <c>Func&lt;string&gt; f = MyLog.Default.GetFilePath;</c>.
+    /// </summary>
+    public static Func<string> FromGame(Func<string> read) =>
+        read == null ? null : () => FromGame(read());
+
+    /// <summary>The exceptions of a parallel task, translated like a caught exception.</summary>
+    public static Exception[] FromGame(Exception[] exceptions)
     {
-        if (texts == null)
-            return null;
-        string[] copy = null;
-        for (int i = 0; i < texts.Length; i++)
+        if (exceptions != null)
         {
-            var translated = FromGameText(texts[i]);
-            if (ReferenceEquals(translated, texts[i]))
-                continue;
-            copy ??= (string[])texts.Clone();
-            copy[i] = translated;
+            foreach (var exception in exceptions)
+                WindowsException.Scrub(exception);
         }
-        return copy ?? texts;
+        return exceptions;
+    }
+
+    // Every string, string[] and List<string> field of a builder type, its own and inherited.
+    private static readonly ConcurrentDictionary<Type, FieldInfo[]> BuilderTextFields = new();
+
+    /// <summary>
+    /// Translates the paths in the object builder a definition returns, such as <c>Model</c>
+    /// and <c>Icons</c>, so they are Windows paths when the mod serializes it too. The builder
+    /// is new on every call, but its arrays and lists may be the definition's own, so those are
+    /// replaced with translated copies rather than changed in place. Nested objects are left
+    /// alone; the vanilla definitions put no paths in them.
+    /// </summary>
+    public static MyObjectBuilder_DefinitionBase FromGame(MyObjectBuilder_DefinitionBase builder)
+    {
+        if (builder == null)
+            return null;
+        foreach (var field in BuilderTextFields.GetOrAdd(builder.GetType(), FindTextFields))
+        {
+            var value = field.GetValue(builder);
+            var translated = value switch
+            {
+                string text => FromGameText(text),
+                string[] texts => FromGameText(texts),
+                List<string> texts => FromGameText(texts),
+                _ => value,
+            };
+            if (!ReferenceEquals(translated, value))
+                field.SetValue(builder, translated);
+        }
+        return builder;
+    }
+
+    private static FieldInfo[] FindTextFields(Type type)
+    {
+        var fields = new List<FieldInfo>();
+        for (var t = type; t != null && t != typeof(object); t = t.BaseType)
+        {
+            foreach (
+                var field in t.GetFields(
+                    BindingFlags.Instance
+                        | BindingFlags.Public
+                        | BindingFlags.NonPublic
+                        | BindingFlags.DeclaredOnly
+                )
+            )
+            {
+                var fieldType = field.FieldType;
+                if (
+                    fieldType == typeof(string)
+                    || fieldType == typeof(string[])
+                    || fieldType == typeof(List<string>)
+                )
+                    fields.Add(field);
+            }
+        }
+        return fields.ToArray();
     }
 
     /// <summary>
@@ -411,6 +481,32 @@ public static class WindowsPath
     {
         return PathHelpers.FromWindowsPath(path);
     }
+
+    /// <summary>A native copy when an element changes, otherwise the list itself.</summary>
+    public static List<string> ToGame(List<string> paths) => Map(paths, ToGame);
+
+    /// <summary>
+    /// Restores a Windows path a mod writes into a definition string, like <c>def.Model</c>, to
+    /// the native path, so engine code that loads it without <c>MyFileSystem</c> finds the
+    /// file. Text that does not start with a drive and a separator is left alone.
+    /// </summary>
+    public static string ToGameText(string text) =>
+        text != null && HasDrivePrefix(text) && text.Length > 2 && IsAnySeparator(text[2])
+            ? ToGame(text)
+            : text;
+
+    /// <summary>A native copy when an element changes, otherwise the array itself.</summary>
+    public static string[] ToGameText(string[] texts) => Map(texts, ToGameText);
+
+    private static string[] Map(string[] texts, Func<string, string> map) =>
+        texts == null || Array.TrueForAll(texts, t => ReferenceEquals(map(t), t))
+            ? texts
+            : Array.ConvertAll(texts, t => map(t));
+
+    private static List<string> Map(List<string> texts, Func<string, string> map) =>
+        texts == null || texts.TrueForAll(t => ReferenceEquals(map(t), t))
+            ? texts
+            : texts.ConvertAll(t => map(t));
 
     /// <summary>
     /// Rewriter target for the struct method <c>ModItem.GetPath()</c>.

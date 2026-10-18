@@ -96,9 +96,9 @@ namespace LinuxCompatDiagnostics
 
                 // Probe 2: overwrite the second definition's Model with a
                 // Windows-shaped absolute path built from the ModPath egress
-                // value (wrong casing on the tail), then spawn. The engine
-                // must restore the path through the sanctioned ingress funnel
-                // when it loads the model.
+                // value (wrong casing on the tail), then spawn. The rewriter
+                // stores it native (SE1-0224) and the engine resolves the
+                // casing when it loads the model.
                 var def = GetDiagBlockDefinition(DiagBlockMutableSubtype);
                 var ctx = ModContext;
                 if (def == null || ctx == null || ctx.ModPath == null)
@@ -200,6 +200,18 @@ namespace LinuxCompatDiagnostics
                 );
                 if (fat == null)
                     return;
+
+                // SE1-0224: the model path comes out through an out argument.
+                Matrix localMatrix;
+                string currentModel;
+                fat.CalcLocalMatrix(out localMatrix, out currentModel);
+                CheckNoHomeFolder(label + ": CalcLocalMatrix model", currentModel);
+                CheckTrue(
+                    OwnerLinux,
+                    label + ": CalcLocalMatrix model ends with testcube.mwm",
+                    EndsWithIgnoreCase(currentModel, "testcube.mwm"),
+                    currentModel
+                );
 
                 var model = ((IMyEntity)fat).Model;
                 CheckTrue(
