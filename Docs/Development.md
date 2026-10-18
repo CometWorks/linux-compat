@@ -5,12 +5,14 @@ debugging it. [Architecture.md](Architecture.md) covers how the plugin works.
 
 ## Local build paths
 
-The build paths (`Bin64`, `DS64`, `Pulsar`, `Steamworks`, `Dependencies`,
-`Wrappers`) are empty in `Directory.Build.props`. To override them, copy its
+The build paths (`Bin64`, `DS64`, `Magnetar`, `Pulsar`, `Steamworks`,
+`Dependencies`, `Wrappers`) are empty in `Directory.Build.props`. To override them, copy its
 first `PropertyGroup` into `Directory.Build.props.user` (git-ignored) in the
 repo root, wrapped in a top-level `<Project>` element, and fill in your paths.
 
-`Bin64` and `DS64` are auto-detected from Steam if left empty. `Pulsar` is
+`Bin64` and `DS64` are auto-detected from Steam if left empty. `Magnetar`
+defaults to `~/.config/Magnetar`; the server plugin builds against the
+`PluginSdk.dll` in its `Libraries/MagnetarInterim` folder. `Pulsar` is
 never auto-detected. Leave it empty and load the working copy through a loader
 development source, in Pulsar and in Magnetar alike; a deployed copy shows up
 as a separate local plugin and can shadow the published one. The server plugin

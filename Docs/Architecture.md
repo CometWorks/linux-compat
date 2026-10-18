@@ -223,6 +223,18 @@ mod-location and game-content readers in `WrappedUtilities` apply the same
 translate-once, reject-leftover-drive rule, and accept only a `ModItem` loaded
 in the session rather than any folder a crafted `Name` would select.
 
+Each of these fixes, and the shim refusal and assignment values of the
+rewriter, has a switch in `IPathSecurityConfig`
+(`Shared/Patches/PathHandling/PathSecurity.cs`), so a player or admin can turn
+off the one a mod trips over ([README](../README.md#configuration)). The fixes
+read `PathSecurity.Config` where they run, so a change applies from the next
+call or mod compile. The client's `Config` and the server's PluginSdk
+`LinuxCompatConfig` implement it, and each plugin installs a
+`PathSecurity.Loader` that reads its file on first use. The dedicated server
+compiles the world's mods before `IPlugin.Init`, so it installs the loader in
+`Preloader.Finish`; until the user data folder is known, every switch reads as
+on.
+
 `IngressTrace` records every internal site that still receives a
 drive-prefixed mod path, together with the stack that delivered it. Debug
 builds always flag conversions made outside the sanctioned funnel; release

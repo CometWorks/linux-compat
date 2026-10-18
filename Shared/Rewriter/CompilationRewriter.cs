@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using ClientPlugin.Patches.PathHandling;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -14,9 +15,12 @@ internal static class CompilationRewriter
         if (target != MyApiTarget.Mod)
             return compilation;
 
-        var shimUses = FindShimUses(compilation);
-        if (shimUses.Count > 0)
-            return RefuseShimUses(compilation, shimUses);
+        if (PathSecurity.Config.RefuseShimUse)
+        {
+            var shimUses = FindShimUses(compilation);
+            if (shimUses.Count > 0)
+                return RefuseShimUses(compilation, shimUses);
+        }
 
         var replacements = new List<(SyntaxTree OldTree, SyntaxTree NewTree)>();
         var requiresShimReference = false;

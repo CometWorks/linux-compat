@@ -23,6 +23,7 @@
         <!-- The code under test, compiled verbatim from the plugin sources. -->
         <Compile Include="../../Shared/Rewriter/CompilationRewriter.cs" Link="CompilationRewriter.cs" />
         <Compile Include="../../Shared/Rewriter/WindowsSemanticsRewriter.cs" Link="WindowsSemanticsRewriter.cs" />
+        <Compile Include="../../Shared/Patches/PathHandling/PathSecurity.cs" Link="PathSecurity.cs" />
         <Compile Include="Stubs.cs" />
         <Compile Include="Program.cs" />
     </ItemGroup>
