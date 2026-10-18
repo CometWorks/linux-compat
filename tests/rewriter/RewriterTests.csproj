@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>13</LangVersion>
+        <Nullable>disable</Nullable>
+        <RootNamespace>RewriterTests</RootNamespace>
+        <AssemblyName>RewriterTests</AssemblyName>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+        <!-- Standalone harness: not part of LinuxCompat.sln. The Directory.Build.props next to
+             this file shadows the repository root's, keeping the plugin's Steam/game path
+             detection out of the test build. -->
+        <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- The Roslyn version the game ships in Bin64. -->
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.9.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The code under test, compiled verbatim from the plugin sources. -->
+        <Compile Include="../../Shared/Rewriter/CompilationRewriter.cs" Link="CompilationRewriter.cs" />
+        <Compile Include="../../Shared/Rewriter/WindowsSemanticsRewriter.cs" Link="WindowsSemanticsRewriter.cs" />
+        <Compile Include="Stubs.cs" />
+        <Compile Include="Program.cs" />
+    </ItemGroup>
+
+</Project>

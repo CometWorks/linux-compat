@@ -1,0 +1,4 @@
+<!-- Shadows the repository root's Directory.Build.props: the upward search stops at the first
+     file found, keeping the plugin's Steam/game path detection out of this hermetic test. -->
+<Project>
+</Project>
