@@ -14,7 +14,7 @@ namespace ClientPlugin.Patches.PathHandling;
 /// their native target. Through <c>MyObjectBuilderSerializer</c>, which calls the check itself, a
 /// mod could read and write any file under the home folder. On Windows the same call is refused.
 /// </para>
-/// Injected into the method body, like <see cref="MyFileSystemOpenPrepatch"/>, so callers that
+/// Injected into the method body, like <see cref="MyFileSystemPathPrepatch"/>, so callers that
 /// inline it are covered too.
 /// </summary>
 public static class PathUtilsEnsureSafePathPrepatch

@@ -66,84 +66,20 @@ static class MyFileSystemFileExistsPatch
     }
 }
 
-[HarmonyPatch(typeof(MyFileSystem), nameof(MyFileSystem.DirectoryExists))]
-[HarmonyPatchCategory("Finish")]
-static class MyFileSystemDirectoryExistsPatch
+// Sorts GetFiles results case-insensitively, whatever order the provider returned. Script grouping
+// and localization override precedence depend on it. MyFileSystemPathPrepatch calls it from the
+// GetFiles bodies.
+public static class GetFilesSort
 {
-    static void Prefix(ref string path)
-    {
-        if (path == null)
-            return;
-
-        path = PathCache.ResolveAbsolute(path);
-    }
-}
-
-// Normalize all GetFiles overloads and sort results case-insensitively.
-// Deterministic order preserves script grouping and localization override precedence.
-[HarmonyPatch(typeof(MyFileSystem), nameof(MyFileSystem.GetFiles), typeof(string))]
-[HarmonyPatchCategory("Finish")]
-static class MyFileSystemGetFilesPatch
-{
-    static void Prefix(ref string path)
-    {
-        if (path == null)
-            return;
-
-        path = PathCache.ResolveAbsolute(path);
-    }
-
-    static void Postfix(ref IEnumerable<string> __result) => GetFilesSort.Apply(ref __result);
-}
-
-[HarmonyPatch(typeof(MyFileSystem), nameof(MyFileSystem.GetFiles), typeof(string), typeof(string))]
-[HarmonyPatchCategory("Finish")]
-static class MyFileSystemGetFilesFilterPatch
-{
-    static void Prefix(ref string path)
-    {
-        if (path == null)
-            return;
-
-        path = PathCache.ResolveAbsolute(path);
-    }
-
-    static void Postfix(ref IEnumerable<string> __result) => GetFilesSort.Apply(ref __result);
-}
-
-[HarmonyPatch(
-    typeof(MyFileSystem),
-    nameof(MyFileSystem.GetFiles),
-    typeof(string),
-    typeof(string),
-    typeof(MySearchOption)
-)]
-[HarmonyPatchCategory("Finish")]
-static class MyFileSystemGetFilesSearchOptionPatch
-{
-    static void Prefix(ref string path)
-    {
-        if (path == null)
-            return;
-
-        path = PathCache.ResolveAbsolute(path);
-    }
-
-    static void Postfix(ref IEnumerable<string> __result) => GetFilesSort.Apply(ref __result);
-}
-
-// Windows-style deterministic ordering is required across filesystem providers.
-static class GetFilesSort
-{
-    public static void Apply(ref IEnumerable<string> result)
+    public static IEnumerable<string> Sorted(IEnumerable<string> result)
     {
         if (result == null)
-            return;
+            return null;
 
         // Materialize lazy providers once before sorting.
         var sorted = result.ToList();
         sorted.Sort(StringComparer.OrdinalIgnoreCase);
-        result = sorted;
+        return sorted;
     }
 }
 

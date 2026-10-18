@@ -172,8 +172,12 @@ wrong-cased or both, into the real path on disk. It is backed by a flat cache
 of the immutable `Content` and `Bin64` trees plus mtime-validated per-directory
 caches for mutable roots, so resolution does not walk the filesystem per call.
 
-`MyFileSystemOpenPrepatch` injects a call to it as the prologue of
-`MyFileSystem.Open`, which is why `VRage.Library.dll` is in `TargetDLLs`.
+`MyFileSystemPathPrepatch` injects a call to it as the prologue of
+`MyFileSystem.Open`, `DirectoryExists` and the `GetFiles` overloads, which is
+why `VRage.Library.dll` is in `TargetDLLs`. These are one-line wrappers the JIT
+inlines into their callers, and an inlined copy skips a Harmony prefix, so
+the resolution has to be in the method body. The `GetFiles` results are also
+sorted there.
 `PathUtilsEnsureSafePathPrepatch` makes `PathUtils.EnsureSafePath` check the
 native path too. Linux does not consider a `C:\` path rooted, so the check used
 to combine it with the Mods folder and pass it, and `MyObjectBuilderSerializer`
