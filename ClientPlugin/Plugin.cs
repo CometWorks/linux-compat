@@ -8,8 +8,8 @@ using VRage.Scripting;
 #if !LOCAL_BUILD
 using System.Reflection;
 
-[assembly: AssemblyVersion("1.0.38.0")]
-[assembly: AssemblyFileVersion("1.0.38.0")]
+[assembly: AssemblyVersion("1.0.34.0")]
+[assembly: AssemblyFileVersion("1.0.34.0")]
 
 #endif
 
