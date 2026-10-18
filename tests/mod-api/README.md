@@ -10,7 +10,7 @@ wrappers in `Shared/Patches/PathHandling/ModApiWrappers/`, and the
 ## Layout
 
 - `LinuxCompatDiagnostics/`: the test mod, and the source of truth. The harness
-  deploys it to `~/.config/SpaceEngineers/Mods/`. A session component runs ~470
+  deploys it to `~/.config/SpaceEngineers/Mods/`. A session component runs ~500
   expected-vs-actual probes during world load and writes
   `Storage/LinuxCompatDiagnostics_LinuxCompatDiagnostics/LinuxCompatDiagnostics.log`.
 - `run.sh`: client harness. Builds the plugin, deploys the mod, clears the
@@ -66,7 +66,10 @@ Mods must never see the Linux home folder or user name; on Windows they see
 the user name of whoever runs it, whatever the probe on that line reported. The
 log is written by the mod, so such a line is a leak. `ProbesHomeLeak.cs` covers
 the call shapes, definition paths, caught exceptions and a world listed and read
-through `UserDataPath + "\Saves"`.
+through `UserDataPath + "\Saves"`. `ProbesRareLeaks.cs` covers the rarer reaches:
+path getters as method groups, checkpoint paths, a parallel task's exceptions,
+`def.GetObjectBuilder()`, Windows paths written into a definition, and the
+dedicated server's `Plugins` list.
 
 ## Security probes
 
@@ -76,16 +79,22 @@ halves, so neither direction can regress unnoticed:
 - `security: refused, <op>: <case>` is an access the boundary must reject.
   Traversal (`../`, backslash, mid-path, deep-to-root), bare `..`, absolute
   native paths, `%2e%2e`, `\\?\` and UNC prefixes, invented drive letters
-  (`C:`, `Z:`, `Q:`), separators in storage filenames, and the engine's
-  protected `Data/Scripts` location, across game content, mod location and all
-  three storage scopes. Every one of these is refused on Windows too, so a FAIL
-  means the Linux port is **wider** than Windows.
+  (`C:`, `Z:`, `Q:`), a drive left after one translation (`C:C:\...`, a drive
+  after a dot segment or after the Content folder), separators in storage
+  filenames, and the engine's protected `Data/Scripts` location, across game
+  content, mod location, the object builder serializer and all three storage
+  scopes. Every one of these is refused on Windows too, so a FAIL means the
+  Linux port is **wider** than Windows. The one exception is a `ModItem` the
+  mod builds that names no loaded mod: Windows reads from whatever folder its
+  `Name` selects, and the Linux port refuses it on purpose.
 - `security: allowed, <op>: <case>` is an access a real mod is entitled to and
   which an over-tightened containment check would break. Relative, backslash
   and wrong-case paths, `..` that stays *inside* the root
   (`Data/../Data/...`), leading `./`, absolute paths built from the egress
-  values (`IMyGamePaths.ContentPath`, `IMyModContext.ModPath`), and a
-  write/exists/read/delete round trip in local, world and global storage.
+  values (`IMyGamePaths.ContentPath`, `IMyModContext.ModPath`), the user data
+  folder in Windows form through the object builder serializer (backslashes,
+  forward slashes or another casing), and a write/exists/read/delete round trip
+  in local, world and global storage.
 
 The audit these cover is
 `~/ws/se/pulsar-tests/se1/reports/security/mod-path-audit.md`.

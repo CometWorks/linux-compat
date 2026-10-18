@@ -58,17 +58,33 @@ def sub1(pattern: str, repl: str, text: str, name: str) -> str:
 
 
 def fix_settings(text: str) -> str:
-    text = sub1(r"<SessionName>[^<]*</SessionName>",
-                "<SessionName>Border Cleanup Test</SessionName>", text, "SessionName")
-    text = sub1(r"<WorldSizeKm>\d+</WorldSizeKm>",
-                "<WorldSizeKm>1</WorldSizeKm>", text, "WorldSizeKm")
-    text = sub1(r"<CargoShipsEnabled>true</CargoShipsEnabled>",
-                "<CargoShipsEnabled>false</CargoShipsEnabled>", text, "CargoShipsEnabled")
+    text = sub1(
+        r"<SessionName>[^<]*</SessionName>",
+        "<SessionName>Border Cleanup Test</SessionName>",
+        text,
+        "SessionName",
+    )
+    text = sub1(
+        r"<WorldSizeKm>\d+</WorldSizeKm>",
+        "<WorldSizeKm>1</WorldSizeKm>",
+        text,
+        "WorldSizeKm",
+    )
+    text = sub1(
+        r"<CargoShipsEnabled>true</CargoShipsEnabled>",
+        "<CargoShipsEnabled>false</CargoShipsEnabled>",
+        text,
+        "CargoShipsEnabled",
+    )
     text = sub1(r"<Mods>.*?</Mods>", "<Mods />", text, "Mods")
     # The trash cleaner would delete the 1-block drift grid once it is 500 m
     # from the player, racing the border crossing this test is about.
-    text = sub1(r"<TrashRemovalEnabled>true</TrashRemovalEnabled>",
-                "<TrashRemovalEnabled>false</TrashRemovalEnabled>", text, "TrashRemovalEnabled")
+    text = sub1(
+        r"<TrashRemovalEnabled>true</TrashRemovalEnabled>",
+        "<TrashRemovalEnabled>false</TrashRemovalEnabled>",
+        text,
+        "TrashRemovalEnabled",
+    )
     return text
 
 
@@ -79,10 +95,13 @@ def main() -> None:
     checkpoint = fix_settings((src / "Sandbox.sbc").read_text(encoding="utf-8-sig"))
     checkpoint = sub1(
         r"<WorldBoundaries>.*?</WorldBoundaries>",
-        '<WorldBoundaries>\n'
+        "<WorldBoundaries>\n"
         '    <Min x="-500" y="-500" z="-500" />\n'
         '    <Max x="500" y="500" z="500" />\n'
-        "  </WorldBoundaries>", checkpoint, "WorldBoundaries")
+        "  </WorldBoundaries>",
+        checkpoint,
+        "WorldBoundaries",
+    )
     (dst / "Sandbox.sbc").write_text(checkpoint, encoding="utf-8")
 
     config = fix_settings((src / "Sandbox_config.sbc").read_text(encoding="utf-8-sig"))
@@ -90,17 +109,30 @@ def main() -> None:
 
     sector = (src / "SANDBOX_0_0_0_.sbs").read_text(encoding="utf-8-sig")
     # No cargo ship spawns in the bounded test world.
-    sector = sub1(r"\s*<MyObjectBuilder_GlobalEventBase>.*?</MyObjectBuilder_GlobalEventBase>",
-                  "", sector, "SpawnCargoShip event")
+    sector = sub1(
+        r"\s*<MyObjectBuilder_GlobalEventBase>.*?</MyObjectBuilder_GlobalEventBase>",
+        "",
+        sector,
+        "SpawnCargoShip event",
+    )
     # Keep only the character; replace every grid with the drift ship.
-    m = re.search(r'( *<MyObjectBuilder_EntityBase xsi:type="MyObjectBuilder_Character">.*?'
-                  r"</MyObjectBuilder_EntityBase>\n)", sector, re.DOTALL)
+    m = re.search(
+        r'( *<MyObjectBuilder_EntityBase xsi:type="MyObjectBuilder_Character">.*?'
+        r"</MyObjectBuilder_EntityBase>\n)",
+        sector,
+        re.DOTALL,
+    )
     if not m:
         raise SystemExit("character entity not found")
     head = sector[: sector.index("<SectorObjects>") + len("<SectorObjects>")]
     (dst / "SANDBOX_0_0_0_.sbs").write_text(
-        head + "\n" + m.group(1) + DRIFT_GRID + "  </SectorObjects>\n</MyObjectBuilder_Sector>",
-        encoding="utf-8")
+        head
+        + "\n"
+        + m.group(1)
+        + DRIFT_GRID
+        + "  </SectorObjects>\n</MyObjectBuilder_Sector>",
+        encoding="utf-8",
+    )
 
     # The game loads the binary sector (.sbsB5) in preference to the XML, and
     # the Remote API load path refuses XML-only saves outright, so a stale B5
@@ -110,8 +142,10 @@ def main() -> None:
     b5 = dst / "SANDBOX_0_0_0_.sbsB5"
     if b5.exists():
         b5.unlink()
-        print("deleted stale SANDBOX_0_0_0_.sbsB5 - regenerate it in-game "
-              "(one UI load) and copy it back, or run.sh cannot load the world")
+        print(
+            "deleted stale SANDBOX_0_0_0_.sbsB5 - regenerate it in-game "
+            "(one UI load) and copy it back, or run.sh cannot load the world"
+        )
 
     print(f"wrote world to {dst}")
 

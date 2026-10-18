@@ -66,7 +66,7 @@ public static class Preloader
                 break;
 #endif
             case "VRage.Library":
-                ClientPlugin.Patches.PathHandling.MyFileSystemOpenPrepatch.Prepatch(asmDef);
+                ClientPlugin.Patches.PathHandling.MyFileSystemPathPrepatch.Prepatch(asmDef);
                 ClientPlugin.Patches.PathHandling.PathUtilsEnsureSafePathPrepatch.Prepatch(asmDef);
                 break;
             case "SpaceEngineers.Game":
@@ -645,6 +645,7 @@ public static class Preloader
         // Server Plugin.Init runs after the auto-loaded world's mods compile.
         ClientPlugin.Patches.PathHandling.PathTranslation.Init();
         ClientPlugin.Rewriter.ShimRegistration.Register();
+        ServerPlugin.Plugin.InstallConfigLoader();
 #endif
     }
 }

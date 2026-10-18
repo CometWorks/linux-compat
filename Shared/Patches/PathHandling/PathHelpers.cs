@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Security;
 using VRage.FileSystem;
 
 namespace ClientPlugin.Patches.PathHandling;
@@ -72,6 +73,29 @@ public static class PathHelpers
     }
 
     /// <summary>
+    /// Whether any segment of a normalized path starts with a drive letter, like
+    /// <c>C:</c> or <c>C:foo</c>. Such a segment would be translated once more by
+    /// <see cref="PathTranslation.Untranslate"/> wherever a path passes through
+    /// <see cref="PathCache.ResolveAbsolute"/> again. A mod running on Windows can
+    /// never produce one past the first segment.
+    /// </summary>
+    public static bool HasDriveSegment(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+            return false;
+        for (int start = 0; start < path.Length; )
+        {
+            int end = path.IndexOf('/', start);
+            if (end < 0)
+                end = path.Length;
+            if (end - start >= 2 && path[start + 1] == ':' && char.IsLetter(path[start]))
+                return true;
+            start = end + 1;
+        }
+        return false;
+    }
+
+    /// <summary>
     /// Treats backslashes as separators on Linux.
     /// Its signature matches <see cref="Path.GetFileName(string)"/> for operand-only transpilers.
     /// </summary>
@@ -96,36 +120,24 @@ public static class PathHelpers
     }
 
     /// <summary>
-    /// The engine's own containment guard: canonicalize, then match the root
-    /// prefix exactly as <c>MyAPIUtilities</c> does on Windows.
-    /// <para>
-    /// A raw <c>StartsWith(root)</c> is not a containment check on Linux.
-    /// <see cref="PathCache.ResolveAbsolute"/> is a resolver, not a gate: it
-    /// returns its input unchanged as soon as the path exists on disk, and the
-    /// Linux kernel resolves <c>..</c> itself, so <c>&lt;root&gt;/../../etc/passwd</c>
-    /// both opens and passes a raw prefix test. Windows never sees that because
-    /// the engine canonicalizes with <see cref="Path.GetFullPath(string)"/> before
-    /// comparing.
-    /// </para>
+    /// The native path <c>PathUtils.EnsureSafePath</c> should check: the mod path translated
+    /// exactly once, then the native path the file system will open. A path that still carries a
+    /// drive segment after one translation is refused outright, because the engine resolver would
+    /// translate it a second time at open and land somewhere the containment check never saw —
+    /// this is the double-drive escape (<c>C:C:\...</c>). Native engine paths have no drive
+    /// segment, so they pass through to the same resolution the open uses. With
+    /// <see cref="IPathSecurityConfig.CheckSafePathAsOpened"/> off, the path is only translated
+    /// once, as before.
     /// </summary>
-    public static bool IsInsideRoot(string path, string root)
+    public static string ResolveForSafetyCheck(string path)
     {
-        if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(root))
-            return false;
-
-        string full;
-        try
-        {
-            full = Path.GetFullPath(path);
-        }
-        catch
-        {
-            return false;
-        }
-
-        // Ordinal prefix match without a trailing separator, matching the
-        // engine byte for byte; tightening it here would diverge from Windows.
-        return full.StartsWith(root, StringComparison.Ordinal);
+        if (string.IsNullOrEmpty(path))
+            return path;
+        if (!PathSecurity.Config.CheckSafePathAsOpened)
+            return FromWindowsPath(path);
+        if (HasDriveSegment(FromWindowsPath(path)))
+            throw new SecurityException("Mods are not allowed to read or write by specified path");
+        return PathCache.ResolveAbsolute(path);
     }
 }
 

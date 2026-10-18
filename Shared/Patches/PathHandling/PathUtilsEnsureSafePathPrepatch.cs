@@ -14,7 +14,14 @@ namespace ClientPlugin.Patches.PathHandling;
 /// their native target. Through <c>MyObjectBuilderSerializer</c>, which calls the check itself, a
 /// mod could read and write any file under the home folder. On Windows the same call is refused.
 /// </para>
-/// Injected into the method body, like <see cref="MyFileSystemOpenPrepatch"/>, so callers that
+/// <para>
+/// The check runs the path through <see cref="PathHelpers.ResolveForSafetyCheck"/>: it translates
+/// once, refuses anything that still carries a drive segment (the <c>C:C:\...</c> double-drive
+/// escape, which one translation pass would leave behind for the open to translate again), and
+/// otherwise resolves it the same way <c>MyFileSystem.Open</c>, <c>OpenWrite</c> and
+/// <c>FileExists</c> resolve the string the caller hands them, so the check and the open agree.
+/// </para>
+/// Injected into the method body, like <see cref="MyFileSystemPathPrepatch"/>, so callers that
 /// inline it are covered too.
 /// </summary>
 public static class PathUtilsEnsureSafePathPrepatch
@@ -37,15 +44,15 @@ public static class PathUtilsEnsureSafePathPrepatch
             return;
         }
 
-        var fromWindowsPath = typeof(PathHelpers).GetMethod(
-            nameof(PathHelpers.FromWindowsPath),
+        var resolveForCheck = typeof(PathHelpers).GetMethod(
+            nameof(PathHelpers.ResolveForSafetyCheck),
             [typeof(string)]
         );
         if (
             method.Body.Instructions.Any(i =>
                 i.OpCode == OpCodes.Call
                 && i.Operand is MethodReference mr
-                && mr.Name == fromWindowsPath.Name
+                && mr.Name == resolveForCheck.Name
                 && mr.DeclaringType.FullName == typeof(PathHelpers).FullName
             )
         )
@@ -58,7 +65,7 @@ public static class PathUtilsEnsureSafePathPrepatch
         il.InsertBefore(first, il.Create(OpCodes.Ldarg_0));
         il.InsertBefore(
             first,
-            il.Create(OpCodes.Call, asmDef.MainModule.ImportReference(fromWindowsPath))
+            il.Create(OpCodes.Call, asmDef.MainModule.ImportReference(resolveForCheck))
         );
         il.InsertBefore(first, il.Create(OpCodes.Starg_S, method.Parameters[0]));
 
