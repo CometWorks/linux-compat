@@ -21,7 +21,7 @@ namespace ClientPlugin.Patches.PathHandling;
 /// otherwise resolves it the same way <c>MyFileSystem.Open</c>, <c>OpenWrite</c> and
 /// <c>FileExists</c> resolve the string the caller hands them, so the check and the open agree.
 /// </para>
-/// Injected into the method body, like <see cref="MyFileSystemOpenPrepatch"/>, so callers that
+/// Injected into the method body, like <see cref="MyFileSystemPathPrepatch"/>, so callers that
 /// inline it are covered too.
 /// </summary>
 public static class PathUtilsEnsureSafePathPrepatch
