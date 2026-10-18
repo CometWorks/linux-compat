@@ -33,7 +33,10 @@ points, in this order:
 2. `Preloader.Patch(asmDef)` applies the Cecil prepatches to the assemblies
    listed in `Preloader.TargetDLLs` before they load. This is for what Harmony
    cannot reach: the Windows platform layer, the audio backend, the Steam
-   layer, SharpDX, and the `MyFileSystem.Open` prologue.
+   layer, SharpDX, and the `MyFileSystem.Open` prologue. It is also for code
+   that must never run unpatched. A Harmony patch can be bypassed at runtime
+   (players hit the original `MySourceVoice.SubmitSourceBuffer` in
+   SpaceGT/Pulsar#70), a rewritten assembly can't.
 3. `Preloader.Finish()` applies the Harmony `"Finish"` category, which is the
    bulk of the plugin (~125 patch classes; how many apply depends on the build,
    since much of `ClientPlugin/` is compiled out of the server). On the server
