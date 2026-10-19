@@ -36,9 +36,15 @@ points, in this order:
    layer, SharpDX, and the `MyFileSystem.Open` prologue. It is also for code
    that must never run unpatched. A Harmony patch can be bypassed at runtime
    (players hit the original `MySourceVoice.SubmitSourceBuffer` in
-   SpaceGT/Pulsar#70), a rewritten assembly can't.
+   SpaceGT/Pulsar#70), a rewritten assembly can't. MonoMod drops the detour
+   when the JIT recompiles a method while it is being patched, and every
+   re-patch (another plugin patching the same method) runs the original body
+   for a moment. So the audio chain (`MyInMemoryWave`, `MyWaveBank.FindAudioFile`,
+   `MyCueBank.GetVoice`) and the crash guards in `NullSafetyPrepatch` are
+   written into the IL too. `PreloaderHelpers.WrapInExceptionFilter` is the
+   Cecil form of a Harmony finalizer.
 3. `Preloader.Finish()` applies the Harmony `"Finish"` category, which is the
-   bulk of the plugin (~125 patch classes; how many apply depends on the build,
+   bulk of the plugin (~115 patch classes; how many apply depends on the build,
    since much of `ClientPlugin/` is compiled out of the server). On the server
    this is also where `PathTranslation.Init()` and `ShimRegistration.Register()`
    run, because the server's `Plugin.Init` runs after the auto-loaded world's

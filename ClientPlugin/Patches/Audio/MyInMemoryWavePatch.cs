@@ -12,31 +12,65 @@ using VRage.Data.Audio;
 
 namespace ClientPlugin.Patches.Audio;
 
-// Decode Linux audio into the shim's managed AudioBuffer.Data field. Reflection
-// targets the runtime type after the SharpDX.XAudio2 AssemblyRef redirect.
-[HarmonyPatch(typeof(MyInMemoryWave), nameof(MyInMemoryWave.Dispose))]
-[HarmonyPatchCategory("Finish")]
-static class MyInMemoryWaveDisposePatch
+// Decode Linux audio into the shim's managed AudioBuffer.Data field instead of the game's
+// SharpDX decoder, and make a second Dispose a no-op. Both are written into the method bodies:
+// as Harmony prefixes they can be lost at runtime, and the world goes silent (SE #1073).
+public static class MyInMemoryWavePrepatch
 {
-    static bool Prefix(MyInMemoryWave __instance)
+    public static void Prepatch(AssemblyDefinition asmDef)
     {
-        // m_owner is null after the first disposal.
-        if (__instance.m_owner == null)
-            return false;
+        var type = asmDef.MainModule.GetType("VRage.Audio.MyInMemoryWave");
+        // MyInMemoryWave(MySoundData cue, string path, MyWaveBank owner, bool streamed, bool cached)
+        var ctor = type?.Methods.FirstOrDefault(m =>
+            m.IsConstructor && !m.IsStatic && m.Parameters.Count == 5
+        );
+        var dispose = type?.Methods.FirstOrDefault(m => m.Name == "Dispose" && !m.HasParameters);
+        var owner = type?.Fields.FirstOrDefault(f => f.Name == "m_owner");
+        if (ctor?.Body == null || dispose?.Body == null || owner == null)
+        {
+            Console.WriteLine(
+                "[LinuxCompat] MyInMemoryWavePrepatch: MyInMemoryWave constructor, Dispose or m_owner not found"
+            );
+            return;
+        }
 
-        // Preserve field cleanup and streamed-wave removal.
-        return true;
+        // The constructor body becomes MyInMemoryWaveLinux.Init(this, cue, path, owner, streamed, cached).
+        ctor.Body.Instructions.RecordOriginalCode(ctor);
+        ctor.Body.Instructions.Clear();
+        ctor.Body.ExceptionHandlers.Clear();
+        ctor.Body.Variables.Clear();
+        var il = ctor.Body.GetILProcessor();
+        il.Append(il.Create(OpCodes.Ldarg_0));
+        foreach (var parameter in ctor.Parameters)
+            il.Append(il.Create(OpCodes.Ldarg, parameter));
+        il.Append(
+            il.Create(
+                OpCodes.Call,
+                asmDef.MainModule.ImportReference(
+                    typeof(MyInMemoryWaveLinux).GetMethod(nameof(MyInMemoryWaveLinux.Init))
+                )
+            )
+        );
+        il.Append(il.Create(OpCodes.Ret));
+        ctor.Body.Instructions.RecordPatchedCode(ctor);
+
+        // Dispose returns at once when m_owner is null, that is, after the first disposal.
+        dispose.Body.Instructions.RecordOriginalCode(dispose);
+        il = dispose.Body.GetILProcessor();
+        var first = dispose.Body.Instructions[0];
+        il.InsertBefore(first, il.Create(OpCodes.Ldarg_0));
+        il.InsertBefore(first, il.Create(OpCodes.Ldfld, owner));
+        il.InsertBefore(first, il.Create(OpCodes.Brtrue, first));
+        il.InsertBefore(first, il.Create(OpCodes.Ret));
+        dispose.Body.Instructions.RecordPatchedCode(dispose);
+
+        Console.WriteLine(
+            "[LinuxCompat] MyInMemoryWavePrepatch: replaced the MyInMemoryWave constructor, guarded Dispose"
+        );
     }
 }
 
-// Finish-category ordering installs this before MyAudio.LoadData.
-[HarmonyPatch(
-    typeof(MyInMemoryWave),
-    MethodType.Constructor,
-    new[] { typeof(MySoundData), typeof(string), typeof(MyWaveBank), typeof(bool), typeof(bool) }
-)]
-[HarmonyPatchCategory("Finish")]
-static class MyInMemoryWaveCtorPatch
+public static class MyInMemoryWaveLinux
 {
     // Runtime AudioBuffer fields after AssemblyRef redirection.
     private static Type s_audioBufferType;
@@ -47,15 +81,19 @@ static class MyInMemoryWaveCtorPatch
 
     private static FieldInfo s_bufferField;
 
-    static bool Prefix(
-        MyInMemoryWave __instance,
-        MySoundData cue,
+    // Called from the constructor body. The parameters take no game types: importing this method
+    // into VRage.Audio during the preload must not load the game assemblies.
+    public static void Init(
+        object instance,
+        object cue,
         string path,
-        MyWaveBank owner,
+        object owner,
         bool streamed,
         bool cached
     )
     {
+        var wave = (MyInMemoryWave)instance;
+
         // Direct File.Exists requires Linux separators and on-disk casing.
         path = path.Replace('\\', '/');
         if (Path.IsPathRooted(path))
@@ -89,17 +127,16 @@ static class MyInMemoryWaveCtorPatch
         s_audioBytesField.SetValue(buffer, data.Length);
         s_flagsField.SetValue(buffer, 0); // BufferFlags.None
         s_dataField.SetValue(buffer, data);
-        if (cue.Loopable)
+        if (((MySoundData)cue).Loopable)
         {
             s_loopCountField.SetValue(buffer, 255);
         }
 
-        __instance.m_owner = owner;
-        __instance.m_path = path;
-        __instance.m_waveFormat = waveFormat;
-        s_bufferField.SetValue(__instance, buffer);
-        __instance.Streamed = streamed;
-        return false;
+        wave.m_owner = (MyWaveBank)owner;
+        wave.m_path = path;
+        wave.m_waveFormat = waveFormat;
+        s_bufferField.SetValue(wave, buffer);
+        wave.Streamed = streamed;
     }
 }
 
