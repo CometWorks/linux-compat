@@ -45,7 +45,11 @@ points, in this order:
    Cecil form of a Harmony finalizer.
 3. `Preloader.Finish()` applies the Harmony `"Finish"` category, which is the
    bulk of the plugin (~115 patch classes; how many apply depends on the build,
-   since much of `ClientPlugin/` is compiled out of the server). On the server
+   since much of `ClientPlugin/` is compiled out of the server). It then
+   rebuilds each replacement once. Harmony compiles a replacement as soon as it
+   patches its method, so it could have inlined a game method that the same
+   pass patches later and skip that patch from there; by the end of the pass
+   every patched method is marked not inlinable. On the server
    this is also where `PathTranslation.Init()` and `ShimRegistration.Register()`
    run, because the server's `Plugin.Init` runs after the auto-loaded world's
    mods have already compiled.
@@ -177,7 +181,10 @@ A few shapes need more than a wrapped read:
   assignment is used as a value (`p = (def.Model = x)`), it is wrapped in
   `FromGameText` too, so it cannot hand back the stored native string. An
   object initializer member (`new BuildProgressModel { File = x }`) has no
-  value and stays an assignment.
+  value and stays an assignment. A value without a type of its own, like
+  `def.DescriptionArgs = null`, is cast to the written type first (also for the
+  `ToGame` path setters and arguments), or the call would be ambiguous between
+  the shim's overloads.
 
 `ShimRegistration` plumbs the shim types into the script compiler before any
 mod compiles. It uses the raw in-memory metadata image rather than

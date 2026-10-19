@@ -24,6 +24,22 @@ internal static class Program
             public class MyDefinitionBase
             {
                 public string[] Icons;
+                public string DescriptionArgs;
+            }
+        }
+
+        namespace VRage.Game.ModAPI
+        {
+            public interface IMyConfigDedicated
+            {
+                string LoadWorld { get; set; }
+                System.Collections.Generic.List<string> Plugins { get; set; }
+                void Load(string path = null);
+            }
+
+            public interface IMyUtilities
+            {
+                bool FileExistsInModLocation(string file, object modItem);
             }
         }
 
@@ -65,6 +81,7 @@ internal static class Program
         CleanModCompiles();
         ObjectInitializerStaysAssignment();
         AssignmentValueTranslated();
+        UntypedValuesBindOneOverload();
         ShimUseRefused();
         ShimUseAllowedOutsideMods();
         SwitchesOff();
@@ -167,6 +184,71 @@ internal static class Program
             "assignment value: statement left alone",
             text.Contains(
                 "        def.Model = global::ClientPlugin.Rewriter.WindowsPath.ToGameText(p);"
+            )
+        );
+    }
+
+    /// <summary>
+    /// A value with no type of its own, like <c>null</c>, passed to a shim with several
+    /// overloads made the call ambiguous (Build Info: <c>def.DescriptionArgs = null;</c>), so
+    /// the rewriter casts it to the type of what it is written to.
+    /// </summary>
+    private static void UntypedValuesBindOneOverload()
+    {
+        var result = Rewrite(
+            """
+            using Sandbox.Definitions;
+            using VRage.Game.ModAPI;
+
+            public class Mod
+            {
+                public void Clear(MyCubeBlockDefinition def)
+                {
+                    def.DescriptionArgs = null;
+                    def.Icons = null;
+                    def.Icons[0] = null;
+                    def.Model = default(string);
+                }
+
+                public string Value(MyCubeBlockDefinition def) => (def.Model = null);
+
+                public MyCubeBlockDefinition.BuildProgressModel Stage() =>
+                    new MyCubeBlockDefinition.BuildProgressModel { File = null };
+
+                public void Config(IMyConfigDedicated config, IMyUtilities utilities)
+                {
+                    config.LoadWorld = null;
+                    config.Plugins = null;
+                    config.Load(null);
+                    utilities.FileExistsInModLocation(null, null);
+                }
+            }
+            """
+        );
+        CheckNoErrors("untyped value", result);
+        var text = Text(result);
+        Check(
+            "untyped value: string written",
+            text.Contains(
+                "def.DescriptionArgs = global::ClientPlugin.Rewriter.WindowsPath.ToGameText((string)(null))"
+            )
+        );
+        Check(
+            "untyped value: array written",
+            text.Contains(
+                "def.Icons = global::ClientPlugin.Rewriter.WindowsPath.ToGameText((string[])(null))"
+            )
+        );
+        Check(
+            "untyped value: list setter",
+            text.Contains(
+                "config.Plugins = global::ClientPlugin.Rewriter.WindowsPath.ToGame((global::System.Collections.Generic.List<string>)(null))"
+            )
+        );
+        Check(
+            "untyped value: path argument",
+            text.Contains(
+                "config.Load(global::ClientPlugin.Rewriter.WindowsPath.ToGame((string)(null)))"
             )
         );
     }

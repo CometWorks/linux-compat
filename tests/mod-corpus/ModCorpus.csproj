@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>13</LangVersion>
+        <Nullable>disable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>ModCorpus</RootNamespace>
+        <AssemblyName>ModCorpus</AssemblyName>
+        <!-- Standalone harness: not part of LinuxCompat.sln. The Directory.Build.props next to
+             this file shadows the repository root's, keeping the plugin's Steam/game path
+             detection out of the test build. -->
+        <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Compile against the Roslyn version the game ships in Bin64, but leave it out of the
+             output: at run time Program.cs loads the game's own copy from Bin64, the one
+             LinuxCompat.dll and the game's script compiler use. -->
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.9.0" ExcludeAssets="runtime" />
+        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="2.9.0" ExcludeAssets="runtime" />
+    </ItemGroup>
+
+</Project>
