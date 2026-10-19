@@ -171,7 +171,10 @@ A few shapes need more than a wrapped read:
   assignment is used as a value (`p = (def.Model = x)`), it is wrapped in
   `FromGameText` too, so it cannot hand back the stored native string. An
   object initializer member (`new BuildProgressModel { File = x }`) has no
-  value and stays an assignment.
+  value and stays an assignment. A value without a type of its own, like
+  `def.DescriptionArgs = null`, is cast to the written type first (also for the
+  `ToGame` path setters and arguments), or the call would be ambiguous between
+  the shim's overloads.
 
 `ShimRegistration` plumbs the shim types into the script compiler before any
 mod compiles. It uses the raw in-memory metadata image rather than

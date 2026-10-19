@@ -27,6 +27,7 @@ Exit code 0 means every check passed. Covered:
 | `clean mod` | A mod that reaches the shims only through the rewriter compiles, and its definition read is rewritten |
 | `object initializer` | `new BuildProgressModel { File = x }` keeps its members as assignments, with the value translated; wrapping one in `FromGameText` failed with CS0747 |
 | `assignment value` | A definition assignment used as a value, simple or compound, gives back the Windows form; as a statement it is left alone |
+| `untyped value` | `null` written to a definition string or array, a path setter or a path argument is cast to the written type, so the call binds one shim overload (Build Info's `def.DescriptionArgs = null;` was ambiguous after #76) |
 | `refused` | A mod naming a shim fails to compile with the refusal and the symbol: a direct call, `using static`, an alias, a method group and an extension method (SE1-0263 B1) |
 | `other target untouched` | Only mod compilations are checked and rewritten |
 | `switch off` | With `RefuseShimUse` and `TranslateAssignmentValues` off in `PathSecurity`, a mod naming a shim compiles and an assignment used as a value is left as written |
