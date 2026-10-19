@@ -615,9 +615,14 @@ public static class Preloader
         const string harmonyId = "LinuxCompat";
 #endif
         var harmony = new Harmony(harmonyId);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        long rebuildMs;
         try
         {
             harmony.PatchCategory("Finish");
+            var patchMs = clock.ElapsedMilliseconds;
+            RebuildReplacements(harmony);
+            rebuildMs = clock.ElapsedMilliseconds - patchMs;
         }
         catch (Exception e)
         {
@@ -631,14 +636,12 @@ public static class Preloader
             catch { }
             throw;
         }
-        Console.WriteLine(
-            $"[LinuxCompat] PatchCategory(\"Finish\") applied {harmony.GetPatchedMethods().Count()} methods"
-        );
+        var applied =
+            $"[LinuxCompat] PatchCategory(\"Finish\") applied {harmony.GetPatchedMethods().Count()} methods in {clock.ElapsedMilliseconds} ms (rebuild {rebuildMs} ms)";
+        Console.WriteLine(applied);
         try
         {
-            VRage.Utils.MyLog.Default.WriteLineAndConsole(
-                $"[LinuxCompat] PatchCategory(\"Finish\") applied {harmony.GetPatchedMethods().Count()} methods"
-            );
+            VRage.Utils.MyLog.Default.WriteLineAndConsole(applied);
         }
         catch { }
 #if MAGNETAR
@@ -647,5 +650,17 @@ public static class Preloader
         ClientPlugin.Rewriter.ShimRegistration.Register();
         ServerPlugin.Plugin.InstallConfigLoader();
 #endif
+    }
+
+    // Harmony compiles a method's replacement, fully optimized, as soon as it patches that
+    // method, and marks only the methods patched so far as not inlinable. A replacement can
+    // therefore inline a game method that this pass patches later, and from that call site the
+    // later patch never runs. Which methods that hits depends on the order Harmony walks the
+    // patch classes in, so it changes from build to build. Once every target carries the mark,
+    // compiling each replacement again leaves no inlined copy of a patched method behind.
+    private static void RebuildReplacements(Harmony harmony)
+    {
+        foreach (var method in harmony.GetPatchedMethods().ToList())
+            harmony.CreateProcessor(method).Patch();
     }
 }

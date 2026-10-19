@@ -39,7 +39,11 @@ points, in this order:
    SpaceGT/Pulsar#70), a rewritten assembly can't.
 3. `Preloader.Finish()` applies the Harmony `"Finish"` category, which is the
    bulk of the plugin (~125 patch classes; how many apply depends on the build,
-   since much of `ClientPlugin/` is compiled out of the server). On the server
+   since much of `ClientPlugin/` is compiled out of the server). It then
+   rebuilds each replacement once. Harmony compiles a replacement as soon as it
+   patches its method, so it could have inlined a game method that the same
+   pass patches later and skip that patch from there; by the end of the pass
+   every patched method is marked not inlinable. On the server
    this is also where `PathTranslation.Init()` and `ShimRegistration.Register()`
    run, because the server's `Plugin.Init` runs after the auto-loaded world's
    mods have already compiled.
