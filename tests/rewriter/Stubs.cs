@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 
 namespace VRage.Scripting
@@ -13,7 +14,8 @@ namespace VRage.Scripting
 }
 
 // Stand-ins for the shims. As in the plugin, the shim reference is the assembly holding the
-// rewriter, so these are what mod source binds to. Only the members the cases use.
+// rewriter, so these are what mod source binds to. Only the members the cases use, but with
+// all of their overloads, since overload resolution is what binds the rewritten calls.
 namespace ClientPlugin.Rewriter
 {
     // Replaces the real ShimRegistration, which reaches into MyScriptCompiler.
@@ -26,6 +28,12 @@ namespace ClientPlugin.Rewriter
     public static class WindowsPath
     {
         public static string ToGame(string path) => path;
+
+        public static List<string> ToGame(List<string> paths) => paths;
+
+        public static List<string> FromGame(List<string> paths) => paths;
+
+        public static List<string> FromGameText(List<string> texts) => texts;
 
         public static string FromGame(string path) => path;
 

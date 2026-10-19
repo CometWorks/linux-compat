@@ -507,6 +507,27 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         return false;
     }
 
+    /// <summary>
+    /// A value written through a shim, cast to the type it is written to when that is not its
+    /// own type. A value with no type, like <c>null</c>, would make the call ambiguous between
+    /// the shim's overloads, such as <c>ToGameText(string)</c> and <c>ToGameText(string[])</c>.
+    /// </summary>
+    private ExpressionSyntax Typed(ExpressionSyntax original, ExpressionSyntax rewritten)
+    {
+        var info = _semanticModel.GetTypeInfo(original);
+        var type = info.ConvertedType;
+        if (type == null || type.TypeKind == TypeKind.Error || type.Equals(info.Type))
+            return rewritten;
+        return SyntaxFactory
+            .CastExpression(
+                SyntaxFactory.ParseTypeName(
+                    type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+                ),
+                SyntaxFactory.ParenthesizedExpression(rewritten.WithoutTrivia())
+            )
+            .WithTriviaFrom(rewritten);
+    }
+
     private static InvocationExpressionSyntax WrapShimCall(string shimFqn, ExpressionSyntax expr)
     {
         return SyntaxFactory
@@ -665,7 +686,10 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
 
             if (System.Array.IndexOf(pathParameters, parameterIndex) >= 0)
                 replacements[argument] = argument.WithExpression(
-                    WrapShimCall(ToGameFqn, argument.Expression)
+                    WrapShimCall(
+                        ToGameFqn,
+                        Typed(node.ArgumentList.Arguments[i].Expression, argument.Expression)
+                    )
                 );
         }
 
@@ -833,7 +857,9 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         {
             RequiresShimReference = true;
             if (simple)
-                rewritten = rewritten.WithRight(WrapShimCall(ToGameFqn, rewritten.Right));
+                rewritten = rewritten.WithRight(
+                    WrapShimCall(ToGameFqn, Typed(node.Right, rewritten.Right))
+                );
             return usedAsValue ? WrapShimCall(FromGameFqn, rewritten) : rewritten;
         }
 
@@ -846,7 +872,9 @@ internal sealed class WindowsSemanticsRewriter : CSharpSyntaxRewriter
         {
             RequiresShimReference = true;
             if (simple)
-                rewritten = rewritten.WithRight(WrapShimCall(ToGameTextFqn, rewritten.Right));
+                rewritten = rewritten.WithRight(
+                    WrapShimCall(ToGameTextFqn, Typed(node.Right, rewritten.Right))
+                );
             return usedAsValue ? WrapShimCall(FromGameTextFqn, rewritten) : rewritten;
         }
 
