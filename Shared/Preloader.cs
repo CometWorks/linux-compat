@@ -583,20 +583,18 @@ public static class Preloader
         if (method == null)
             return;
 
-        var module = type.Module;
-        var getCurrentProcess = module.ImportReference(
-            typeof(System.Diagnostics.Process).GetMethod("GetCurrentProcess")
-        );
-        var privateMemSize = module.ImportReference(
-            typeof(System.Diagnostics.Process).GetProperty("PrivateMemorySize64")!.GetGetMethod()!
+        // Read at most once a second: MyGeneralStats reads it on every update.
+        var get = type.Module.ImportReference(
+            typeof(ClientPlugin.Patches.SystemAbstraction.ProcessPrivateMemory).GetMethod(
+                nameof(ClientPlugin.Patches.SystemAbstraction.ProcessPrivateMemory.Get)
+            )
         );
 
         var il = method.Body.GetILProcessor();
         method.Body.Instructions.Clear();
         method.Body.ExceptionHandlers.Clear();
         method.Body.Variables.Clear();
-        il.Append(il.Create(Mono.Cecil.Cil.OpCodes.Call, getCurrentProcess));
-        il.Append(il.Create(Mono.Cecil.Cil.OpCodes.Callvirt, privateMemSize));
+        il.Append(il.Create(Mono.Cecil.Cil.OpCodes.Call, get));
         il.Append(il.Create(Mono.Cecil.Cil.OpCodes.Ret));
     }
 
