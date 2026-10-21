@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -10,7 +9,7 @@ using Sandbox.Game.World;
 
 namespace ClientPlugin.Patches.PathHandling;
 
-// Platform separators and computed prefix depth keep sibling Linux mod scripts in one assembly.
+// Splitting on both separators and a computed prefix depth keep sibling Linux mod scripts in one assembly.
 [HarmonyPatch(typeof(MyScriptManager))]
 [HarmonyPatchCategory("Finish")]
 // ReSharper disable once UnusedType.Global
@@ -27,19 +26,33 @@ static class MyScriptManagerLoadScriptsPatch
         var il = instructions.ToList();
         il.RecordOriginalCode(patchedMethod);
 
+        // The three path splits on '\' become splits on both separators. A zipped mod, such as
+        // an old *_legacy.bin Workshop item, lists its scripts as "<archive>/Data\Scripts\..."
+        // on Linux, so splitting on '/' alone would call them misplaced and skip them.
         // Mutating operands preserves attached labels and exception blocks.
-        var sep = Path.DirectorySeparatorChar;
-        foreach (var instr in il)
+        var split = AccessTools.Method(typeof(string), nameof(string.Split), [typeof(char[])]);
+        var splitPath = AccessTools.Method(
+            typeof(MyScriptManagerLoadScriptsPatch),
+            nameof(SplitPath)
+        );
+        int splits = 0;
+        for (int k = 2; k < il.Count; k++)
         {
-            if (instr.opcode == OpCodes.Ldc_I4_S && instr.operand is sbyte sb && sb == (sbyte)'\\')
+            if (
+                il[k].Calls(split)
+                && il[k - 1].opcode == OpCodes.Stelem_I2
+                && LoadsBackslash(il[k - 2])
+            )
             {
-                instr.operand = (sbyte)sep;
-            }
-            else if (instr.opcode == OpCodes.Ldc_I4 && instr.operand is int i && i == '\\')
-            {
-                instr.operand = (int)sep;
+                il[k].opcode = OpCodes.Call;
+                il[k].operand = splitPath;
+                splits++;
             }
         }
+        if (splits != 3)
+            throw new InvalidOperationException(
+                $"MyScriptManagerLoadScriptsPatch: Expected 3 path splits on '\\', found {splits}."
+            );
 
         // Match constructed Array.IndexOf<string> by name and declaring type;
         // MethodInfo identity differs from open and non-generic overloads.
@@ -99,6 +112,16 @@ static class MyScriptManagerLoadScriptsPatch
 
         il.RecordPatchedCode(patchedMethod);
         return il;
+    }
+
+    static readonly char[] PathSeparators = ['/', '\\'];
+
+    public static string[] SplitPath(string path, char[] _) => path.Split(PathSeparators);
+
+    static bool LoadsBackslash(CodeInstruction instr)
+    {
+        return (instr.opcode == OpCodes.Ldc_I4_S && instr.operand is sbyte sb && sb == (sbyte)'\\')
+            || (instr.opcode == OpCodes.Ldc_I4 && instr.operand is int i && i == '\\');
     }
 
     static bool IsLdloc(OpCode opcode)
