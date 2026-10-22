@@ -1,7 +1,10 @@
 using System;
+using System.Collections;
 using System.IO;
+using System.Reflection;
 using System.Xml;
 using System.Xml.Serialization;
+using Sandbox.Definitions;
 using Sandbox.Game.World;
 using Sandbox.ModAPI.Interfaces;
 using VRage.FileSystem;
@@ -209,7 +212,8 @@ internal sealed class WrappedUtilities : IMyUtilities
     /// The folder of the loaded mod the item names, or null. A mod can build any
     /// <c>ModItem</c>, and vanilla <c>GetPath()</c> combines the Mods folder with its
     /// <c>Name</c>, so a rooted name would pick any folder; only the session's own copy is
-    /// trusted. Stricter than Windows on purpose: an item naming no loaded mod is refused.
+    /// trusted, or a mod loaded outside the session's list (<see cref="LoadedClientModPath"/>).
+    /// Stricter than Windows on purpose: an item naming no loaded mod is refused.
     /// With <see cref="IPathSecurityConfig.RefuseUnloadedModItems"/> off, the item's own path
     /// is used, as on Windows.
     /// </summary>
@@ -239,7 +243,34 @@ internal sealed class WrappedUtilities : IMyUtilities
             if (same)
                 return mod.GetPath();
         }
-        return null;
+        return LoadedClientModPath(item);
+    }
+
+    private static readonly FieldInfo ModDefinitionSetsField = typeof(MyDefinitionManager).GetField(
+        "m_modDefinitionSets",
+        BindingFlags.Instance | BindingFlags.NonPublic
+    );
+
+    /// <summary>
+    /// The folder of a mod the game loaded without listing it in the session, or null.
+    /// Pulsar's client mods are such: their definitions and scripts are loaded, but the
+    /// world's mod list never names them, and their own <c>ModContext.ModItem</c> carries
+    /// the Workshop folder Pulsar downloaded them to. The definition manager keys the mods
+    /// it loaded by that same <c>GetPath()</c>, so an item is accepted only when its path
+    /// is one of those folders.
+    /// </summary>
+    private static string LoadedClientModPath(MyObjectBuilder_Checkpoint.ModItem item)
+    {
+        try
+        {
+            var path = item.GetPath();
+            var sets = ModDefinitionSetsField?.GetValue(MyDefinitionManager.Static) as IDictionary;
+            return !string.IsNullOrEmpty(path) && sets != null && sets.Contains(path) ? path : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     // Storage filenames resolve Linux filesystem casing before delegation;
