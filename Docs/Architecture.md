@@ -231,7 +231,9 @@ segment afterwards, so the resolver cannot translate it again at open and land
 somewhere the check never saw (the `C:C:\...` double-drive escape); the
 mod-location and game-content readers in `WrappedUtilities` apply the same
 translate-once, reject-leftover-drive rule, and accept only a `ModItem` loaded
-in the session rather than any folder a crafted `Name` would select.
+in the session rather than any folder a crafted `Name` would select. A mod the
+game loaded without the session listing it, such as a Pulsar client mod, counts
+as loaded when its path is one the definition manager loaded definitions from.
 
 Each of these fixes, and the shim refusal and assignment values of the
 rewriter, has a switch in `IPathSecurityConfig`

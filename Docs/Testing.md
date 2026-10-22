@@ -6,6 +6,7 @@ with the commands and environment it needs.
 | Suite | Covers | Needs |
 | --- | --- | --- |
 | [tests/mod-api](../tests/mod-api/README.md) | The mod API boundary: Windows path, newline and stopwatch semantics for mods, path containment, and no Linux home folder in anything a mod sees. ~550 probes, of which 199 are security probes. | The game client and the dedicated server |
+| [tests/client-mods](../tests/client-mods/README.md) | Mod-location reads of a Pulsar client mod, a mod the world's mod list does not name: Build Info loaded as one must read its own textures, fonts and data files. | The game client, Pulsar and Build Info |
 | [tests/physics-border](../tests/physics-border/README.md) | Bounded-world broad-phase border cleanup, through both `MyPhysics.CreateHkWorld` creation paths. | The game client |
 | [tests/definition-file-order](../tests/definition-file-order/README.md) | `WindowsStringOrder`, the Windows sort order of the definition files, against data sorted by Wine's `CompareStringEx`. | Nothing; standalone |
 | [tests/path-translation](../tests/path-translation/README.md) | The root mapping in `PathTranslation.Init()`, in both directions, round trips without the user name, and `WindowsException.Scrub`. | Nothing; standalone |
@@ -15,5 +16,6 @@ with the commands and environment it needs.
 
 Every suite that starts a game client runs it headless and holds an exclusive
 `flock` on `~/.cache/se-game.lock`, the machine-wide lock shared with the other
-automation on this machine. The dedicated server run of `tests/mod-api` takes no
+automation on this machine, except `tests/client-mods`, which runs an isolated
+client of its own. The dedicated server run of `tests/mod-api` takes no
 lock; it runs on its own Magnetar config, data folder and ports instead.
