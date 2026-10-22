@@ -866,6 +866,34 @@ namespace LinuxCompatDiagnostics
                 () => ReadFirstLineInModLocation("TestData\\CaseSensitivity\\expected.txt")
             );
 
+            // Build Info checks its textures this way before it uses them. Pulsar can load the
+            // mod as a client mod, outside the session's mods (see README.md).
+            bool worldMod = false;
+            foreach (var mod in MyAPIGateway.Session.Mods)
+                worldMod |= mod.PublishedFileId == me.PublishedFileId && mod.Name == me.Name;
+            Info("loaded as", worldMod ? "world mod" : "client mod");
+            CheckProbe(
+                OwnerLinux,
+                "exists backslash Textures path",
+                true,
+                () => utils.FileExistsInModLocation("Textures\\LinuxCompatDiag\\TestIcon.dds", me)
+            );
+            CheckProbe(
+                OwnerLinux,
+                "binary read backslash Textures path",
+                "DDS ",
+                () =>
+                {
+                    using (
+                        var r = utils.ReadBinaryFileInModLocation(
+                            "Textures\\LinuxCompatDiag\\TestIcon.dds",
+                            me
+                        )
+                    )
+                        return new string(r.ReadChars(4));
+                }
+            );
+
             CheckProbe(
                 OwnerLinux,
                 "read nested subdir",

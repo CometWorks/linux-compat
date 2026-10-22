@@ -33,6 +33,8 @@ wrappers in `Shared/Patches/PathHandling/ModApiWrappers/`, and the
   (default `~/.config/SpaceEngineersDedicated`); nothing outside the root is
   written.
   Run it only while that root's DS is stopped.
+- `prepare_client_mod.py`: stages the mod as a Pulsar client mod, see "Client
+  mod run" below.
 - `parse_results.py`: log parser, usable standalone on a suite log. It reports
   the security probes as their own section and enforces the manifest.
 - `security-probes.txt`: the security probe manifest (see below).
@@ -86,7 +88,9 @@ halves, so neither direction can regress unnoticed:
   scopes. Every one of these is refused on Windows too, so a FAIL means the
   Linux port is **wider** than Windows. The one exception is a `ModItem` the
   mod builds that names no loaded mod: Windows reads from whatever folder its
-  `Name` selects, and the Linux port refuses it on purpose.
+  `Name` selects, and the Linux port refuses it on purpose. A loaded mod is a
+  mod of the world or a Pulsar client mod, and an item naming one reads from
+  that mod's folder.
 - `security: allowed, <op>: <case>` is an access a real mod is entitled to and
   which an over-tightened containment check would break. Relative, backslash
   and wrong-case paths, `..` that stays *inside* the root
@@ -109,6 +113,32 @@ too. After adding or renaming probes, regenerate and commit it:
 python3 tests/mod-api/parse_results.py <suite.log> \
     --update-security-manifest tests/mod-api/security-probes.txt
 ```
+
+## Client mod run
+
+Players can also enable a mod in Pulsar instead of in the world, as a client
+mod. Pulsar compiles its scripts with a mod context of its own and never adds
+it to the session's mods, so the mod API has to accept that context's
+`ModItem` as well. Build Info, enabled that way, found none of its textures and
+fonts on 1.0.35 and 1.0.36. To cover it, stage the mod as a client mod:
+
+```
+python3 tests/mod-api/prepare_client_mod.py tests/mod-api/LinuxCompatDiagnostics \
+    <root> <pulsar folder>/Legacy
+```
+
+Pulsar loads client mods from the Workshop folder next to the game's `Bin64`.
+The script builds a stand-in Steam library under `<root>`, with symlinks to the
+game install and the mod copied in under the fake Workshop id `900000001`, so
+the real library stays untouched. It also enables the mod in that Pulsar
+folder's current profile, so use a Pulsar folder of your own. Start that Pulsar
+with `-bin64 <the path the script prints>`, load a copy of the diagnostics
+world whose `<Mods>` is empty, and parse the log the suite writes under
+`Storage/900000001.sbm_LinuxCompatDiagnostics/`. The suite logs `INFO loaded as
+= "client mod"`. Pass no security manifest, as for the dedicated server: under
+a Workshop id the suite skips 4 PathUtils probes. With that, a client mod run
+passes like a world mod run; a build without the fix fails 33 probes there, the
+`ReadFileInModLocation` section among them.
 
 ## Log format
 
