@@ -286,4 +286,109 @@ public static class PreloaderHelpers
         File.WriteAllText(path, text);
 #endif
     }
+
+    /// <summary>
+    /// Wraps the whole body of <paramref name="method"/> in <c>try { ... } catch (Exception e)</c>.
+    /// The catch calls <paramref name="filter"/>, a static <c>bool (Exception)</c> or, for an
+    /// instance method, <c>bool (Exception, object instance)</c>. True swallows the exception and
+    /// the method returns the default of its return type; false rethrows it.
+    /// <para>
+    /// This is a Harmony finalizer written into the IL. Unlike a Harmony patch it can't be lost at
+    /// runtime: no detour has to survive the JIT recompiling the method or another plugin
+    /// patching it (SE #1073). The filter's signature takes no game types, because importing one
+    /// here would load the unpatched game assembly.
+    /// </para>
+    /// </summary>
+    public static void WrapInExceptionFilter(MethodDefinition method, MethodReference filter)
+    {
+        var body = method.Body;
+        var il = body.GetILProcessor();
+        var module = method.Module;
+        var exceptionType = module.ImportReference(typeof(Exception));
+
+        // Inserted instructions can push a short branch out of its range.
+        foreach (var instruction in body.Instructions)
+            if (instruction.OpCode.OperandType == OperandType.ShortInlineBrTarget)
+                instruction.OpCode = LongBranch(instruction.OpCode);
+
+        var isVoid = method.ReturnType.MetadataType == MetadataType.Void;
+        var result = isVoid ? null : new VariableDefinition(method.ReturnType);
+        if (result != null)
+            body.Variables.Add(result);
+        var exception = new VariableDefinition(exceptionType);
+        body.Variables.Add(exception);
+        body.InitLocals = true;
+
+        var end = isVoid ? il.Create(OpCodes.Ret) : il.Create(OpCodes.Ldloc, result);
+        var tryStart = body.Instructions[0];
+        foreach (var ret in body.Instructions.Where(i => i.OpCode == OpCodes.Ret).ToList())
+        {
+            // Reuse the ret so that branches to it stay attached.
+            if (isVoid)
+            {
+                ret.OpCode = OpCodes.Leave;
+                ret.Operand = end;
+            }
+            else
+            {
+                ret.OpCode = OpCodes.Stloc;
+                ret.Operand = result;
+                il.InsertAfter(ret, il.Create(OpCodes.Leave, end));
+            }
+        }
+        foreach (var tail in body.Instructions.Where(i => i.OpCode == OpCodes.Tail).ToList())
+            il.Remove(tail); // no tail calls out of a protected region
+
+        var handler = il.Create(OpCodes.Stloc, exception);
+        var swallow = il.Create(OpCodes.Leave, end);
+        // A null end means "to the end of the body", which is about to move.
+        foreach (var existing in body.ExceptionHandlers)
+        {
+            existing.TryEnd ??= handler;
+            existing.HandlerEnd ??= handler;
+        }
+        il.Append(handler);
+        il.Append(il.Create(OpCodes.Ldloc, exception));
+        if (filter.Parameters.Count == 2)
+            il.Append(il.Create(OpCodes.Ldarg_0));
+        il.Append(il.Create(OpCodes.Call, filter));
+        il.Append(il.Create(OpCodes.Brtrue, swallow));
+        il.Append(il.Create(OpCodes.Rethrow));
+        il.Append(swallow);
+        il.Append(end);
+        if (!isVoid)
+            il.Append(il.Create(OpCodes.Ret));
+
+        // Appended last, so that it encloses every handler the body already has.
+        body.ExceptionHandlers.Add(
+            new ExceptionHandler(ExceptionHandlerType.Catch)
+            {
+                TryStart = tryStart,
+                TryEnd = handler,
+                HandlerStart = handler,
+                HandlerEnd = end,
+                CatchType = exceptionType,
+            }
+        );
+    }
+
+    private static OpCode LongBranch(OpCode shortBranch) =>
+        shortBranch.Code switch
+        {
+            Mono.Cecil.Cil.Code.Br_S => OpCodes.Br,
+            Mono.Cecil.Cil.Code.Brfalse_S => OpCodes.Brfalse,
+            Mono.Cecil.Cil.Code.Brtrue_S => OpCodes.Brtrue,
+            Mono.Cecil.Cil.Code.Beq_S => OpCodes.Beq,
+            Mono.Cecil.Cil.Code.Bge_S => OpCodes.Bge,
+            Mono.Cecil.Cil.Code.Bgt_S => OpCodes.Bgt,
+            Mono.Cecil.Cil.Code.Ble_S => OpCodes.Ble,
+            Mono.Cecil.Cil.Code.Blt_S => OpCodes.Blt,
+            Mono.Cecil.Cil.Code.Bne_Un_S => OpCodes.Bne_Un,
+            Mono.Cecil.Cil.Code.Bge_Un_S => OpCodes.Bge_Un,
+            Mono.Cecil.Cil.Code.Bgt_Un_S => OpCodes.Bgt_Un,
+            Mono.Cecil.Cil.Code.Ble_Un_S => OpCodes.Ble_Un,
+            Mono.Cecil.Cil.Code.Blt_Un_S => OpCodes.Blt_Un,
+            Mono.Cecil.Cil.Code.Leave_S => OpCodes.Leave,
+            _ => shortBranch,
+        };
 }

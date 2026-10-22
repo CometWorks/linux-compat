@@ -24,12 +24,14 @@ public static class Preloader
     public static IEnumerable<string> TargetDLLs { get; } =
     [
 #if MAGNETAR
+        "Sandbox.Game.dll",
         "SpaceEngineers.Game.dll",
         "VRage.Dedicated.dll",
         "VRage.Library.dll",
         "VRage.Platform.Windows.dll",
         "VRage.Steam.dll",
 #else
+        "Sandbox.Game.dll",
         "SpaceEngineers.Game.dll",
         "VRage.Audio.dll",
         "VRage.Library.dll",
@@ -69,8 +71,12 @@ public static class Preloader
                 ClientPlugin.Patches.PathHandling.MyFileSystemPathPrepatch.Prepatch(asmDef);
                 ClientPlugin.Patches.PathHandling.PathUtilsEnsureSafePathPrepatch.Prepatch(asmDef);
                 break;
+            case "Sandbox.Game":
+                ClientPlugin.Patches.NullSafety.NullSafetyPrepatch.Prepatch(asmDef);
+                break;
             case "SpaceEngineers.Game":
                 PatchSpaceEngineersGame(asmDef);
+                ClientPlugin.Patches.NullSafety.NullSafetyPrepatch.Prepatch(asmDef);
                 break;
 #if MAGNETAR
             case "VRage.Dedicated":
@@ -209,6 +215,9 @@ public static class Preloader
         // Resolve SharpDX.XAudio2 types to this assembly's shims.
         RedirectAssemblyRef(asmDef, "SharpDX.XAudio2");
         ClientPlugin.Patches.Audio.MySourceVoiceSubmitSourceBufferPrepatch.Prepatch(asmDef);
+        ClientPlugin.Patches.Audio.MyInMemoryWavePrepatch.Prepatch(asmDef);
+        ClientPlugin.Patches.Audio.MyWaveBankFindAudioFilePrepatch.Prepatch(asmDef);
+        ClientPlugin.Patches.Audio.MyCueBankGetVoicePrepatch.Prepatch(asmDef);
     }
 
     private static void RedirectAssemblyRef(AssemblyDefinition asmDef, string fromName)
