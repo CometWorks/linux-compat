@@ -53,7 +53,10 @@ symlinked `NuGet` and `Libraries`, copied plugin sources), its own game user
 data folder, client id (`CLIENT_ID`) and Remote API port (`REMOTE_PORT`,
 default 24170), `-multiInstance --no-steam`, headless and without rendering
 unless `--render` is given. It stops only the processes started with its own
-user data folder. The source Pulsar folder is only read.
+user data folder. The source Pulsar folder is only read. Each run clears the
+instance's dev folder builds, so Pulsar compiles the tree under test again, and
+turns on experimental mode in its own game config, which the game's worlds need
+when the client renders.
 
 Pulsar finds client mods in `Bin64/../../../workshop/content/244850`, worked out
 from the path as given, so the instance gets a Steam library of its own:

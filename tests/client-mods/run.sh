@@ -115,9 +115,31 @@ rsync -a --delete "$BUILD_INFO/" "$STEAMAPPS/workshop/content/244850/514062285/"
 mkdir -p "$APPDATA/Saves/$CLIENT_ID" "$RESULTS"
 sed "s|<ListenPort>[0-9]*</ListenPort>|<ListenPort>$REMOTE_PORT</ListenPort>|" \
     "$REMOTE_CFG" > "$APPDATA/Remote.cfg" || fail "no Remote.cfg at $REMOTE_CFG"
+# The game's worlds are experimental (scripts, block limits), and only the
+# --no-render client turns experimental mode on by itself.
+python3 - "$APPDATA/SpaceEngineers.cfg" <<'PY' || fail "config setup failed"
+import os, re, sys
+cfg = sys.argv[1]
+item = ("<item>\n        <Key>ExperimentalMode</Key>\n        <Value>\n"
+        "          <Value xsi:type=\"xsd:string\">True</Value>\n        </Value>\n      </item>")
+if not os.path.exists(cfg):
+    open(cfg, "w").write(
+        '<?xml version="1.0" encoding="utf-8"?>\n<MyObjectBuilder_ConfigData '
+        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+        'xmlns:xsd="http://www.w3.org/2001/XMLSchema">\n  <Data>\n    <dictionary>\n      '
+        + item + "\n    </dictionary>\n  </Data>\n</MyObjectBuilder_ConfigData>\n")
+    sys.exit()
+s = open(cfg, encoding="utf-8-sig").read()
+s, n = re.subn(r"(<Key>ExperimentalMode</Key>\s*<Value>\s*<Value[^>]*>)\w+", r"\1True", s)
+if n == 0:
+    s = s.replace("<dictionary>", "<dictionary>\n      " + item, 1)
+open(cfg, "w", encoding="utf-8").write(s)
+PY
 rm -rf "$WORLD"
 cp -r "$GAME_DIR/Content/CustomWorlds/Empty World" "$WORLD" || fail "world copy failed"
 rm -rf "$APPDATA/Performance/Cache/CompiledMods" "$MOD_LOG_DIR"
+# Pulsar compiles the dev folder plugins again, so its log names the tree.
+rm -rf "$INSTANCE/Interim/DevFolder"
 rm -f "$APPDATA"/SpaceEngineers*.log "$INSTANCE/Interim/info.log" "$RESULTS"/*
 
 # 5. Start the client: offline, its own instance, appdata, identity and port.
