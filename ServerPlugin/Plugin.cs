@@ -52,33 +52,44 @@ public class Plugin : IPlugin
     /// </summary>
     internal static void InstallConfigLoader() => PathSecurity.Loader = LoadConfig;
 
+    // The file is read and saved outside ConfigSync: ConfigStorage takes PluginSdk's configuration
+    // lock, and PluginSdk holds that lock while it reads PluginConfig (plugin init, Observe). Under
+    // ConfigSync, a node start deadlocked against the Quasar agent reading PluginConfig (DF-698).
     private static LinuxCompatConfig LoadConfig()
     {
         if (config != null || MyFileSystem.UserDataPath == null)
             return config;
 
+        var path = Path.Combine(MyFileSystem.UserDataPath, "LinuxCompat.cfg");
+        LinuxCompatConfig loaded;
+        var broken = false;
+        try
+        {
+            loaded = ConfigStorage.LoadXml<LinuxCompatConfig>(path);
+        }
+        catch (Exception ex)
+        {
+            // Keep the broken file for the admin to fix; run with the defaults meanwhile.
+            Log($"Failed to read {path}, using the defaults: {ex.Message}");
+            loaded = new LinuxCompatConfig();
+            broken = true;
+        }
+
         lock (ConfigSync)
         {
+            // Another thread loaded it meanwhile: everyone uses the first one
             if (config != null)
                 return config;
+            config = loaded;
+        }
 
-            var path = Path.Combine(MyFileSystem.UserDataPath, "LinuxCompat.cfg");
-            try
-            {
-                config = ConfigStorage.LoadXml<LinuxCompatConfig>(path);
-            }
-            catch (Exception ex)
-            {
-                // Keep the broken file for the admin to fix; run with the defaults meanwhile.
-                Log($"Failed to read {path}, using the defaults: {ex.Message}");
-                return config = new LinuxCompatConfig();
-            }
-
+        if (!broken)
+        {
             // A fresh install gets a sparse file to edit, and Quasar's changes are kept.
             Save(path);
-            config.PropertyChanged += (_, _) => Save(path);
-            return config;
+            loaded.PropertyChanged += (_, _) => Save(path);
         }
+        return loaded;
     }
 
     private static void Save(string path)
