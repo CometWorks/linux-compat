@@ -67,3 +67,9 @@ Please start a support thread on the [Pulsar Discord](https://discord.gg/z8ZczP2
 ## Legal
 
 Space Engineers is a trademark of Keen Software House s.r.o.
+
+## License
+
+AGPL-3.0, see [LICENSE](LICENSE).
+
+Please contact us for alternate licensing.
