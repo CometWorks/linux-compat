@@ -70,6 +70,6 @@ Space Engineers is a trademark of Keen Software House s.r.o.
 
 ## License
 
-AGPL-3.0, see [LICENSE](LICENSE).
-
-Please contact us for alternate licensing.
+AGPL-3.0 with an independent-extension exception. Plugins and integrations
+using supported APIs may use their own licences, including proprietary terms.
+See [licensing](LICENSING.md) for the exception and source obligations.

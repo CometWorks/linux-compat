@@ -263,6 +263,8 @@
         </ItemGroup>
         <MakeDir Directories="$(PluginDirectory)" />
         <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(PluginDirectory)/plugin.dll" />
+        <Copy SourceFiles="$(MSBuildProjectDirectory)/../LICENSE;$(MSBuildProjectDirectory)/../LICENSING.md"
+              DestinationFolder="$(PluginDirectory)" />
         <Copy SourceFiles="$(PkgFFmpeg_AutoGen)/lib/netstandard2.1/FFmpeg.AutoGen.dll" DestinationFolder="$(PluginDirectory)" />
         <Copy SourceFiles="$(PkgSilk_NET_OpenAL)/lib/net5.0/Silk.NET.OpenAL.dll" DestinationFolder="$(PluginDirectory)" />
         <Copy SourceFiles="$(NuGetPackageRoot)silk.net.core/2.23.0/lib/net6.0/Silk.NET.Core.dll" DestinationFolder="$(PluginDirectory)" />

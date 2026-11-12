@@ -75,4 +75,9 @@
         <Magnetar Condition="'$(Magnetar)' == ''">$(HOME)/.config/Magnetar</Magnetar>
         <MagnetarBin Condition="'$(MagnetarBin)' == ''">$(Magnetar)/Libraries/MagnetarInterim</MagnetarBin>
     </PropertyGroup>
+    <ItemGroup>
+        <None Include="$(MSBuildThisFileDirectory)LICENSE;$(MSBuildThisFileDirectory)LICENSING.md"
+              Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"
+              CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="" />
+    </ItemGroup>
 </Project>
