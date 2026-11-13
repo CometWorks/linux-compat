@@ -1,84 +1,66 @@
-# CometWorks Independent Extension Exception
+# Plugin and API exception
 
-Version 1.0
+This is an additional permission under AGPL section 7, given by the copyright
+holders applying it for code they can license. The AGPL itself and its version
+choices stay unchanged.
 
-This additional permission under AGPL section 7 applies only to rights held by
-the copyright holders applying it ("Grantors"). AGPL terms retain their meanings;
-the AGPL text and applicable version designations are unchanged.
+## Your own plugins can stay closed
 
-## 0. Definitions.
+You may build, use, modify, link, run, host and distribute independent plugins,
+mods, UI extensions and services under your own license, including a proprietary
+license, without a fee or registration. You do not have to provide their source
+just because they run with this project, even in the same process. They may
+exchange API data and depend on the host to work.
 
-"Covered Implementation" means the Program's AGPL-covered implementation,
-excluding expressly permissively licensed material and separately licensed
-third-party software. An SDK's permissive license does not license the
-implementation it calls.
+## Use the documented APIs
 
-"Supported Interface" means an interface designated for third-party use in the
-upstream CometWorks project's published documentation for the version used.
-Public visibility, accessibility or designation solely by a downstream fork
-does not suffice.
+An independent extension must not copy or adapt this project's AGPL implementation
+code in a way that requires copyright permission. Separately MIT-licensed SDK,
+contract and example code can be used under MIT.
 
-An "Independent Extension" incorporates or adapts no Covered Implementation
-requiring copyright permission and interacts with it, directly or through
-intermediaries, only through Supported Interfaces and their documented operation.
-Its own interfaces and dealings with separately licensed game components or
-third-party services are unrestricted by this definition. Same-process execution
-or dependence on the Program does not itself disqualify it.
+Its access to this project's implementation, including through other components,
+must stay within APIs documented for third-party use by the upstream CometWorks
+project for that version. A method being public, technically accessible or
+labelled an API by a private fork is not enough. Your extension's own interfaces
+and its use of separately licensed game components or third-party services are
+not restricted by this rule.
 
-## 1. Permission.
+Normal API adapters and documented replacement points are allowed. Our API's own
+use of private internals does not turn your API call into unsupported access.
+Independently written code is not disqualified just because it offers similar
+functionality.
 
-Notwithstanding AGPL requirements to license a combination as a whole, you may
-combine the Program with an Independent Extension, run it, permit remote
-interaction and convey it. The extension may use proprietary or other terms of
-your choice and need not be included in Corresponding Source solely because of
-that combination. Covered parts remain AGPL-governed. Qualifying server, UI and
-companion plugins, mods and services may be supplied together or separately,
-without a fee, registration or separate agreement.
+## A plugin label does not exempt core changes
 
-## 2. Exclusions.
+This permission does not cover copied, adapted, translated or decompiled AGPL
+implementation code, internal patches, or access outside the documented APIs,
+such as replacing internal methods, detouring, rewriting IL or inspecting private
+state through reflection. Routing that access through a wrapper, protocol or
+modified host does not make it independent. Neither does splitting covered core
+changes across plugins, processes or repositories. The actual code and interaction
+matter, not the label or packaging.
 
-This permission does not exempt:
+Falling outside this exception does not by itself decide whether copyright law
+makes a work AGPL-covered. A separate host patch does not remove this permission
+from an otherwise independent plugin.
 
-a) Covered Implementation copied, adapted, translated, decompiled or otherwise
-transformed in a manner requiring copyright permission.
+## Other terms still apply
 
-b) Internal patches, method replacement, detouring, IL rewriting, reflection or
-undocumented access outside Supported Interfaces.
+The AGPL still applies to covered code, including notices, modification details,
+source and required build/install information. Source must match the version
+actually distributed or used remotely, including for section 13 offers. You do
+not have to submit changes upstream; submitting them does not replace required
+source sharing.
 
-c) Wrappers, protocols or modified hosts providing such unsupported access or
-patching on another component's behalf.
+Earlier grants, legal rights and the AGPL's warranty and liability terms stay
+unchanged. Section 7 still governs notices, removal and contributions. This file
+does not grant permission for another contributor's code without their agreement,
+or grant trademark or third-party rights.
 
-d) Covered modifications divided among plugins, assemblies, processes,
-repositories or services.
+## Space Engineers and its libraries
 
-Labels, transports, permissive wrappers, patch size, original-code proportions
-and unchanged files on disk do not establish independence. Documented overrides
-and ordinary API adapters remain eligible; the Program's internal performance of
-a documented operation is not unsupported access by its caller. Similar
-functionality alone does not establish copying. Exclusion from this permission
-does not itself establish that a work is AGPL-covered.
-
-## 3. Retained duties and rights.
-
-Applicable AGPL duties remain, including notices, modification identification,
-Corresponding Source, Installation Information and section 13. Required source
-must match the covered version conveyed or used remotely, including modifications
-and required build/install material. Separate packaging does not exclude required
-source. A separate host patch does not itself disqualify an eligible extension.
-Upstream submission or acceptance is neither required nor a substitute for
-compliance.
-
-Existing grants and statutory rights are preserved. AGPL section 7 governs
-notices, removal of this permission and its application to contributions you may
-license; another contributor's adoption is not presumed from this document's
-presence. AGPL warranty and liability provisions remain. No trademark rights
-or authority over third-party rights are granted.
-
-## 4. Game components.
-
-The Grantors also permit combining the Program with separately licensed Space
-Engineers client/server binaries, VRage and their supplied runtime libraries,
-and running and conveying that combination. Their source need not be included in the Program's Corresponding Source solely
-because of this combination. This grants no rights in them or waiver of
-their licenses, does not exempt Covered Implementation incorporated into them,
-and does not qualify other components under section 1.
+We also permit combining, running and distributing this project with separately
+licensed Space Engineers client/server binaries, VRage and their supplied runtime
+libraries. Their source is not required merely because of that combination.
+Their own licenses still apply. This does not exempt our AGPL code copied into
+those components or give other plugins a way around the rules above.

@@ -70,10 +70,8 @@ Space Engineers is a trademark of Keen Software House s.r.o.
 
 ## License
 
-AGPL-3.0, with the [CometWorks Independent Extension Exception](EXCEPTION.md).
-Only qualifying Independent Extensions receive the additional permission to use
-proprietary terms. A plugin label, wrapper or separate process does not exempt
-covered core code or internal patches. Read the [licence guide](LICENSING.md) for scope and source obligations.
+AGPL-3.0. Your own plugins can stay closed under the [plugin exception](EXCEPTION.md)
+when they use our documented APIs without copying core code or using private
+hooks. See the [licensing guide](LICENSING.md) for scope and source requirements.
 
-[Alternative licensing](LICENSING.md#alternative-licensing) remains available by
-separate written agreement with the relevant copyright holders.
+[Alternative licensing](LICENSING.md#alternative-licensing) is available case by case.

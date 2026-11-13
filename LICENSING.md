@@ -1,28 +1,29 @@
 # Licensing
 
-Linux compatibility uses the [AGPL](LICENSE) with the [binding exception](EXCEPTION.md).
-Qualifying independent API extensions may remain proprietary. Copied core code,
-internal patches and repackaged core modifications are outside that permission.
-Existing AGPL version choices are unchanged.
-
+Linux compatibility uses the [AGPL](LICENSE). AGPL keeps changes to our core available to
+its users. Independent plugins using our documented APIs can stay closed under
+the [plugin exception](EXCEPTION.md), including when loaded in-process. Copying
+core code or patching its internals is outside that permission, even if packaged
+as a plugin.
 ## Running and sharing
 
-Permitted commercial use and qualifying extensions require no license fee or
-registration. Running an unmodified version does not itself trigger section 13.
-For modified network versions, prominently offer users matching Corresponding
-Source free of charge, including required build/install material. Small patches
-count. Our game-server guidance includes players; a join notice can link to the
-source. An upstream link omitting your changes is insufficient.
+Commercial use needs no license fee or registration. Running an unmodified
+version does not itself trigger AGPL section 13.
 
-Binary/container distribution must also satisfy section 6. Preserve notices and
-required source availability. Upstream PRs are encouraged, not required.
+If users connect to your modified version, offer them its matching source for
+free, including required build/install material. This includes small patches.
+Our game-server guidance includes players; a join notice can link to the source.
+An upstream link without your changes is insufficient. You do not have to submit
+your changes upstream.
+
+Distributing binaries or containers also requires AGPL section 6 compliance.
+Keep the notices and required source available.
 
 ## Alternative licensing
 
-[Contact CometWorks](https://github.com/CometWorks) for a separate written license,
-including proprietary core modifications. Availability depends on the copyright
-holders' rights; scope, duration, fees and source obligations are negotiated.
-No license or fixed price is promised. Requests grant no rights and suspend no
-existing obligations.
+[Contact us](https://github.com/CometWorks) if you need different terms, including
+keeping core changes private. We consider these requests case by case, where we
+have the rights to offer them. Scope, fees and source obligations need a written
+agreement; asking does not change your current license obligations.
 
-Earlier valid grants and third-party licenses remain in effect.
+Earlier grants and third-party licenses still apply.
