@@ -144,6 +144,11 @@ public static class Preloader
             NopMethodBody(myVRagePlatform, "Init");
             NopMethodBody(myVRagePlatform, "Done");
             ReplaceWithBoolReturn(myVRagePlatform, "CreateInput2", false);
+#if !MAGNETAR
+            ClientPlugin.Patches.PlatformGuards.MyVRagePlatformInput2Prepatch.Prepatch(
+                myVRagePlatform
+            );
+#endif
         }
 
         var myWindowsWindows = asmDef.MainModule.GetType(
