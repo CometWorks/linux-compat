@@ -61,10 +61,13 @@ echo "linux-compat: $LC_DIR"
 echo "test root:    $TEST_ROOT"
 
 [ -x "$PULSAR_SOURCE/Interim.bin" ] || fail "Pulsar Interim not found in $PULSAR_SOURCE"
+# Pulsar's config folder for Interim: Legacy since Pulsar 2.4, Interim before.
+CFG=Legacy
+[ -d "$PULSAR_SOURCE/Legacy" ] || CFG=Interim
 [ -d "$SE_REMOTE_DIR" ] || fail "se-remote skill not found at $SE_REMOTE_DIR"
 [ -d "$BUILD_INFO/Data/Scripts" ] || fail "Build Info not found at $BUILD_INFO"
 [ -f "$LC_DIR/ClientPlugin/ClientPlugin.xml" ] || fail "no linux-compat tree at $LC_DIR"
-grep -q "<Name>remote</Name>" "$PULSAR_SOURCE/Interim/Sources/sources.xml" ||
+grep -q "<Name>remote</Name>" "$PULSAR_SOURCE/$CFG/Sources/sources.xml" ||
     fail "the Pulsar source folder has no 'remote' dev folder plugin"
 
 # 1. A Pulsar instance of its own: copied launcher, shared NuGet and Libraries,
@@ -72,19 +75,19 @@ grep -q "<Name>remote</Name>" "$PULSAR_SOURCE/Interim/Sources/sources.xml" ||
 #    testing/pulsar-dev-instances in the workspace for why).
 if [ ! -x "$INSTANCE/Interim.bin" ]; then
     echo "== creating the Pulsar instance =="
-    mkdir -p "$INSTANCE/Interim"
+    mkdir -p "$INSTANCE/$CFG"
     cp -p "$PULSAR_SOURCE"/Interim.* "$INSTANCE/"
     for shared in NuGet Libraries; do
         ln -s "$PULSAR_SOURCE/$shared" "$INSTANCE/$shared"
     done
     for part in config.xml DevFolder GitHub Local Sources; do
-        cp -r "$PULSAR_SOURCE/Interim/$part" "$INSTANCE/Interim/$part"
+        cp -r "$PULSAR_SOURCE/$CFG/$part" "$INSTANCE/$CFG/$part"
     done
 fi
 
 # 2. The profile: the source folder's dev folder plugins, with linux-compat
 #    from the tree under test, and Build Info as the only client mod.
-python3 - "$PULSAR_SOURCE/Interim" "$INSTANCE/Interim" "$LC_DIR" <<'PY' || fail "profile setup failed"
+python3 - "$PULSAR_SOURCE/$CFG" "$INSTANCE/$CFG" "$LC_DIR" <<'PY' || fail "profile setup failed"
 import re, sys
 src, dst, lc = sys.argv[1:]
 sources = open(f"{src}/Sources/sources.xml").read()
@@ -139,8 +142,8 @@ rm -rf "$WORLD"
 cp -r "$GAME_DIR/Content/CustomWorlds/Empty World" "$WORLD" || fail "world copy failed"
 rm -rf "$APPDATA/Performance/Cache/CompiledMods" "$MOD_LOG_DIR"
 # Pulsar compiles the dev folder plugins again, so its log names the tree.
-rm -rf "$INSTANCE/Interim/DevFolder"
-rm -f "$APPDATA"/SpaceEngineers*.log "$INSTANCE/Interim/info.log" "$RESULTS"/*
+rm -rf "$INSTANCE/$CFG/DevFolder"
+rm -f "$APPDATA"/SpaceEngineers*.log "$INSTANCE/$CFG/info.log" "$RESULTS"/*
 
 # 5. Start the client: offline, its own instance, appdata, identity and port.
 FLAGS=(--headless --quality minimal --resolution 1280x720)
@@ -192,7 +195,7 @@ PY
 GAME_LOG="$(ls -t "$APPDATA"/SpaceEngineers_*.log 2>/dev/null | head -1)"
 [ -n "$GAME_LOG" ] || fail "no game log in $APPDATA"
 cp "$GAME_LOG" "$RESULTS/game.log"
-cp "$INSTANCE/Interim/info.log" "$RESULTS/pulsar.log" 2>/dev/null
+cp "$INSTANCE/$CFG/info.log" "$RESULTS/pulsar.log" 2>/dev/null
 cp "$MOD_LOG_DIR/info.log" "$RESULTS/buildinfo.log" 2>/dev/null
 stop_game
 trap - EXIT
@@ -205,7 +208,9 @@ grep -qE "Loading client mod scripts for (Build Info \()?514062285" "$RESULTS/pu
     { echo "INVALID: Pulsar did not load Build Info as a client mod"; ok=0; }
 grep -q "Registered modules from: 514062285" "$RESULTS/game.log" ||
     { echo "INVALID: Build Info's scripts did not run"; ok=0; }
-grep -qF "Compiling files from $LC_DIR:" "$RESULTS/pulsar.log" ||
+# "Compiling files for LinuxCompat (linux-compat) from <dir>:" in current Pulsar,
+# "Compiling files from <dir>:" in older ones
+grep -qE "Compiling files (for .* )?from $LC_DIR:" "$RESULTS/pulsar.log" ||
     { echo "INVALID: linux-compat was not compiled from $LC_DIR"; ok=0; }
 [ "$ok" -eq 1 ] || fail "invalid run; see $RESULTS"
 
