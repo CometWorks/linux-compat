@@ -67,6 +67,17 @@ internal unsafe class MyLinuxVideoPlayer : IVideoPlayer, IDisposable
     public VideoState CurrentState => m_currentState;
     public IntPtr TextureSrv => m_srv.NativePointer;
 
+    // Game 1.211.017 added CPU frame hand-off for its new render path. This player
+    // decodes into its own GPU texture, which the DX11 renderer reads via TextureSrv.
+    public bool ProducesCpuFrames => false;
+
+    public bool TryGetFrame(out IntPtr data, out int rowPitch)
+    {
+        data = IntPtr.Zero;
+        rowPitch = 0;
+        return false;
+    }
+
     public float Volume
     {
         get => m_volume;

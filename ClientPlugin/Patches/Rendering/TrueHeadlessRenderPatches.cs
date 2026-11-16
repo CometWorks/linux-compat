@@ -273,13 +273,19 @@ sealed class HeadlessWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     List<string> IVRageInput2.EnumerateJoystickNames() => new List<string>();
 
-    string IVRageInput2.InitializeJoystickIfPossible(string joystickInstanceName) => null;
+    List<MyJoystickInfo> IVRageInput2.EnumerateJoystickDevices() => new List<MyJoystickInfo>();
 
-    bool IVRageInput2.IsJoystickAxisSupported(MyJoystickAxesEnum axis) => false;
+    string IVRageInput2.InitializeJoystickIfPossible(
+        int id,
+        string joystickInstanceId,
+        string otherSlotInstanceId
+    ) => null;
 
-    bool IVRageInput2.IsJoystickConnected() => false;
+    bool IVRageInput2.IsJoystickAxisSupported(int id, MyJoystickAxesEnum axis) => false;
 
-    void IVRageInput2.GetJoystickState(ref MyJoystickState state) { }
+    bool IVRageInput2.IsJoystickConnected(int id) => false;
+
+    void IVRageInput2.GetJoystickState(int id, ref MyJoystickState state) { }
 
     void IVRageInput2.ShowVirtualKeyboardIfNeeded(
         Action<string> onSuccess,
