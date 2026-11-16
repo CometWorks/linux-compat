@@ -957,16 +957,29 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
 
     List<string> IVRageInput2.EnumerateJoystickNames() => SdlJoystick.EnumerateJoystickNames();
 
-    string IVRageInput2.InitializeJoystickIfPossible(string joystickInstanceName) =>
-        SdlJoystick.InitializeJoystickIfPossible(joystickInstanceName);
+    // SDL drives one controller, in slot 0. The second slot (game 1.211.017) stays empty.
+    // The device name doubles as the instance id, as the game stored names before.
+    List<MyJoystickInfo> IVRageInput2.EnumerateJoystickDevices() =>
+        SdlJoystick
+            .EnumerateJoystickNames()
+            .ConvertAll(name => new MyJoystickInfo { DisplayName = name, InstanceId = name });
 
-    bool IVRageInput2.IsJoystickAxisSupported(MyJoystickAxesEnum axis) =>
-        SdlJoystick.IsJoystickAxisSupported(axis);
+    string IVRageInput2.InitializeJoystickIfPossible(
+        int id,
+        string joystickInstanceId,
+        string otherSlotInstanceId
+    ) => id == 0 ? SdlJoystick.InitializeJoystickIfPossible(joystickInstanceId) : null;
 
-    bool IVRageInput2.IsJoystickConnected() => SdlJoystick.IsJoystickConnected();
+    bool IVRageInput2.IsJoystickAxisSupported(int id, MyJoystickAxesEnum axis) =>
+        id == 0 && SdlJoystick.IsJoystickAxisSupported(axis);
 
-    void IVRageInput2.GetJoystickState(ref MyJoystickState state) =>
-        SdlJoystick.GetJoystickState(ref state);
+    bool IVRageInput2.IsJoystickConnected(int id) => id == 0 && SdlJoystick.IsJoystickConnected();
+
+    void IVRageInput2.GetJoystickState(int id, ref MyJoystickState state)
+    {
+        if (id == 0)
+            SdlJoystick.GetJoystickState(ref state);
+    }
 
     void IVRageInput2.ShowVirtualKeyboardIfNeeded(
         Action<string> onSuccess,
