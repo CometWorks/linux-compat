@@ -1,24 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ClientPlugin.Compatibility;
+using ClientPlugin.Tools;
 using HarmonyLib;
+using Mono.Cecil;
+using Mono.Cecil.Cil;
 using VRage;
 using VRage.Input;
 using VRage.Input.Keyboard;
 using VRage.Platform.Windows;
 
 namespace ClientPlugin.Patches.PlatformGuards;
-
-[HarmonyPatch(typeof(MyVRagePlatform), "get_Input2")]
-[HarmonyPatchCategory("Finish")]
-static class MyVRagePlatformInput2Patch
-{
-    static bool Prefix(ref IVRageInput2 __result)
-    {
-        __result = SdlInput2Provider.Input2;
-        return __result == null;
-    }
-}
 
 static class SdlInput2Provider
 {
@@ -29,7 +22,52 @@ static class SdlInput2Provider
 
     // The platform input device behind MyVRage.Platform.Input2: the SDL window
     // when rendering, the HeadlessWindow no-op stub under PULSAR_NO_RENDER.
+    // MyVRagePlatformInput2Prepatch makes the game's getter return it.
     public static IVRageInput2 Input2 { get; set; }
+}
+
+// MyVRagePlatform.get_Input2 returns Input2 above when it is set, else the game's own field.
+// Written into the getter's body: as a Harmony prefix it got lost on a player's machine, the
+// getter returned the game's null field, and MyVRageInput.UpdateStates crashed on
+// Input2.DeveloperKeys while joining a server (SE-1587).
+public static class MyVRagePlatformInput2Prepatch
+{
+    // Called from the prepatched getter. Returns object, so that importing it into the game
+    // assembly doesn't pull in a game type.
+    public static object Input2Object() => SdlInput2Provider.Input2;
+
+    public static void Prepatch(TypeDefinition myVRagePlatform)
+    {
+        var getter = myVRagePlatform.Methods.FirstOrDefault(m =>
+            m.Name == "get_Input2" && m.Parameters.Count == 0
+        );
+        if (getter?.Body == null)
+        {
+            Console.WriteLine(
+                "[LinuxCompat] MyVRagePlatformInput2Prepatch: MyVRagePlatform.get_Input2 not found"
+            );
+            return;
+        }
+
+        var module = myVRagePlatform.Module;
+        var input2Object = module.ImportReference(
+            typeof(MyVRagePlatformInput2Prepatch).GetMethod(nameof(Input2Object))
+        );
+        getter.Body.Instructions.RecordOriginalCode(getter);
+        var il = getter.Body.GetILProcessor();
+        var first = getter.Body.Instructions[0];
+        var pop = il.Create(OpCodes.Pop);
+        il.InsertBefore(first, il.Create(OpCodes.Call, input2Object));
+        il.InsertBefore(first, il.Create(OpCodes.Castclass, getter.ReturnType));
+        il.InsertBefore(first, il.Create(OpCodes.Dup));
+        il.InsertBefore(first, il.Create(OpCodes.Brfalse_S, pop));
+        il.InsertBefore(first, il.Create(OpCodes.Ret));
+        il.InsertBefore(first, pop);
+        getter.Body.Instructions.RecordPatchedCode(getter);
+        Console.WriteLine(
+            "[LinuxCompat] MyVRagePlatformInput2Prepatch: patched MyVRagePlatform.get_Input2"
+        );
+    }
 }
 
 [HarmonyPatch(typeof(MyVRageInput), nameof(MyVRageInput.LoadContent))]

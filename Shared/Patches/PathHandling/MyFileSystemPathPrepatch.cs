@@ -17,6 +17,13 @@ namespace ClientPlugin.Patches.PathHandling;
 /// ships it as <c>data</c> unresolved and loaded none of its definitions.
 /// Injected into the method bodies, the resolution also runs in every inlined copy.
 /// </para>
+/// <para>
+/// <c>FileExists</c> had a Harmony prefix instead. On a player's machine that detour got lost
+/// at runtime: 298 vanilla sounds went missing, and <c>MyModel.LoadData</c> loaded
+/// <c>Error.mwm</c> for every block model whose path casing differs from the disk, so pistons
+/// had no subparts and conveyor tubes no conveyor ports, and joining a server crashed (SE-1587).
+/// A prepatch can't get lost that way.
+/// </para>
 /// </summary>
 public static class MyFileSystemPathPrepatch
 {
@@ -43,6 +50,7 @@ public static class MyFileSystemPathPrepatch
         );
 
         Patch(type, "Open", 4, resolveAbsolute, null);
+        Patch(type, "FileExists", 1, resolveAbsolute, null);
         Patch(type, "DirectoryExists", 1, resolveAbsolute, null);
         Patch(type, "GetFiles", 1, resolveAbsolute, sorted);
         Patch(type, "GetFiles", 2, resolveAbsolute, sorted);

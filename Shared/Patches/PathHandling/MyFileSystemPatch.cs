@@ -53,19 +53,6 @@ static class MyFileSystemOpenWritePatch
     }
 }
 
-[HarmonyPatch(typeof(MyFileSystem), nameof(MyFileSystem.FileExists))]
-[HarmonyPatchCategory("Finish")]
-static class MyFileSystemFileExistsPatch
-{
-    static void Prefix(ref string path)
-    {
-        if (path == null)
-            return;
-
-        path = PathCache.ResolveAbsolute(path);
-    }
-}
-
 // Sorts GetFiles results case-insensitively, whatever order the provider returned. Script grouping
 // and localization override precedence depend on it. MyFileSystemPathPrepatch calls it from the
 // GetFiles bodies.

@@ -40,8 +40,11 @@ points, in this order:
    when the JIT recompiles a method while it is being patched, and every
    re-patch (another plugin patching the same method) runs the original body
    for a moment. So the audio chain (`MyInMemoryWave`, `MyWaveBank.FindAudioFile`,
-   `MyCueBank.GetVoice`) and the crash guards in `NullSafetyPrepatch` are
-   written into the IL too. `PreloaderHelpers.WrapInExceptionFilter` is the
+   `MyCueBank.GetVoice`), the crash guards in `NullSafetyPrepatch`,
+   `MyFileSystem.FileExists` and `MyVRagePlatform.get_Input2` are written into
+   the IL too. When those last two were Harmony prefixes, a player lost both:
+   block models loaded as `Error.mwm` and the input update hit a null `Input2`,
+   and joining a server crashed (SE-1587). `PreloaderHelpers.WrapInExceptionFilter` is the
    Cecil form of a Harmony finalizer.
 3. `Preloader.Finish()` applies the Harmony `"Finish"` category, which is the
    bulk of the plugin (~115 patch classes; how many apply depends on the build,
@@ -226,7 +229,7 @@ of the immutable `Content` and `Bin64` trees plus mtime-validated per-directory
 caches for mutable roots, so resolution does not walk the filesystem per call.
 
 `MyFileSystemPathPrepatch` injects a call to it as the prologue of
-`MyFileSystem.Open`, `DirectoryExists` and the `GetFiles` overloads, which is
+`MyFileSystem.Open`, `FileExists`, `DirectoryExists` and the `GetFiles` overloads, which is
 why `VRage.Library.dll` is in `TargetDLLs`. These are one-line wrappers the JIT
 inlines into their callers, and an inlined copy skips a Harmony prefix, so
 the resolution has to be in the method body. The `GetFiles` results are also
