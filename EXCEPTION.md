@@ -12,37 +12,26 @@ license, without a fee or registration. You do not have to provide their source
 just because they run with this project, even in the same process. They may
 exchange API data and depend on the host to work.
 
-## Use the documented APIs
+## Your own patches are allowed
 
-An independent extension must not copy or adapt this project's AGPL implementation
-code in a way that requires copyright permission. Separately MIT-licensed SDK,
-contract and example code can be used under MIT.
+Your plugin can use our APIs or patch our internals at runtime, including through
+reflection, method detours and IL rewriting. It does not have to use only
+documented APIs. This permission is for code you wrote independently.
 
-Its access to this project's implementation, including through other components,
-must stay within APIs documented for third-party use by the upstream CometWorks
-project for that version. A method being public, technically accessible or
-labelled an API by a private fork is not enough. Your extension's own interfaces
-and its use of separately licensed game components or third-party services are
-not restricted by this rule.
-
-Normal API adapters and documented replacement points are allowed. Our API's own
-use of private internals does not turn your API call into unsupported access.
+Separately MIT-licensed SDK, contract and example code can be used under MIT.
 Independently written code is not disqualified just because it offers similar
 functionality.
 
 ## A plugin label does not exempt core changes
 
-This permission does not cover copied, adapted, translated or decompiled AGPL
-implementation code, internal patches, or access outside the documented APIs,
-such as replacing internal methods, detouring, rewriting IL or inspecting private
-state through reflection. Routing that access through a wrapper, protocol or
-modified host does not make it independent. Neither does splitting covered core
-changes across plugins, processes or repositories. The actual code and interaction
-matter, not the label or packaging.
+Copying or adapting our AGPL code into a plugin does not exempt that code.
+This includes translated or decompiled code. Wrapping it in a service or splitting
+it across processes or repositories does not change that. Changes you make
+directly to our source or binary files still follow AGPL.
 
-Falling outside this exception does not by itself decide whether copyright law
-makes a work AGPL-covered. A separate host patch does not remove this permission
-from an otherwise independent plugin.
+Your independent plugin can stay closed even if you patch the host separately.
+Its own runtime patches can stay closed too. Falling outside this exception does
+not by itself decide whether copyright law makes a work AGPL-covered.
 
 ## Other terms still apply
 
@@ -63,4 +52,4 @@ We also permit combining, running and distributing this project with separately
 licensed Space Engineers client/server binaries, VRage and their supplied runtime
 libraries. Their source is not required merely because of that combination.
 Their own licenses still apply. This does not exempt our AGPL code copied into
-those components or give other plugins a way around the rules above.
+those components.

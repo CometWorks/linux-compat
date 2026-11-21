@@ -70,8 +70,9 @@ Space Engineers is a trademark of Keen Software House s.r.o.
 
 ## License
 
-AGPL-3.0. Your own plugins can stay closed under the [plugin exception](EXCEPTION.md)
-when they use our documented APIs without copying core code or using private
-hooks. See the [licensing guide](LICENSING.md) for scope and source requirements.
+[AGPL v3 only](LICENSE) (`AGPL-3.0-only`). Your own plugins can stay closed under
+the [plugin exception](EXCEPTION.md), including plugins that patch internals at
+runtime. Copied core code still follows AGPL. See the
+[licensing guide](LICENSING.md) for scope and source requirements.
 
 [Alternative licensing](LICENSING.md#alternative-licensing) is available case by case.
