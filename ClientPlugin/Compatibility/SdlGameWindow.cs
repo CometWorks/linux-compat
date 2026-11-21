@@ -864,7 +864,7 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
         bool needsTextInput =
             m_isVisible
             && Volatile.Read(ref m_isActive)
-            && MyScreenManager.FocusedControl is IMyImeActiveControl;
+            && WantsText(MyScreenManager.GetScreenWithFocus());
         if (needsTextInput == m_textInputActive)
             return;
 
@@ -880,6 +880,15 @@ internal sealed class SdlGameWindow : IVRageWindow, IVRageInput, IVRageInput2
                 SDL_StopTextInput(Handle);
         });
     }
+
+    // A game text box, or a mod's MyModScreen: it has no controls and reads
+    // IMyInput.TextInput itself, which stays empty while SDL text input is off.
+    private static bool WantsText(MyGuiScreenBase screen) =>
+        screen != null
+        && (
+            screen.FocusedControl is IMyImeActiveControl
+            || screen.GetType().DeclaringType?.FullName == "Sandbox.ModAPI.MyModScreen"
+        );
 
     public void SetCursor(Stream stream) { }
 
