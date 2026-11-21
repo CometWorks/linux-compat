@@ -45,6 +45,8 @@ public class Plugin : IPlugin
 
         var harmony = new Harmony("LinuxCompat");
         harmony.PatchCategory("Init");
+
+        ModClipboard.Register();
     }
 
     public void Dispose() { }
