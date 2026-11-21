@@ -165,6 +165,8 @@ public static class Preloader
             NopMethodBody(myWindowsWindows, "CreateToolWindow");
         }
 
+        ClientPlugin.Compatibility.ReleaseAssertPatch.Apply(asmDef);
+
 #if !MAGNETAR
         var myWindowsRender = asmDef.MainModule.GetType(
             "VRage.Platform.Windows.Render.MyWindowsRender"
