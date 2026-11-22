@@ -16,6 +16,9 @@ upstream [licensing guide](LICENSING.md#integration-interfaces) names it for
 third-party use. Use the guide for the release or upstream source revision you
 run. Public methods follow the same rule.
 
+Our API's own use of private internals does not turn your API call into
+unsupported access.
+
 Separately MIT-licensed SDK, contract and example code can be used under MIT.
 
 ## Core changes
