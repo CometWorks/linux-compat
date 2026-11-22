@@ -25,8 +25,9 @@ documented interfaces, even at runtime. Packaging a change as a plugin, wrapper
 or service does not bring it within the exception. Copyright law and the AGPL
 determine what source must be shared in these cases.
 
-Your independent extension can still use this permission if the host is
-patched separately, as long as the extension itself meets these terms.
+If you change this project, those changes still follow the AGPL. Your
+independent extension can stay closed if it uses only the interfaces we
+document for third-party use and follows that documentation.
 
 ## Other terms still apply
 
