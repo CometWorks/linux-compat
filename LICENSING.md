@@ -4,6 +4,8 @@ Linux compatibility uses [AGPL v3 only](LICENSE) (`AGPL-3.0-only`).
 Your own plugins can stay closed if they use only our third-party interfaces
 and follow the documentation. Private core patches fall outside the
 [plugin exception](EXCEPTION.md), even when bundled as a plugin.
+If you need a core change to fix a bug or add support, consider sending it
+upstream or keeping it in a separate AGPL fork.
 
 ## Running and sharing
 
@@ -16,8 +18,7 @@ free, including required build/install material. This includes small patches.
 Our game-server guidance includes players; a join notice can link to the source.
 Link to the source for your version, including your changes.
 
-We welcome fixes and improvements upstream. Contributing is optional and
-does not replace required source sharing.
+Contributing upstream is optional and does not replace required source sharing.
 
 Distributing binaries or containers also requires AGPL section 6 compliance.
 Keep the notices and required source available.
