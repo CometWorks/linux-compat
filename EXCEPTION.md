@@ -46,5 +46,7 @@ or grant trademark or third-party rights.
 We also permit combining, running and distributing this project with separately
 licensed Space Engineers client/server binaries, VRage and their supplied runtime
 libraries. Their source is not required merely because of that combination.
-The game's own terms govern patches to Space Engineers itself. Our AGPL code
-copied into those components remains subject to the AGPL.
+Space Engineers and VRage patches follow their own terms, even when we patch
+the same game method. Patches that target our code, including code we inject
+into the game, fall outside this exception. Our AGPL code copied into those
+components remains subject to the AGPL.
