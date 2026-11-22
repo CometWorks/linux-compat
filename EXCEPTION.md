@@ -9,7 +9,8 @@ choices stay unchanged.
 You may use and distribute your own independent extension under your own
 license, even in the same process, if it uses only the interfaces described below
 to interact with this project, including through other components, and uses them
-as documented.
+for their documented purpose. A bug in how you call a documented interface
+does not by itself affect this permission.
 
 An interface qualifies when the integration documentation linked from the
 upstream [licensing guide](LICENSING.md#integration-interfaces) names it for
