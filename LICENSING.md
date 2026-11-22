@@ -7,6 +7,10 @@ and follow the documentation. Private core patches fall outside the
 If you need a core change to fix a bug or add support, consider sending it
 upstream or keeping it in a separate AGPL fork.
 
+## Integration interfaces
+
+This release designates no third-party interfaces under the plugin exception.
+
 ## Running and sharing
 
 Commercial use needs no license fee or registration. You do not need a separate

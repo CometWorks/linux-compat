@@ -7,11 +7,14 @@ choices stay unchanged.
 ## Your own plugins can stay closed
 
 You may use and distribute your own independent extension under your own
-license, even in the same process, if it interacts with this project only
-through the APIs, protocols and runtime hooks we document for third-party use
-and uses them as documented. A public method qualifies only if we document
-it for third-party use. The same rule applies through wrappers and other
-components.
+license, even in the same process, if it uses only the interfaces described below
+to interact with this project, including through other components, and uses them
+as documented.
+
+An interface qualifies when the integration documentation linked from the
+upstream [licensing guide](LICENSING.md#integration-interfaces) names it for
+third-party use. Use the guide for the release or upstream source revision you
+run. Public methods follow the same rule.
 
 Separately MIT-licensed SDK, contract and example code can be used under MIT.
 
