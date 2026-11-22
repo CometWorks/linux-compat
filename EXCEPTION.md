@@ -12,8 +12,7 @@ fee or registration. This includes extensions that run in the same process.
 
 Your extension must use only the interfaces described below to interact with
 this project, including through other components. Use those interfaces for their
-documented purpose. The exception still applies if you use an interface for its
-documented purpose and make a mistake, such as calling it from the wrong thread.
+documented purpose.
 
 An interface qualifies when the integration documentation linked from the
 upstream [licensing guide](LICENSING.md#integration-interfaces) names it for
