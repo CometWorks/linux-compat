@@ -6,11 +6,14 @@ choices stay unchanged.
 
 ## Your own plugins can stay closed
 
-You may use and distribute your own independent extension under your own
-license, even in the same process, if it uses only the interfaces described below
-to interact with this project, including through other components, and uses them
-for their documented purpose. A bug in how you call a documented interface
-does not by itself affect this permission.
+If your independent extension meets the interface rules below, you may build,
+use, modify, link, run, host and distribute it under your own license, without a
+fee or registration. This includes extensions that run in the same process.
+
+Your extension must use only the interfaces described below to interact with
+this project, including through other components. Use those interfaces for their
+documented purpose. A bug in how you call a documented interface does not by
+itself affect this permission.
 
 An interface qualifies when the integration documentation linked from the
 upstream [licensing guide](LICENSING.md#integration-interfaces) names it for
