@@ -22,6 +22,9 @@ free, including required build/install material. This includes small patches.
 Our game-server guidance includes players; a join notice can link to the source.
 Link to the source for your version, including your changes.
 
+A qualifying plugin can stay closed when you run it with a fork that carries
+this exception. Share the fork's source when the AGPL requires it.
+
 Contributing upstream is optional and does not replace required source sharing.
 
 Distributing binaries or containers also requires AGPL section 6 compliance.
