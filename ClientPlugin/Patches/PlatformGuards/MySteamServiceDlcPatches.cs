@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using HarmonyLib;
 using Steamworks;
 using VRage.Steam;
@@ -19,23 +20,62 @@ namespace ClientPlugin.Patches.PlatformGuards;
 // with BIsSubscribedApp instead: it is the license check, a superset of
 // BIsDlcInstalled (installed implies owned), and stays false for DLC the user
 // does not own.
+//
+// Ownership alone is too loose for DLC that has not been released yet: a retail
+// or pre-release key grants the license before launch, and BIsDlcInstalled stays
+// false for it on every platform until release. So ownership only counts when
+// Steam also lists the DLC as available (BGetDLCDataByIndex).
+// BIsDlcInstalled answering true is trusted as is.
 static class SteamDlcOwnership
 {
+    static HashSet<uint> _availableDlcs;
+
     // Returns false (and leaves result untouched) to fall through to the
     // original method if the Steamworks call fails for any reason.
     internal static bool TryGetOwnership(uint dlcId, out bool result)
     {
         try
         {
-            result = SteamApps.BIsSubscribedApp((AppId_t)dlcId);
+            var appId = (AppId_t)dlcId;
+            result = SteamApps.BIsDlcInstalled(appId) ||
+                     (SteamApps.BIsSubscribedApp(appId) && IsAvailable(dlcId));
             return true;
         }
         catch (Exception e)
         {
-            Console.WriteLine($"[LinuxCompat] BIsSubscribedApp({dlcId}) failed: {e.Message}");
+            Console.WriteLine($"[LinuxCompat] DLC ownership check for {dlcId} failed: {e.Message}");
             result = false;
             return false;
         }
+    }
+
+    static bool IsAvailable(uint dlcId)
+    {
+        var dlcs = _availableDlcs ?? LoadAvailableDlcs();
+        return dlcs.Contains(dlcId);
+    }
+
+    // The DLC list is fixed for the session, so query it once. An empty list
+    // is not cached, in case Steam had not populated it yet.
+    static HashSet<uint> LoadAvailableDlcs()
+    {
+        var dlcs = new HashSet<uint>();
+        var count = SteamApps.GetDLCCount();
+        for (var i = 0; i < count; i++)
+        {
+            if (!SteamApps.BGetDLCDataByIndex(i, out var appId, out var available, out _, 128))
+                continue;
+
+            if (available)
+                dlcs.Add((uint)appId);
+            else if (SteamApps.BIsSubscribedApp(appId))
+                Console.WriteLine($"[LinuxCompat] DLC {appId} is owned but not available");
+        }
+
+        if (count > 0)
+            _availableDlcs = dlcs;
+
+        return dlcs;
     }
 }
 
